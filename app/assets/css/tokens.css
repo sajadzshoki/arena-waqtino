@@ -1,0 +1,108 @@
+/* ============================================================================
+   WAQTINO DESIGN TOKENS — «قانون طلایی»
+   ----------------------------------------------------------------------------
+   هیچ رنگ هگز/کدهای رنگی داخل کامپوننت‌ها ممنوع است.
+   تمام رنگ‌ها فقط در همین فایل تعریف می‌شوند.
+
+   جریان سیستم طراحی:
+     این فایل (توکن‌های خام + معنایی)
+        ↓
+   @theme (Tailwind v4)  →  کلاس‌های brand-* / warm-*
+        ↓
+   متغیرهای --ui-* (Nuxt UI runtime)  +  app/app.config.ts (alias رنگ‌ها)
+        ↓
+   کامپوننت‌های Nuxt UI و Waqtino
+
+   ▶ برای تغییر رنگ اصلی برند فقط بلوک --color-brand-* را ویرایش کنید.
+   ========================================================================== */
+
+@theme static {
+  /* ---------- فونت ---------- */
+  --font-sans:
+    'Vazirmatn Variable', 'Vazirmatn', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Tahoma, sans-serif;
+
+  /* ---------- پالت برند (تنها منبع رنگ اصلی) ----------
+     «سبز پترو» — اعتماد + انرژی، بدون حس داشبوردهای AI. */
+  --color-brand-50: #ecfbf6;
+  --color-brand-100: #cff5e9;
+  --color-brand-200: #a1ebd9;
+  --color-brand-300: #67dac3;
+  --color-brand-400: #2fc1a9;
+  --color-brand-500: #11a58d;
+  --color-brand-600: #098672; /* ◀ رنگ اصلی در حالت روشن */
+  --color-brand-700: #0c6d5e;
+  --color-brand-800: #0d574d;
+  --color-brand-900: #0e4941;
+  --color-brand-950: #032b25;
+
+  /* ---------- خنثی گرم (پس‌زمینه‌ها، متن، خطوط) ---------- */
+  --color-warm-50: #fafaf8;
+  --color-warm-100: #f4f4f1;
+  --color-warm-200: #e7e5de;
+  --color-warm-300: #d6d3c9;
+  --color-warm-400: #b3aea0;
+  --color-warm-500: #8e887b;
+  --color-warm-600: #716c60;
+  --color-warm-700: #5c574b;
+  --color-warm-800: #413e35;
+  --color-warm-900: #2b2823;
+  --color-warm-950: #1a1814;
+}
+
+/* ============================================================================
+   لایه معنایی — نگاشت توکن‌ها به متغیرهای زمان‌اجرا (light / dark)
+   دارک‌مود «معکوس‌سازی ساده» نیست؛ مقادیر به‌صورت دستی انتخاب شده‌اند.
+   ========================================================================== */
+@layer base {
+  :root {
+    --ui-primary: var(--color-brand-600);
+    --ui-secondary: var(--color-warm-700);
+
+    /* سطوح */
+    --ui-bg: var(--color-warm-50);
+    --ui-bg-muted: var(--color-warm-100);
+    --ui-bg-elevated: #ffffff;
+    --ui-bg-accented: var(--color-warm-100);
+    --ui-bg-inverted: var(--color-warm-900);
+
+    /* متن */
+    --ui-text: var(--color-warm-900);
+    --ui-text-highlighted: var(--color-warm-950);
+    --ui-text-muted: var(--color-warm-600);
+    --ui-text-dimmed: var(--color-warm-500);
+
+    /* خطوط حاشیه */
+    --ui-border: var(--color-warm-200);
+    --ui-border-accented: var(--color-warm-300);
+    --ui-border-inverted: #ffffff;
+
+    /* شعاع گوشه‌ها */
+    --ui-radius: 0.625rem;
+
+    /* ابعاد ساختاری اپ (مرکزی، قابل‌استفاده با h-(--var) / max-w-(--var)) */
+    --wq-header-h: 3.75rem;
+    --wq-tabbar-h: 4.5rem;
+    --wq-content-max: 42rem;
+  }
+
+  .dark {
+    --ui-primary: var(--color-brand-400);
+    --ui-secondary: var(--color-warm-300);
+
+    --ui-bg: var(--color-warm-950);
+    --ui-bg-muted: #211d17;
+    --ui-bg-elevated: #24201a;
+    --ui-bg-accented: #2a241c;
+    --ui-bg-inverted: #f0ede3;
+
+    --ui-text: #f0ede3;
+    --ui-text-highlighted: #faf8f1;
+    --ui-text-muted: #a8a190;
+    --ui-text-dimmed: #7e7867;
+
+    --ui-border: #322d23;
+    --ui-border-accented: #423b2e;
+    --ui-border-inverted: #1a1814;
+  }
+}

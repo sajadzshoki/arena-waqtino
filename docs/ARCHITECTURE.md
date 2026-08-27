@@ -69,24 +69,28 @@ AppUser
 
 ```
 app/
-  assets/css/        tokens.css, main.css
-  components/        App* — کروم اپ + حالت‌ها (فازهای بعد: ui/ و feature-based)
-  composables/       useAuth, useUserMode, useServices
-  config/            navigation.ts, booking-status.ts (پیکربندی دامنه، auto-import)
-  layouts/           default.vue (پوستهٔ موبایل)
-  pages/             index.vue
-  plugins/           01.services.ts, 02.session.ts
-  services/          service-error.ts, index.ts (registry)
-    auth/  users/  businesses/   contract + mock-impl
-    mocks/           داده‌های واقع‌گرایانهٔ فارسی (users, businesses)
-  types/             مدل دامنه (auto-import: user, business, service, employee,
-                     booking, availability, review, notification, chat, common)
-  utils/             digits، datetime، delay
-docs/                همین سند + خلاصهٔ قانون اساسی
+  assets/css/        tokens.css (منبع واحد توکن)، main.css (تایپوگرافی/UTILITYها)
+  components/
+    app/             کروم اپ: AppHeader، AppBottomNavigation، AppModeSwitcher،
+                     AppLogo، AppThemeToggle، AppPageHeader، AppBackHeader، AppStickyAction
+    ui/              Wq* — کامپوننت‌های سیستم طراحی (دکمه، فرم، اورلی، نمایش داده)
+    states/          AppLoadingState، AppEmptyState، AppErrorState، AppOfflineState
+  composables/       useAuth، useUserMode، useServices، useAppToast
+  config/            navigation.ts، booking-status.ts (پیکربندی دامنه، auto-import)
+  layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
+  pages/             index.vue، dev/design.vue (شوکیس فقط-توسعه)
+  plugins/           01.services.ts، 02.session.ts
+  services/          index.ts (registry) — auth/ users/ businesses/ (contract+mock)
+    mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses)
+  types/             مدل دامنه (auto-import) + page-meta.ts
+  utils/             digits، datetime، duration، delay، errors (ServiceError)
+docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 ```
 
+کامپوننت‌ها با `pathPrefix: false` اسکن می‌شوند؛ نام فایل = نام تگ (یکتا نگه دارید).
 مرز دامنه‌ها با رشد پروژه به `app/components/<domain>/` و
 `app/composables/<domain>/` گسترش می‌یابد (مثل `components/bookings/`).
+سیستم طراحی کامل و قوانین استفاده: `docs/DESIGN-SYSTEM.md`.
 
 ## ۶. استانداردهای کد
 

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * AppThemeToggle — چرخهٔ حالت نمایش: سیستم → روشن → تیره.
+ * ترجیح کاربر در کوکی (storageKey: wq-color-mode) نگه داشته می‌شود.
+ */
 const colorMode = useColorMode()
 
 type Preference = 'system' | 'light' | 'dark'
@@ -26,14 +30,11 @@ function cycle() {
 </script>
 
 <template>
-  <UButton
-    color="neutral"
+  <WqIconButton
+    :icon="current.icon"
+    :label="`حالت نمایش: ${current.label} — برای تغییر لمس کنید`"
     variant="ghost"
     size="lg"
-    square
-    :icon="current.icon"
-    :aria-label="`حالت نمایش: ${current.label} — برای تغییر لمس کنید`"
-    :title="`حالت نمایش: ${current.label}`"
     @click="cycle"
   />
 </template>

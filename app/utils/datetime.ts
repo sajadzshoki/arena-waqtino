@@ -12,16 +12,16 @@ const faTime = new Intl.DateTimeFormat('fa-IR', {
 })
 
 /** مثال: «پنجشنبه ۵ شهریور ۱۴۰۵» */
-export function formatFaDateFull(date: Date | string): string {
+export function formatFaDateFull(date: Date | string | number): string {
   return faDate.format(new Date(date))
 }
 
 /** مثال: «۵ شهریور ۱۴۰۵» */
-export function formatFaDate(date: Date | string): string {
+export function formatFaDate(date: Date | string | number): string {
   return faDateMedium.format(new Date(date))
 }
 
 /** مثال: «۱۴:۳۰» */
-export function formatFaTime(date: Date | string): string {
+export function formatFaTime(date: Date | string | number): string {
   return faTime.format(new Date(date))
 }

@@ -1,19 +1,20 @@
 /* ============================================================================
-   WAQTINO DESIGN TOKENS — «قانون طلایی»
+   WAQTINO — DESIGN TOKENS (منبع واحد حقیقت)
    ----------------------------------------------------------------------------
-   هیچ رنگ هگز/کدهای رنگی داخل کامپوننت‌ها ممنوع است.
-   تمام رنگ‌ها فقط در همین فایل تعریف می‌شوند.
+   قانون طلایی: هگز/مقادیر خام فقط در همین فایل. کامپوننت‌ها فقط از توکن‌های
+   معنایی استفاده می‌کنند (bg-surface، text-foreground-secondary، border-line …)
 
-   جریان سیستم طراحی:
-     این فایل (توکن‌های خام + معنایی)
+   جریان:
+     پالت‌های خام (brand/warm + سایه‌ها)
+        ↓ :root / .dark
+     توکن‌های معنایی --wq-*
+        ↓ @theme inline
+     کلاس‌های Tailwind معنایی  +  متغیرهای --ui-* (Nuxt UI runtime)
         ↓
-   @theme (Tailwind v4)  →  کلاس‌های brand-* / warm-*
-        ↓
-   متغیرهای --ui-* (Nuxt UI runtime)  +  app/app.config.ts (alias رنگ‌ها)
-        ↓
-   کامپوننت‌های Nuxt UI و Waqtino
+     کامپوننت‌ها
 
-   ▶ برای تغییر رنگ اصلی برند فقط بلوک --color-brand-* را ویرایش کنید.
+   ▶ تغییر رنگ برند: فقط بلوک «پالت برند» همین فایل.
+   ▶ مستندات کامل: docs/DESIGN-SYSTEM.md
    ========================================================================== */
 
 @theme static {
@@ -23,20 +24,21 @@
     'Segoe UI', Tahoma, sans-serif;
 
   /* ---------- پالت برند (تنها منبع رنگ اصلی) ----------
-     «سبز پترو» — اعتماد + انرژی، بدون حس داشبوردهای AI. */
+     «سبز پترو عمیق»: اعتماد و آرامشِ رزرو + انرژی و سرزندگی؛ دور از زیبایی‌شناسی
+     بنفش/آبی نئون محصولات AI و داشبوردهای SaaS. */
   --color-brand-50: #ecfbf6;
-  --color-brand-100: #cff5e9;
-  --color-brand-200: #a1ebd9;
-  --color-brand-300: #67dac3;
-  --color-brand-400: #2fc1a9;
+  --color-brand-100: #ccf2e9;
+  --color-brand-200: #a1e6d7;
+  --color-brand-300: #65d5c1;
+  --color-brand-400: #2bbfa8;
   --color-brand-500: #11a58d;
-  --color-brand-600: #098672; /* ◀ رنگ اصلی در حالت روشن */
-  --color-brand-700: #0c6d5e;
-  --color-brand-800: #0d574d;
-  --color-brand-900: #0e4941;
-  --color-brand-950: #032b25;
+  --color-brand-600: #0a8571; /* ◀ primary در حالت روشن (کنتراست ۴٫۶:۱ با سفید) */
+  --color-brand-700: #0c6b5c;
+  --color-brand-800: #0d564a;
+  --color-brand-900: #0e4841;
+  --color-brand-950: #052e29;
 
-  /* ---------- خنثی گرم (پس‌زمینه‌ها، متن، خطوط) ---------- */
+  /* ---------- خنثی گرم ---------- */
   --color-warm-50: #fafaf8;
   --color-warm-100: #f4f4f1;
   --color-warm-200: #e7e5de;
@@ -48,61 +50,214 @@
   --color-warm-800: #413e35;
   --color-warm-900: #2b2823;
   --color-warm-950: #1a1814;
+
+  /* ---------- شعاع (مقیاس کوچک و حساب‌شده) ----------
+     pills فقط برای chip/tag/status؛ کارت‌ها حداکثر xl. */
+  --radius-xs: 0.25rem; /* ۴  */
+  --radius-sm: 0.375rem; /* ۶ */
+  --radius-md: 0.5rem; /* ۸  */
+  --radius-lg: 0.75rem; /* ۱۲ — دکمه/اینپوت */
+  --radius-xl: 1rem; /* ۱۶ — کارت */
+  --radius-2xl: 1.25rem; /* ۲۰ — شیت/دیالوگ */
 }
 
 /* ============================================================================
-   لایه معنایی — نگاشت توکن‌ها به متغیرهای زمان‌اجرا (light / dark)
-   دارک‌مود «معکوس‌سازی ساده» نیست؛ مقادیر به‌صورت دستی انتخاب شده‌اند.
+   توکن‌های معنایی — حالت روشن
    ========================================================================== */
 @layer base {
   :root {
-    --ui-primary: var(--color-brand-600);
-    --ui-secondary: var(--color-warm-700);
+    /* برند */
+    --wq-primary: var(--color-brand-600);
+    --wq-primary-hover: color-mix(in oklab, var(--color-brand-600) 88%, black);
+    --wq-primary-active: color-mix(in oklab, var(--color-brand-600) 76%, black);
+    --wq-primary-foreground: #ffffff;
 
     /* سطوح */
-    --ui-bg: var(--color-warm-50);
-    --ui-bg-muted: var(--color-warm-100);
-    --ui-bg-elevated: #ffffff;
-    --ui-bg-accented: var(--color-warm-100);
-    --ui-bg-inverted: var(--color-warm-900);
+    --wq-background: var(--color-warm-50);
+    --wq-surface: #ffffff;
+    --wq-surface-raised: #ffffff;
+    --wq-surface-overlay: #ffffff;
+    --wq-surface-muted: var(--color-warm-100);
+    --wq-surface-inverse: var(--color-warm-900);
 
     /* متن */
-    --ui-text: var(--color-warm-900);
-    --ui-text-highlighted: var(--color-warm-950);
-    --ui-text-muted: var(--color-warm-600);
-    --ui-text-dimmed: var(--color-warm-500);
+    --wq-foreground: var(--color-warm-900);
+    --wq-foreground-strong: var(--color-warm-950);
+    --wq-foreground-secondary: var(--color-warm-600);
+    --wq-foreground-muted: var(--color-warm-500);
+    --wq-foreground-disabled: var(--color-warm-400);
+    --wq-inverse: var(--color-warm-50);
 
-    /* خطوط حاشیه */
-    --ui-border: var(--color-warm-200);
-    --ui-border-accented: var(--color-warm-300);
-    --ui-border-inverted: #ffffff;
+    /* خطوط */
+    --wq-line: var(--color-warm-200);
+    --wq-line-subtle: var(--color-warm-100);
+    --wq-line-strong: var(--color-warm-300);
+    --wq-line-focus: var(--wq-primary);
 
-    /* شعاع گوشه‌ها */
-    --ui-radius: 0.625rem;
+    /* وضعیت‌ها (light) */
+    --wq-success: #16a34a;
+    --wq-warning: #d97706;
+    --wq-error: #dc2626;
+    --wq-info: #0284c7;
 
-    /* ابعاد ساختاری اپ (مرکزی، قابل‌استفاده با h-(--var) / max-w-(--var)) */
+    /* سایه‌ها (خفيف و مقصوددار) */
+    --wq-shadow-raised:
+      0 1px 2px rgb(23 20 14 / 0.05),
+      0 1px 3px rgb(23 20 14 / 0.06);
+    --wq-shadow-pop:
+      0 12px 32px -12px rgb(23 20 14 / 0.22),
+      0 4px 12px rgb(23 20 14 / 0.08);
+    --wq-shadow-sticky: 0 -8px 24px -16px rgb(23 20 14 / 0.28);
+
+    /* موشن */
+    --wq-dur-1: 120ms;
+    --wq-dur-2: 180ms;
+    --wq-dur-3: 280ms;
+    --wq-ease: cubic-bezier(0.2, 0, 0, 1);
+
+    /* ابعاد ساختاری */
     --wq-header-h: 3.75rem;
     --wq-tabbar-h: 4.5rem;
     --wq-content-max: 42rem;
+    --wq-page-px: 1rem;
+  }
+
+  /* ==========================================================================
+     دارک‌مود — دست‌ساز، نه معکوس‌شده. سلسله‌مراتب با سطح+خط روشن‌تر حفظ می‌شود.
+     ========================================================================== */
+  .dark {
+    --wq-primary: var(--color-brand-400);
+    --wq-primary-hover: color-mix(in oklab, var(--color-brand-400) 88%, white);
+    --wq-primary-active: color-mix(in oklab, var(--color-brand-400) 78%, white);
+    --wq-primary-foreground: #062e29;
+
+    --wq-background: var(--color-warm-950);
+    --wq-surface: #211d17;
+    --wq-surface-raised: #27221b;
+    --wq-surface-overlay: #2d2720;
+    --wq-surface-muted: #17140e;
+    --wq-surface-inverse: var(--color-warm-50);
+
+    --wq-foreground: #f2efe6;
+    --wq-foreground-strong: #faf8f1;
+    --wq-foreground-secondary: #aba393;
+    --wq-foreground-muted: #8d8674;
+    --wq-foreground-disabled: #5a5448;
+    --wq-inverse: var(--color-warm-950);
+
+    --wq-line: #362f24;
+    --wq-line-subtle: #29241c;
+    --wq-line-strong: #494130;
+    --wq-line-focus: var(--wq-primary);
+
+    --wq-success: #4ade80;
+    --wq-warning: #fbbf24;
+    --wq-error: #f87171;
+    --wq-info: #38bdf8;
+
+    --wq-shadow-raised:
+      0 1px 2px rgb(0 0 0 / 0.5),
+      0 2px 6px rgb(0 0 0 / 0.35);
+    --wq-shadow-pop:
+      0 16px 40px -12px rgb(0 0 0 / 0.7),
+      0 4px 12px rgb(0 0 0 / 0.5);
+    --wq-shadow-sticky: 0 -8px 24px -12px rgb(0 0 0 / 0.6);
+  }
+
+  /* --- توکن‌های مشتق‌شده (soft/border از رنگ پایه، خودکار در هر دو تم) --- */
+  :root {
+    --wq-primary-soft: color-mix(in oklab, var(--wq-primary) 11%, var(--wq-surface));
+    --wq-primary-border: color-mix(in oklab, var(--wq-primary) 38%, var(--wq-line));
+
+    --wq-success-soft: color-mix(in oklab, var(--wq-success) 12%, var(--wq-surface));
+    --wq-success-border: color-mix(in oklab, var(--wq-success) 38%, var(--wq-line));
+    --wq-warning-soft: color-mix(in oklab, var(--wq-warning) 14%, var(--wq-surface));
+    --wq-warning-border: color-mix(in oklab, var(--wq-warning) 38%, var(--wq-line));
+    --wq-error-soft: color-mix(in oklab, var(--wq-error) 11%, var(--wq-surface));
+    --wq-error-border: color-mix(in oklab, var(--wq-error) 38%, var(--wq-line));
+    --wq-info-soft: color-mix(in oklab, var(--wq-info) 11%, var(--wq-surface));
+    --wq-info-border: color-mix(in oklab, var(--wq-info) 38%, var(--wq-line));
+
+    /* ---------- نگاشت به runtime Nuxt UI ---------- */
+    --ui-primary: var(--wq-primary);
+    --ui-secondary: var(--color-warm-600);
+    --ui-success: var(--wq-success);
+    --ui-info: var(--wq-info);
+    --ui-warning: var(--wq-warning);
+    --ui-error: var(--wq-error);
+
+    --ui-bg: var(--wq-background);
+    --ui-bg-muted: var(--wq-surface-muted);
+    --ui-bg-elevated: var(--wq-surface-raised);
+    --ui-bg-accented: var(--wq-surface-overlay);
+    --ui-bg-inverted: var(--wq-surface-inverse);
+
+    --ui-text: var(--wq-foreground);
+    --ui-text-highlighted: var(--wq-foreground-strong);
+    --ui-text-muted: var(--wq-foreground-secondary);
+    --ui-text-dimmed: var(--wq-foreground-muted);
+
+    --ui-border: var(--wq-line);
+    --ui-border-accented: var(--wq-line-strong);
+    --ui-border-inverted: var(--wq-inverse);
+
+    --ui-radius: var(--radius-lg);
   }
 
   .dark {
-    --ui-primary: var(--color-brand-400);
     --ui-secondary: var(--color-warm-300);
-
-    --ui-bg: var(--color-warm-950);
-    --ui-bg-muted: #211d17;
-    --ui-bg-elevated: #24201a;
-    --ui-bg-accented: #2a241c;
-    --ui-bg-inverted: #f0ede3;
-
-    --ui-text: #f0ede3;
-    --ui-text-highlighted: #faf8f1;
-    --ui-text-muted: #a8a190;
-    --ui-text-dimmed: #7e7867;
-
-    --ui-border: #322d23;
-    --ui-border-accented: #423b2e;
-    --ui-border-inverted: #1a1814;
   }
+}
+
+/* ============================================================================
+   خروجی کلاس‌های Tailwind معنایی (به متغیرهای runtime ارجاع می‌دهند تا
+   با سوییچ تم خودکار تغییر کنند)
+   ========================================================================== */
+@theme inline {
+  --color-background: var(--wq-background);
+  --color-surface: var(--wq-surface);
+  --color-surface-raised: var(--wq-surface-raised);
+  --color-surface-overlay: var(--wq-surface-overlay);
+  --color-surface-muted: var(--wq-surface-muted);
+  --color-surface-inverse: var(--wq-surface-inverse);
+
+  --color-foreground: var(--wq-foreground);
+  --color-foreground-strong: var(--wq-foreground-strong);
+  --color-foreground-secondary: var(--wq-foreground-secondary);
+  --color-foreground-muted: var(--wq-foreground-muted);
+  --color-foreground-disabled: var(--wq-foreground-disabled);
+  --color-inverse: var(--wq-inverse);
+
+  --color-line: var(--wq-line);
+  --color-line-subtle: var(--wq-line-subtle);
+  --color-line-strong: var(--wq-line-strong);
+  --color-line-focus: var(--wq-line-focus);
+
+  --color-primary-hover: var(--wq-primary-hover);
+  --color-primary-active: var(--wq-primary-active);
+  --color-primary-soft: var(--wq-primary-soft);
+  --color-primary-border: var(--wq-primary-border);
+  --color-primary-foreground: var(--wq-primary-foreground);
+
+  --color-success: var(--wq-success);
+  --color-success-soft: var(--wq-success-soft);
+  --color-success-border: var(--wq-success-border);
+  --color-warning: var(--wq-warning);
+  --color-warning-soft: var(--wq-warning-soft);
+  --color-warning-border: var(--wq-warning-border);
+  --color-error: var(--wq-error);
+  --color-error-soft: var(--wq-error-soft);
+  --color-error-border: var(--wq-error-border);
+  --color-info: var(--wq-info);
+  --color-info-soft: var(--wq-info-soft);
+  --color-info-border: var(--wq-info-border);
+
+  /* ارتفاع (Elevation) — به‌صورت کلاس معنایی */
+  --shadow-raised: var(--wq-shadow-raised);
+  --shadow-pop: var(--wq-shadow-pop);
+  --shadow-sticky: var(--wq-shadow-sticky);
+
+  /* موشن */
+  --ease-wq: var(--wq-ease);
+  --transition-duration-fast: var(--wq-dur-1);
 }

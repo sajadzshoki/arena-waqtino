@@ -6,7 +6,7 @@ export default withNuxt({
     // Domain packages under app/services use classes; keep Vue rules over app/**.
     'vue/multi-word-component-names': [
       'error',
-      { ignores: ['default', 'index'] }
+      { ignores: ['default', 'index', 'design', '[id]'] }
     ]
   }
 })

@@ -20,6 +20,11 @@ export default defineNuxtConfig({
     dirs: ['types', 'config']
   },
 
+  // سازماندهی پوشه‌ای کامپوننت‌ها بدون پیشوند مسیر:
+  // components/ui/WqButton.vue → <WqButton>
+  // components/app/AppHeader.vue → <AppHeader>
+  components: [{ path: '~/components', pathPrefix: false }],
+
   app: {
     head: {
       htmlAttrs: {

@@ -4,11 +4,28 @@ import type { UserCapability, UserMode } from '~/types/user'
 /**
  * حالت کاربری (Mode) — قلب «کاربر واحد با چند قابلیت».
  *
- * حالت‌های موجود فقط از capabilities واقعی کاربر ساخته می‌شوند و
- * انتخاب فعلی در کوکی ماندگار می‌شود. ناوبری و تجربهٔ UI بر اساس
- * currentMode تغییر می‌کند.
+ * قواعد حالت پیش‌فرض (متمرکز، همین‌جا):
+ *   ۱) انتخاب معتبر ذخیره‌شدهٔ کاربر
+ *   ۲) مشتری (اگر قابلیتش را دارد)
+ *   ۳) اولین قابلیت موجود
+ *   ۴) مهمان → مشتری (مرور عمومی)
+ * حالت در کوکی wq_mode ماندگار است؛ حالت نامعتبر هرگز اعمال نمی‌شود.
  */
 const MODE_COOKIE = 'wq_mode'
+
+/** ترتیب ترجیح حالت پیش‌فرض */
+const MODE_PREFERENCE: UserMode[] = ['customer', 'business', 'employee']
+
+export function resolveDefaultMode(
+  available: UserMode[],
+  stored?: UserMode | null
+): UserMode {
+  if (stored && available.includes(stored)) return stored
+  for (const mode of MODE_PREFERENCE) {
+    if (available.includes(mode)) return mode
+  }
+  return available[0] ?? 'customer'
+}
 
 export function useUserMode() {
   const { capabilities } = useAuth()
@@ -24,7 +41,8 @@ export function useUserMode() {
 
   const storedMode = useCookie<UserMode | null>(MODE_COOKIE, {
     default: () => null,
-    sameSite: 'lax'
+    sameSite: 'lax',
+    maxAge: 365 * 24 * 60 * 60
   })
 
   const selectedMode = useState<UserMode>('app:mode', () => 'customer')
@@ -35,24 +53,19 @@ export function useUserMode() {
     () => ({})
   )
 
-  /** به‌ترتیب اولویت: انتخاب کاربر → مهمان/پیش‌فرض مشتری */
+  /** به‌ترتیب اولویت: انتخاب کاربر → پیش‌فرض (متمرکز در resolveDefaultMode) */
   const currentMode = computed<UserMode>(() => {
     const modes = availableModes.value
     if (modes.length === 0) return 'customer'
     if (modes.includes(selectedMode.value)) return selectedMode.value
-    return modes[0] ?? 'customer'
+    return resolveDefaultMode(modes, null)
   })
 
   const currentModeMeta = computed<ModeMeta>(() => MODE_META[currentMode.value])
 
   /** یک‌بار هنگام شروع برنامه (پلاگین session) صدا زده می‌شود. */
   function initMode(): void {
-    if (storedMode.value && availableModes.value.includes(storedMode.value)) {
-      selectedMode.value = storedMode.value
-    }
-    else if (availableModes.value.length > 0) {
-      selectedMode.value = availableModes.value[0] ?? 'customer'
-    }
+    selectedMode.value = resolveDefaultMode(availableModes.value, storedMode.value)
   }
 
   /** نام کسب‌وکارهای قابلیت‌های کاربر را از سرویس برای سوییچر واکشی می‌کند. */

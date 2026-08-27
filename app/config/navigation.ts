@@ -1,9 +1,9 @@
 /**
- * مدل ناوبری وقتی‌نو — منبع مرکزی ناوبری پایین (bottom tab bar).
+ * مدل ناوبری وقتینو — منبع مرکزی ناوبری پایین + مسیر فرود هر حالت.
  *
  * ناوبری «متکی به حالت کاربر» است: هر حالت (مشتری/کسب‌وکار/کارمند)
  * مجموعهٔ تب‌های خودش را دارد و همهٔ حالت‌ها همزمان نمایش داده نمی‌شوند.
- * تب‌هایی که هنوز در فازهای بعدی ساخته می‌شوند enabled=false هستند.
+ * فعال‌سازی یک بخش در فاز جدید = افزودن/ویرایش آیتم همین فایل.
  */
 
 export interface AppNavItem {
@@ -16,27 +16,34 @@ export interface AppNavItem {
   enabled: boolean
 }
 
+/** مسیر فرود هر حالت — بعد از ورود یا سوییچ حالت به اینجا هدایت می‌شود. */
+export const MODE_LANDING: Record<UserMode, string> = {
+  customer: '/',
+  business: '/business',
+  employee: '/employee'
+}
+
 const CUSTOMER_NAV: AppNavItem[] = [
   { key: 'home', label: 'خانه', icon: 'i-lucide-house', to: '/', enabled: true },
-  { key: 'search', label: 'جستجو', icon: 'i-lucide-search', enabled: false },
-  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-calendar-days', enabled: false },
-  { key: 'saved', label: 'نشان‌شده‌ها', icon: 'i-lucide-bookmark', enabled: false },
-  { key: 'profile', label: 'پروفایل', icon: 'i-lucide-user-round', enabled: false }
+  { key: 'search', label: 'جستجو', icon: 'i-lucide-search', to: '/search', enabled: true },
+  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-calendar-days', to: '/bookings', enabled: true },
+  { key: 'saved', label: 'نشان‌شده‌ها', icon: 'i-lucide-bookmark', to: '/saved', enabled: true },
+  { key: 'profile', label: 'پروفایل', icon: 'i-lucide-user-round', to: '/profile', enabled: true }
 ]
 
 const BUSINESS_NAV: AppNavItem[] = [
-  { key: 'dashboard', label: 'داشبورد', icon: 'i-lucide-layout-dashboard', enabled: false },
-  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-clipboard-list', enabled: false },
-  { key: 'calendar', label: 'تقویم', icon: 'i-lucide-calendar', enabled: false },
-  { key: 'business', label: 'کسب‌وکار', icon: 'i-lucide-store', enabled: false },
-  { key: 'more', label: 'بیشتر', icon: 'i-lucide-ellipsis', enabled: false }
+  { key: 'dashboard', label: 'داشبورد', icon: 'i-lucide-layout-dashboard', to: '/business', enabled: true },
+  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-clipboard-list', to: '/business/bookings', enabled: true },
+  { key: 'calendar', label: 'تقویم', icon: 'i-lucide-calendar', to: '/business/calendar', enabled: true },
+  { key: 'business', label: 'کسب‌وکار', icon: 'i-lucide-store', to: '/business/manage', enabled: true },
+  { key: 'more', label: 'بیشتر', icon: 'i-lucide-ellipsis', to: '/business/more', enabled: true }
 ]
 
 const EMPLOYEE_NAV: AppNavItem[] = [
-  { key: 'dashboard', label: 'داشبورد', icon: 'i-lucide-layout-dashboard', enabled: false },
-  { key: 'schedule', label: 'برنامه', icon: 'i-lucide-calendar-clock', enabled: false },
-  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-clipboard-list', enabled: false },
-  { key: 'more', label: 'بیشتر', icon: 'i-lucide-ellipsis', enabled: false }
+  { key: 'dashboard', label: 'داشبورد', icon: 'i-lucide-layout-dashboard', to: '/employee', enabled: true },
+  { key: 'schedule', label: 'برنامه', icon: 'i-lucide-calendar-clock', to: '/employee/schedule', enabled: true },
+  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-clipboard-list', to: '/employee/bookings', enabled: true },
+  { key: 'more', label: 'بیشتر', icon: 'i-lucide-ellipsis', to: '/employee/more', enabled: true }
 ]
 
 export const NAVIGATION: Record<UserMode, AppNavItem[]> = {

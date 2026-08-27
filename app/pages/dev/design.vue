@@ -119,6 +119,16 @@ const services = useServices()
 const { data: business } = await useAsyncData('design-demo-business', () =>
   services.businesses.getById('biz_narenj')
 )
+
+/* ——— شبیه‌سازی mock ——— */
+const mockFlags = useMockFlags()
+const { data: probe, refresh: probeRefresh, pending: probePending, error: probeError, clear: probeClear } =
+  await useAsyncData('design-mock-probe', () => services.businesses.list({ perPage: 3 }))
+
+watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
+  probeClear()
+  probeRefresh()
+})
 </script>
 
 <template>
@@ -409,6 +419,43 @@ const { data: business } = await useAsyncData('design-demo-business', () =>
         <WqButton variant="tertiary" @click="toast.success('رزرو شما با موفقیت ثبت شد.')">toast موفقیت</WqButton>
         <WqButton variant="tertiary" @click="toast.error('زمان انتخابی دیگر در دسترس نیست.')">toast خطا</WqButton>
         <WqButton variant="tertiary" @click="toast.info('یادآوری نوبت فعال شد.', 'i-lucide-bell')">toast اطلاع</WqButton>
+      </div>
+    </WqSectionHeader>
+
+    <!-- ══ شبیه‌سازی mock ══ -->
+    <WqSectionHeader
+      v-if="mockFlags.enabled.value"
+      class="mt-8"
+      title="شبیه‌سازی پاسخ mock"
+      subtitle="loading / success / empty / error بدون بک‌اند واقعی"
+    >
+      <div class="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+        <div class="flex items-center justify-between">
+          <span class="t-label">شبیه‌سازی خطای شبکه</span>
+          <USwitch v-model="mockFlags.forceError.value" color="primary" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="t-label">شبیه‌سازی پاسخ خالی</span>
+          <USwitch v-model="mockFlags.forceEmpty.value" color="primary" />
+        </div>
+        <USeparator />
+        <div class="min-h-16">
+          <AppLoadingState v-if="probePending" label="در حال واکشی نمونه" />
+          <AppErrorState
+            v-else-if="probeError"
+            retryable
+            :description="toServiceError(probeError).message"
+            @retry="probeRefresh()"
+          />
+          <AppEmptyState
+            v-else-if="!probe || probe.items.length === 0"
+            title="پاسخ خالی"
+            description="فهرست کسب‌وکار خالی برگشت (شبیه‌سازی‌شده)."
+          />
+          <p v-else class="t-body-sm text-foreground-secondary">
+            پاسخ موفق: {{ toFaDigits(probe.items.length) }} کسب‌وکار از {{ toFaDigits(probe.total) }}
+          </p>
+        </div>
       </div>
     </WqSectionHeader>
 

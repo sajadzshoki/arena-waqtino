@@ -1,5 +1,5 @@
 import { ServiceError } from '~/utils/errors'
-import { DEV_USER } from '~/services/mocks/users'
+import { devUserForPhone } from '~/services/mocks/users'
 import type { AuthSession } from '~/types/user'
 import type { AuthService, OtpRequestResult, VerifyOtpInput } from './auth-service'
 
@@ -19,7 +19,8 @@ export class MockAuthService implements AuthService {
   private get cookie() {
     return useCookie<AuthSession | null>(SESSION_COOKIE, {
       default: () => null,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 // ۳۰ روز — نشست توسعه ماندگار
     })
   }
 
@@ -70,7 +71,7 @@ export class MockAuthService implements AuthService {
     this.pendingOtp = null
 
     const session: AuthSession = {
-      user: { ...DEV_USER, phone },
+      user: devUserForPhone(phone),
       accessToken: `dev-token-${Date.now()}`,
       issuedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()

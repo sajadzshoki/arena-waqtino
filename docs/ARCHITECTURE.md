@@ -24,6 +24,20 @@ app/services/*         قراردادها + پیاده‌سازی mock/api  «ت
   (`NUXT_PUBLIC_API_MODE`). تعویض mock→api هیچ تغییری در UI نمی‌خواهد.
 - خطاها به‌صورت `ServiceError` (با پیام فارسی) از سرویس بیرون می‌آیند.
 
+### محافظت مسیر (από فاز ۲)
+
+`app/middleware/guard.global.ts` مبتنی بر route meta است:
+
+| meta | رفتار |
+| --- | --- |
+| `access: 'guest'` | ورود/OTP؛ کاربر واردشده به فرود حالت فعلی هدایت می‌شود |
+| `access: 'auth'` | مهمان → `/login?redirect=…` |
+| `capability: 'business'\|'employee'` | فاقد قابلیت → فرود حالت معتبر + toast |
+
+مقصد فرود هر حالت: `MODE_LANDING` در `app/config/navigation.ts`.
+قانون حالت پیش‌فرض: `resolveDefaultMode()` در `app/composables/useUserMode.ts`
+(ذخیره‌شدهٔ معتبر → مشتری → اولین قابلیت → مهمان/مشتری).
+
 ## ۲. سیستم طراحی و تم
 
 ```

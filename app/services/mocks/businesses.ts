@@ -140,6 +140,15 @@ export const MOCK_EMPLOYEES: Employee[] = [
     isActive: true
   },
   {
+    id: 'emp_elham_pars',
+    businessId: 'biz_pars',
+    userId: 'usr_dev_elham',
+    name: 'الهه احمدی',
+    title: 'منشی و هماهنگ‌کنندهٔ نوبت‌ها',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
     id: 'emp_dr_ranjbar',
     businessId: 'biz_pars',
     name: 'دکتر کیان رنجبر',

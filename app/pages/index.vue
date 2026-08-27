@@ -1,27 +1,18 @@
 <script setup lang="ts">
 /**
- * خانه — پوستهٔ محصولی + ورود آزمایشی توسعه.
- * تجربهٔ واقعی مشتری (کشف/جستجو/پیشنهادها) در فازهای بعد ساخته می‌شود.
+ * خانه — فرود حالت مشتری (بازدید مهمان آزاد است).
+ * تجربهٔ کامل کشف کسب‌وکار در فازهای بعد ساخته می‌شود.
  */
+definePageMeta({ access: 'public' })
 useHead({ title: 'خانه' })
 
 const config = useRuntimeConfig()
-const toast = useAppToast()
-const { user, isAuthenticated, pending: authPending, devSignIn } = useAuth()
+const { user, isAuthenticated } = useAuth()
 const { currentModeMeta } = useUserMode()
 
 const isMock = computed(() => config.public.apiMode === 'mock')
+const isDev = import.meta.dev
 const today = formatFaDateFull(new Date())
-
-async function onDevSignIn() {
-  try {
-    await devSignIn()
-    toast.success('با حساب آزمایشی وارد شدید.')
-  }
-  catch (error) {
-    toast.error(toServiceError(error).message)
-  }
-}
 </script>
 
 <template>
@@ -44,30 +35,23 @@ async function onDevSignIn() {
 
       <div v-else class="flex flex-col gap-3">
         <p class="t-body-sm text-foreground-secondary">
-          فعلاً مهمان هستید. برای آزمایش سوییچ حالت‌ها (مشتری / کسب‌وکار / کارمند)
-          با جریان آزمایشی OTP وارد شوید — بدون پیامک واقعی.
+          برای رزرو نوبت، ذخیرهٔ کسب‌وکارها و پیگیری نوبت‌ها وارد حساب خود شوید.
         </p>
-        <WqButton
-          v-if="isMock"
-          :loading="authPending"
-          icon="i-lucide-smartphone"
-          block
-          @click="onDevSignIn"
-        >
-          ورود آزمایشی توسعه (کد: {{ toFaDigits(config.public.mockOtpCode) }})
+        <WqButton icon="i-lucide-key-round" block @click="navigateTo('/login')">
+          ورود یا ثبت‌نام
         </WqButton>
         <UAlert
-          v-else
-          color="warning"
-          variant="soft"
-          icon="i-lucide-triangle-alert"
-          title="حالت API فعال است اما بک‌اند هنوز متصل نشده است."
+          v-if="isMock"
+          color="neutral"
+          variant="subtle"
+          icon="i-lucide-flask-conical"
+          title="حالت توسعه فعال است — ورود با OTP ساختگی انجام می‌شود."
         />
       </div>
     </section>
 
     <!-- ورود به شوکیس سیستم طراحی — فقط محیط توسعه -->
-    <section v-if="isMock" class="mt-6">
+    <section v-if="isMock && isDev" class="mt-6">
       <WqSectionHeader title="ابزارهای توسعه" subtitle="فقط در حالت توسعه نمایش داده می‌شود">
         <div class="rounded-xl border border-line bg-surface px-4">
           <WqListRow

@@ -1,11 +1,19 @@
 import type { Business, BusinessCategory } from '~/types/business'
 import type { EntityId, Paginated } from '~/types/common'
-import { MOCK_BUSINESSES, MOCK_CATEGORIES } from '~/services/mocks/businesses'
+import type { Employee } from '~/types/employee'
+import type { BookableService } from '~/types/service'
+import { ServiceError } from '~/utils/errors'
+import { MOCK_BUSINESSES, MOCK_CATEGORIES, MOCK_EMPLOYEES, MOCK_SERVICES } from '~/services/mocks/businesses'
 import type { BusinessListQuery, BusinessService } from './business-service'
 
 export class MockBusinessService implements BusinessService {
   async list(query: BusinessListQuery = {}): Promise<Paginated<Business>> {
     await delay()
+    const flags = useMockFlags()
+    if (flags.forceError.value) throw ServiceError.network()
+    if (flags.forceEmpty.value) {
+      return { items: [], total: 0, page: query.page ?? 1, perPage: query.perPage ?? 10 }
+    }
 
     const page = query.page ?? 1
     const perPage = query.perPage ?? 10
@@ -38,5 +46,15 @@ export class MockBusinessService implements BusinessService {
   async listCategories(): Promise<BusinessCategory[]> {
     await delay(150)
     return MOCK_CATEGORIES
+  }
+
+  async listServices(businessId: EntityId): Promise<BookableService[]> {
+    await delay(200)
+    return MOCK_SERVICES.filter(s => s.businessId === businessId && s.isActive)
+  }
+
+  async listEmployees(businessId: EntityId): Promise<Employee[]> {
+    await delay(200)
+    return MOCK_EMPLOYEES.filter(e => e.businessId === businessId && e.isActive)
   }
 }

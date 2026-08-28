@@ -27,12 +27,17 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'سالن زیبایی نارنج',
     categoryId: 'cat_beauty',
     description:
-      'سالن زیبایی نارنج با بیش از ده سال تجربه در خدمات تخصصی مو، پوست و میکاپ، در محلهٔ سعادت‌آباد تهران آمادهٔ پذیرش شماست. رزرو آنلاین نوبت برای رنگ و لایت، کراتینه و میکاپ عروس انجام می‌شود.',
+      'سالن زیبایی نارنج با بیش از ده سال تجربه در خدمات تخصصی مو، پوست و میکاپ، در محلهٔ سعادت‌آباد تهران آمادهٔ پذیرش شماست. ما با استفاده از محصولات مرغوب و تکنیک‌های روز دنیا، تلاش می‌کنیم بهترین تجربهٔ زیبایی را برای شما فراهم کنیم. تیم حرفه‌ای ما در زمینهٔ رنگ و لایت، کراتینه، میکاپ عروس و مراقبت‌های پوست فعالیت می‌کند.',
     phone: '02122083145',
     address: { city: 'تهران', district: 'سعادت‌آباد', street: 'بلوار دریا، نبش خیابان مطهری' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.6, count: 218 },
     isVerified: true,
     status: 'active',
@@ -45,12 +50,16 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'کلینیک دندانپزشکی پارس',
     categoryId: 'cat_health',
     description:
-      'کلینیک دندانپزشکی پارس با کادر متخصص در زمینه‌های ایمپلنت، ارتودنسی و زیبایی لبخند، خدمات ویزیت و درمان را با نوبت‌دهی آنلاین ارائه می‌کند.',
+      'کلینیک دندانپزشکی پارس با کادر متخصص در زمینه‌های ایمپلنت، ارتودنسی و زیبایی لبخند، خدمات ویزیت و درمان را با نوبت‌دهی آنلاین ارائه می‌کند. تجهیزات مدرن و محیطی بهداشتی در انتظار شماست. ما با بیش از ۱۵ سال سابقه، خدمات دندانپزشکی عمومی و تخصصی را با بالاترین کیفیت ارائه می‌دهیم.',
     phone: '02188650210',
     address: { city: 'تهران', district: 'ونک', street: 'میدان ونک، برج گلدیس، طبقهٔ ۴' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1606811971618-4486d14f3f99?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1598256989800-feebf06a241a?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.8, count: 342 },
     isVerified: true,
     status: 'active',
@@ -63,12 +72,16 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'باشگاه بدنسازی انرژی',
     categoryId: 'cat_sport',
     description:
-      'باشگاه انرژی با دستگاه‌های به‌روز قدرتی و هوازی، کلاس‌های کراس‌فیت و مربیان رسمی فدراسیون. امکان رزرو جلسهٔ مشاورهٔ بدن‌سازی و برنامهٔ تمرینی اختصاصی.',
+      'باشگاه انرژی با دستگاه‌های به‌روز قدرتی و هوازی، کلاس‌های کراس‌فیت و مربیان رسمی فدراسیون. امکان رزرو جلسهٔ مشاورهٔ بدن‌سازی و برنامهٔ تمرینی اختصاصی. محیطی حرفه‌ای و دوستانه برای همهٔ سطوح آمادگی جسمانی.',
     phone: '02166742018',
     address: { city: 'تهران', district: 'سعادت‌آباد', street: 'خیابان علامه شمالی، پلاک ۲۷' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.3, count: 156 },
     isVerified: false,
     status: 'active',
@@ -81,12 +94,15 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'تعمیرگاه تخصصی شوکا',
     categoryId: 'cat_auto',
     description:
-      'تعمیرگاه تخصصی شوکا؛ تشخیص عیب با دیاگ، تعمیرات برق و مکانیک خودروهای داخلی و وارداتی. نوبت سرویس دوره‌ای و تعویض روغن را آنلاین رزرو کنید.',
+      'تعمیرگاه تخصصی شوکا؛ تشخیص عیب با دیاگ، تعمیرات برق و مکانیک خودروهای داخلی و وارداتی. نوبت سرویس دوره‌ای و تعویض روغن را آنلاین رزرو کنید. با بیش از ۲۰ سال تجربه در تعمیرات خودرو.',
     phone: '02133907044',
     address: { city: 'تهران', district: 'صادقیه', street: 'بلوار اشرفی اصفهانی، خیابان صدوقی' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1530046339915-78e95e5f7e7f?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.1, count: 89 },
     isVerified: false,
     status: 'active',
@@ -99,12 +115,15 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'آموزشگاه زبان رویش',
     categoryId: 'cat_education',
     description:
-      'آموزشگاه زبان رویش، برگزارکنندهٔ دوره‌های آیلتس، مکالمهٔ انگلیسی و آلمانی با اساتید مجرب. جلسهٔ تعیین سطح رایگان را به‌صورت آنلاین رزرو کنید.',
+      'آموزشگاه زبان رویش، برگزارکنندهٔ دوره‌های آیلتس، مکالمهٔ انگلیسی و آلمانی با اساتید مجرب. جلسهٔ تعیین سطح رایگان را به‌صورت آنلاین رزرو کنید. کلاس‌ها به‌صورت خصوصی و نیمه‌خصوصی برگزار می‌شود.',
     phone: '02188774156',
     address: { city: 'تهران', district: 'فاطمی', street: 'خیابان فاطمی، روبه‌روی دانشگاه تهران' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.7, count: 274 },
     isVerified: true,
     status: 'active',
@@ -117,12 +136,16 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'استودیو عکاسی نورا',
     categoryId: 'cat_photo',
     description:
-      'استودیو نورا؛ عکاسی پرتره، مدلینگ و عروس با نورپردازی حرفه‌ای. رزرو سانس‌های استودیو و پکیج‌های عکاسی خانوادگی به‌صورت آنلاین.',
+      'استودیو نورا؛ عکاسی پرتره، مدلینگ و عروس با نورپردازی حرفه‌ای. رزرو سانس‌های استودیو و پکیج‌های عکاسی خانوادگی به‌صورت آنلاین. با بیش از ۸ سال تجربه در عکاسی حرفه‌ای.',
     phone: '02144330851',
     address: { city: 'تهران', district: 'نارمک', street: 'میدان هنگام، خیابان فرجام' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1471341971476-ae15ff5dd4ea?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.5, count: 121 },
     isVerified: true,
     status: 'active',
@@ -135,12 +158,15 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'مرکز مشاوره آرامش',
     categoryId: 'cat_consult',
     description:
-      'مرکز مشاوره آرامش؛ مشاوره فردی، خانوادگی و زوج‌درمانی با روانشناسان مجرب. وقت مشاوره حضوری و آنلاین را آنلاین رزرو کنید.',
+      'مرکز مشاوره آرامش؛ مشاوره فردی، خانوادگی و زوج‌درمانی با روانشناسان مجرب. وقت مشاوره حضوری و آنلاین را آنلاین رزرو کنید. رویکرد ما مبتنی بر روش‌های علمی و به‌روز روانشناسی است.',
     phone: '02188993344',
     address: { city: 'تهران', district: 'یوسف‌آباد', street: 'خیابان اسدآبادی، پلاک ۵۴' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.9, count: 187 },
     isVerified: true,
     status: 'active',
@@ -153,12 +179,15 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'خدمات نظافتی تمیزآز',
     categoryId: 'cat_home',
     description:
-      'خدمات نظافت منزل، محل کار و مشاعات با نیروهای مجرب و بیمه‌شده. رزرو آنلاین نوبت نظافت ساعتی و دوره‌ای.',
+      'خدمات نظافت منزل، محل کار و مشاعات با نیروهای مجرب و بیمه‌شده. رزرو آنلاین نوبت نظافت ساعتی و دوره‌ای. استفاده از مواد شویندهٔ مرغوب و تجهیزات حرفه‌ای.',
     phone: '02155443322',
     address: { city: 'تهران', district: 'پونک', street: 'میدان پونک، خیابان عدل' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.4, count: 203 },
     isVerified: true,
     status: 'active',
@@ -171,12 +200,15 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'کلینیک دامپزشکی پتلند',
     categoryId: 'cat_pets',
     description:
-      'کلینیک دامپزشکی پتلند؛ واکسیناسیون، چکاپ، grooming و جراحی حیوانات خانگی. نوبت‌دهی آنلاین برای سگ، گربه و پرندگان.',
+      'کلینیک دامپزشکی پتلند؛ واکسیناسیون، چکاپ، grooming و جراحی حیوانات خانگی. نوبت‌دهی آنلاین برای سگ، گربه و پرندگان. تیمی از دامپزشکان متخصص با تجربه.',
     phone: '02144778899',
     address: { city: 'تهران', district: 'ونک', street: 'خیابان ونک، نبش کوچهٔ نیلوفر' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1629740067905-bd3f515aa739?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.7, count: 145 },
     isVerified: true,
     status: 'active',
@@ -189,12 +221,16 @@ export const MOCK_BUSINESSES: Business[] = [
     name: 'آرایشگاه مردانه جنتلمن',
     categoryId: 'cat_beauty',
     description:
-      'آرایشگاه مردانه جنتلمن؛ اصلاح مو و ریش، پاکسازی پوست و خدمات VIP با رزرو آنلاین نوبت.',
+      'آرایشگاه مردانه جنتلمن؛ اصلاح مو و ریش، پاکسازی پوست و خدمات VIP با رزرو آنلاین نوبت. محیطی لوکس و حرفه‌ای برای آقایان. استفاده از محصولات اصل و درجه یک.',
     phone: '02177665544',
     address: { city: 'تهران', district: 'تجریش', street: 'میدان تجریش، بازار تجریش، پلاک ۱۲' },
-    coverImageUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&h=400&fit=crop',
+    coverImageUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&h=500&fit=crop',
     logoUrl: null,
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1585747860019-8968b03467dc?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1621605815971-fbc98d665f33?w=400&h=400&fit=crop',
+      'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=400&h=400&fit=crop'
+    ],
     rating: { average: 4.5, count: 312 },
     isVerified: true,
     status: 'active',
@@ -231,6 +267,14 @@ export const MOCK_EMPLOYEES: Employee[] = [
     isActive: true
   },
   {
+    id: 'emp_dr_mirzaei',
+    businessId: 'biz_pars',
+    name: 'دکتر فرهاد میرزایی',
+    title: 'متخصص ارتودنسی',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
     id: 'emp_mina_narenj',
     businessId: 'biz_narenj',
     name: 'مینا رحیمی',
@@ -245,10 +289,83 @@ export const MOCK_EMPLOYEES: Employee[] = [
     title: 'متخصص پوست',
     avatarUrl: null,
     isActive: true
+  },
+  {
+    id: 'emp_nike_narenj',
+    businessId: 'biz_narenj',
+    name: 'نیک آهنگ',
+    title: 'میکاپ آرتیست عروس',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_reza_energy',
+    businessId: 'biz_energy',
+    name: 'رضا کریمی',
+    title: 'مربی بدن‌سازی',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_ali_energy',
+    businessId: 'biz_energy',
+    name: 'علی حسینی',
+    title: 'مربی کراس‌فیت',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_maryam_aramesh',
+    businessId: 'biz_aramesh',
+    name: 'مریم سلطانی',
+    title: 'روانشناس بالینی',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_hassan_aramesh',
+    businessId: 'biz_aramesh',
+    name: 'حسن نوری',
+    title: 'مشاور خانواده',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_shima_ruyesh',
+    businessId: 'biz_ruyesh',
+    name: 'شیما عباسی',
+    title: 'مدرس زبان انگلیسی (IELTS)',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_amir_noora',
+    businessId: 'biz_noora',
+    name: 'امیر جعفری',
+    title: 'عکاس پرتره و مدلینگ',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_reza_barber',
+    businessId: 'biz_barbershop',
+    name: 'رضا صادقی',
+    title: 'آرایشگر ارشد',
+    avatarUrl: null,
+    isActive: true
+  },
+  {
+    id: 'emp_mehdi_barber',
+    businessId: 'biz_barbershop',
+    name: 'مهدی قاسمی',
+    title: 'متخصص اصلاح ریش',
+    avatarUrl: null,
+    isActive: true
   }
 ]
 
 export const MOCK_SERVICES: BookableService[] = [
+  // === سالن نارنج ===
   {
     id: 'srv_narenj_color',
     businessId: 'biz_narenj',
@@ -263,6 +380,7 @@ export const MOCK_SERVICES: BookableService[] = [
     id: 'srv_narenj_keratin',
     businessId: 'biz_narenj',
     name: 'کراتینه و احیای مو',
+    description: 'کراتینه برزیلی با مواد درجه یک + پروتئین‌تراپی',
     price: 2_450_000,
     durationMinutes: 120,
     employeeIds: ['emp_mina_narenj'],
@@ -272,15 +390,39 @@ export const MOCK_SERVICES: BookableService[] = [
     id: 'srv_narenj_skin',
     businessId: 'biz_narenj',
     name: 'فیشیال و پاکسازی پوست',
+    description: 'پاکسازی عمیق + ماسک مناسب نوع پوست',
     price: 890_000,
     durationMinutes: 60,
     employeeIds: ['emp_omid_narenj'],
     isActive: true
   },
   {
+    id: 'srv_narenj_bridal',
+    businessId: 'biz_narenj',
+    name: 'میکاپ عروس',
+    description: 'میکاپ حرفه‌ای عروس + تست میکاپ + شینیون مو',
+    price: 8_500_000,
+    durationMinutes: 240,
+    employeeIds: ['emp_nike_narenj'],
+    isActive: true
+  },
+  {
+    id: 'srv_narenj_haircut',
+    businessId: 'biz_narenj',
+    name: 'کوتاهی و مدل مو',
+    description: 'شامل شستشو، کوتاهی و حالت‌دهی',
+    price: 450_000,
+    durationMinutes: 45,
+    employeeIds: ['emp_mina_narenj'],
+    isActive: true
+  },
+
+  // === کلینیک پارس ===
+  {
     id: 'srv_pars_visit',
     businessId: 'biz_pars',
     name: 'ویزیت و معاینهٔ دندان',
+    description: 'معاینه کامل + عکس‌برداری در صورت نیاز',
     price: 450_000,
     durationMinutes: 30,
     isActive: true
@@ -296,13 +438,66 @@ export const MOCK_SERVICES: BookableService[] = [
     isActive: true
   },
   {
+    id: 'srv_pars_scaling',
+    businessId: 'biz_pars',
+    name: 'جرم‌گیری و بروساژ',
+    description: 'تمیز کردن حرفه‌ای دندان + پولیش',
+    price: 750_000,
+    durationMinutes: 45,
+    isActive: true
+  },
+  {
+    id: 'srv_pars_whitening',
+    businessId: 'biz_pars',
+    name: 'بلیچینگ (سفیدکردن) دندان',
+    description: 'سفیدکردن دندان با لیزر در یک جلسه',
+    price: 3_800_000,
+    durationMinutes: 60,
+    isActive: true
+  },
+  {
+    id: 'srv_pars_ortho',
+    businessId: 'biz_pars',
+    name: 'مشاورهٔ ارتودنسی',
+    description: 'بررسی ناهنجاری فک و دندان + طرح درمان ارتودنسی',
+    price: 500_000,
+    durationMinutes: 30,
+    employeeIds: ['emp_dr_mirzaei'],
+    isActive: true
+  },
+
+  // === باشگاه انرژی ===
+  {
     id: 'srv_energy_consult',
     businessId: 'biz_energy',
     name: 'جلسهٔ مشاورهٔ بدن‌سازی',
+    description: 'آنالیز بدن + تنظیم برنامهٔ تمرینی + توصیهٔ تغذیه‌ای',
     price: 350_000,
     durationMinutes: 45,
     isActive: true
   },
+  {
+    id: 'srv_energy_crossfit',
+    businessId: 'biz_energy',
+    name: 'کلاس گروهی کراس‌فیت',
+    description: 'کلاس ۶۰ دقیقه‌ای کراس‌فیت با مربی رسمی',
+    price: 180_000,
+    durationMinutes: 60,
+    employeeIds: ['emp_ali_energy'],
+    isActive: true
+  },
+  {
+    id: 'srv_energy_personal',
+    businessId: 'biz_energy',
+    name: 'جلسهٔ تمرین خصوصی',
+    description: 'یک جلسه تمرین خصوصی با مربی اختصاصی',
+    price: 500_000,
+    durationMinutes: 60,
+    employeeIds: ['emp_reza_energy'],
+    isActive: true
+  },
+
+  // === آموزشگاه رویش ===
   {
     id: 'srv_ruyesh_level',
     businessId: 'biz_ruyesh',
@@ -310,6 +505,160 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'مصاحبهٔ شفاهی + آزمون کتبی کوتاه',
     price: 0,
     durationMinutes: 30,
+    isActive: true
+  },
+  {
+    id: 'srv_ruyesh_ielts',
+    businessId: 'biz_ruyesh',
+    name: 'دورهٔ آمادگی آیلتس',
+    description: 'جلسهٔ اول دورهٔ آمادگی آزمون آیلتس (جلسهٔ آزمایشی)',
+    price: 450_000,
+    durationMinutes: 90,
+    employeeIds: ['emp_shima_ruyesh'],
+    isActive: true
+  },
+  {
+    id: 'srv_ruyesh_conversation',
+    businessId: 'biz_ruyesh',
+    name: 'جلسهٔ مکالمهٔ انگلیسی',
+    description: 'یک جلسه تمرین مکالمه با پارتنر نیتیو',
+    price: 280_000,
+    durationMinutes: 60,
+    isActive: true
+  },
+
+  // === استودیو نورا ===
+  {
+    id: 'srv_noora_portrait',
+    businessId: 'biz_noora',
+    name: 'عکاسی پرتره (استودیویی)',
+    description: 'یک ساعت عکاسی پرتره در استودیو + ۱۰ عکس ویرایش‌شده',
+    price: 2_200_000,
+    durationMinutes: 60,
+    employeeIds: ['emp_amir_noora'],
+    isActive: true
+  },
+  {
+    id: 'srv_noora_family',
+    businessId: 'biz_noora',
+    name: 'عکاسی خانوادگی',
+    description: 'عکاسی خانوادگی در فضای باز + ۱۵ عکس ویرایش‌شده',
+    price: 3_500_000,
+    durationMinutes: 90,
+    employeeIds: ['emp_amir_noora'],
+    isActive: true
+  },
+
+  // === مرکز مشاوره آرامش ===
+  {
+    id: 'srv_aramesh_individual',
+    businessId: 'biz_aramesh',
+    name: 'جلسهٔ مشاورهٔ فردی',
+    description: 'یک جلسه ۵۰ دقیقه‌ای مشاورهٔ فردی',
+    price: 700_000,
+    durationMinutes: 50,
+    employeeIds: ['emp_maryam_aramesh'],
+    isActive: true
+  },
+  {
+    id: 'srv_aramesh_couple',
+    businessId: 'biz_aramesh',
+    name: 'جلسهٔ زوج‌درمانی',
+    description: 'یک جلسه ۷۰ دقیقه‌ای مشاورهٔ زوجین',
+    price: 1_100_000,
+    durationMinutes: 70,
+    employeeIds: ['emp_hassan_aramesh'],
+    isActive: true
+  },
+  {
+    id: 'srv_aramesh_family',
+    businessId: 'biz_aramesh',
+    name: 'مشاورهٔ خانواده',
+    description: 'یک جلسه ۶۰ دقیقه‌ای مشاورهٔ خانوادگی',
+    price: 900_000,
+    durationMinutes: 60,
+    employeeIds: ['emp_hassan_aramesh'],
+    isActive: true
+  },
+
+  // === آرایشگاه جنتلمن ===
+  {
+    id: 'srv_barber_cut',
+    businessId: 'biz_barbershop',
+    name: 'اصلاح مو',
+    description: 'شستشو + کوتاهی مو + حالت‌دهی',
+    price: 250_000,
+    durationMinutes: 30,
+    employeeIds: ['emp_reza_barber'],
+    isActive: true
+  },
+  {
+    id: 'srv_barber_beard',
+    businessId: 'biz_barbershop',
+    name: 'اصلاح ریش',
+    description: 'طراحی و اصلاح ریش با تیغ و ماشین',
+    price: 150_000,
+    durationMinutes: 20,
+    employeeIds: ['emp_mehdi_barber'],
+    isActive: true
+  },
+  {
+    id: 'srv_barber_vip',
+    businessId: 'biz_barbershop',
+    name: 'پکیج VIP (مو + ریش + ماسک صورت)',
+    description: 'اصلاح مو و ریش + ماسک صورت + شستشوی صورت',
+    price: 550_000,
+    durationMinutes: 75,
+    employeeIds: ['emp_reza_barber'],
+    isActive: true
+  },
+
+  // === کلینیک پتلند ===
+  {
+    id: 'srv_petland_checkup',
+    businessId: 'biz_petland',
+    name: 'چکاپ کامل',
+    description: 'معاینهٔ عمومی + آزمایش خون + توصیه‌های بهداشتی',
+    price: 650_000,
+    durationMinutes: 40,
+    isActive: true
+  },
+  {
+    id: 'srv_petland_vaccine',
+    businessId: 'biz_petland',
+    name: 'واکسیناسیون',
+    description: 'تزریق واکسن چندگانه (سگ یا گربه)',
+    price: 380_000,
+    durationMinutes: 20,
+    isActive: true
+  },
+  {
+    id: 'srv_petland_grooming',
+    businessId: 'biz_petland',
+    name: 'آرایش و حمام (Grooming)',
+    description: 'حمام + کوتاهی مو + ناخن + تمیز کردن گوش',
+    price: 550_000,
+    durationMinutes: 90,
+    isActive: true
+  },
+
+  // === خدمات نظافتی تمیزآز ===
+  {
+    id: 'srv_tamiraz_hourly',
+    businessId: 'biz_tamiraz',
+    name: 'نظافت ساعتی منزل',
+    description: 'هر ساعت نظافت عمومی منزل',
+    price: 180_000,
+    durationMinutes: 60,
+    isActive: true
+  },
+  {
+    id: 'srv_tamiraz_deep',
+    businessId: 'biz_tamiraz',
+    name: 'نظافت اساسی (Deep Clean)',
+    description: 'نظافت کامل + شستشوی پنجره + تمیز کردن کابینت',
+    price: 2_500_000,
+    durationMinutes: 360,
     isActive: true
   }
 ]

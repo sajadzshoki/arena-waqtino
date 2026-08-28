@@ -24,8 +24,17 @@ export class MockBusinessService implements BusinessService {
       items = items.filter(b => b.categoryId === query.categoryId)
     }
     if (search) {
+      const lowerSearch = search.toLowerCase()
+      // جستجو در نام/توضیح کسب‌وکار + نام خدمات
+      const serviceBizIds = MOCK_SERVICES
+        .filter(s => s.name.toLowerCase().includes(lowerSearch))
+        .map(s => s.businessId)
+
       items = items.filter(
-        b => b.name.includes(search) || b.description.includes(search)
+        b =>
+          b.name.includes(search) ||
+          b.description.includes(search) ||
+          serviceBizIds.includes(b.id)
       )
     }
 

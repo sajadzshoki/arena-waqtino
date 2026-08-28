@@ -395,7 +395,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 3_200_000,
     durationMinutes: 180,
     employeeIds: ['emp_mina_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_keratin',
@@ -405,7 +405,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 2_450_000,
     durationMinutes: 120,
     employeeIds: ['emp_mina_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_skin',
@@ -415,7 +415,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 890_000,
     durationMinutes: 60,
     employeeIds: ['emp_omid_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_bridal',
@@ -425,7 +425,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 8_500_000,
     durationMinutes: 240,
     employeeIds: ['emp_nike_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_haircut',
@@ -435,7 +435,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 450_000,
     durationMinutes: 45,
     employeeIds: ['emp_mina_narenj'],
-    isActive: true
+    status: 'active'
   },
 
   // === کلینیک پارس ===
@@ -446,7 +446,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'معاینه کامل + عکس‌برداری در صورت نیاز',
     price: 450_000,
     durationMinutes: 30,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_implant',
@@ -456,7 +456,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 600_000,
     durationMinutes: 45,
     employeeIds: ['emp_dr_ranjbar'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_scaling',
@@ -465,7 +465,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'تمیز کردن حرفه‌ای دندان + پولیش',
     price: 750_000,
     durationMinutes: 45,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_whitening',
@@ -474,7 +474,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'سفیدکردن دندان با لیزر در یک جلسه',
     price: 3_800_000,
     durationMinutes: 60,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_ortho',
@@ -484,7 +484,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 500_000,
     durationMinutes: 30,
     employeeIds: ['emp_dr_mirzaei'],
-    isActive: true
+    status: 'active'
   },
 
   // === باشگاه انرژی ===
@@ -495,7 +495,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'آنالیز بدن + تنظیم برنامهٔ تمرینی + توصیهٔ تغذیه‌ای',
     price: 350_000,
     durationMinutes: 45,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_energy_crossfit',
@@ -505,7 +505,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 180_000,
     durationMinutes: 60,
     employeeIds: ['emp_ali_energy'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_energy_personal',
@@ -515,7 +515,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 500_000,
     durationMinutes: 60,
     employeeIds: ['emp_reza_energy'],
-    isActive: true
+    status: 'active'
   },
 
   // === آموزشگاه رویش ===
@@ -526,7 +526,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'مصاحبهٔ شفاهی + آزمون کتبی کوتاه',
     price: 0,
     durationMinutes: 30,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_ruyesh_ielts',
@@ -536,7 +536,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 450_000,
     durationMinutes: 90,
     employeeIds: ['emp_shima_ruyesh'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_ruyesh_conversation',
@@ -545,7 +545,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه تمرین مکالمه با پارتنر نیتیو',
     price: 280_000,
     durationMinutes: 60,
-    isActive: true
+    status: 'active'
   },
 
   // === استودیو نورا ===
@@ -557,7 +557,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 2_200_000,
     durationMinutes: 60,
     employeeIds: ['emp_amir_noora'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_noora_family',
@@ -567,7 +567,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 3_500_000,
     durationMinutes: 90,
     employeeIds: ['emp_amir_noora'],
-    isActive: true
+    status: 'active'
   },
 
   // === مرکز مشاوره آرامش ===
@@ -579,7 +579,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 700_000,
     durationMinutes: 50,
     employeeIds: ['emp_maryam_aramesh'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_aramesh_couple',
@@ -589,7 +589,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 1_100_000,
     durationMinutes: 70,
     employeeIds: ['emp_hassan_aramesh'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_aramesh_family',
@@ -599,7 +599,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 900_000,
     durationMinutes: 60,
     employeeIds: ['emp_hassan_aramesh'],
-    isActive: true
+    status: 'active'
   },
 
   // === آرایشگاه جنتلمن ===
@@ -611,7 +611,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 250_000,
     durationMinutes: 30,
     employeeIds: ['emp_reza_barber'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_barber_beard',
@@ -621,7 +621,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 150_000,
     durationMinutes: 20,
     employeeIds: ['emp_mehdi_barber'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_barber_vip',
@@ -631,7 +631,7 @@ export const MOCK_SERVICES: BookableService[] = [
     price: 550_000,
     durationMinutes: 75,
     employeeIds: ['emp_reza_barber'],
-    isActive: true
+    status: 'active'
   },
 
   // === کلینیک پتلند ===
@@ -642,7 +642,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'معاینهٔ عمومی + آزمایش خون + توصیه‌های بهداشتی',
     price: 650_000,
     durationMinutes: 40,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_petland_vaccine',
@@ -651,7 +651,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'تزریق واکسن چندگانه (سگ یا گربه)',
     price: 380_000,
     durationMinutes: 20,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_petland_grooming',
@@ -660,7 +660,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'حمام + کوتاهی مو + ناخن + تمیز کردن گوش',
     price: 550_000,
     durationMinutes: 90,
-    isActive: true
+    status: 'active'
   },
 
   // === خدمات نظافتی تمیزآز ===
@@ -671,7 +671,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'هر ساعت نظافت عمومی منزل',
     price: 180_000,
     durationMinutes: 60,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_tamiraz_deep',
@@ -680,7 +680,24 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'نظافت کامل + شستشوی پنجره + تمیز کردن کابینت',
     price: 2_500_000,
     durationMinutes: 360,
-    isActive: true
+    status: 'active'
+  },
+  {
+    id: 'srv_narenj_color_fix',
+    businessId: 'biz_narenj',
+    name: 'تصحیح رنگ مو',
+    description: 'رفع عیب رنگ و نچرال‌کردن ته مو در یک جلسه',
+    price: 1_900_000,
+    durationMinutes: 90,
+    status: 'inactive'
+  },
+  {
+    id: 'srv_narenj_kidcut',
+    businessId: 'biz_narenj',
+    name: 'کوتاهی مو کودک',
+    price: 380_000,
+    durationMinutes: 30,
+    status: 'active'
   }
 ]
 

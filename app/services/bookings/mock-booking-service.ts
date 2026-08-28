@@ -5,7 +5,7 @@ import type { EntityId } from '~/types/common'
 import type { CreateBookingRequest, CreateBookingResponse, CreateBookingErrorResponse, BookingValidationResult } from '~/types/booking-flow'
 import { allMockBookings, MOCK_BOOKINGS } from '~/services/mocks/bookings'
 import { MOCK_BOOKED_SLOTS } from '~/services/mocks/extras'
-import { MOCK_SERVICES } from '~/services/mocks/businesses'
+import { resolveBusinessServices } from '~/services/mocks/service-state'
 import type { BookingScope, BookingService, CancelBookingRequest, CancelBookingResponse, CancelBookingErrorResponse, RescheduleBookingRequest, RescheduleBookingResponse, RescheduleBookingErrorResponse } from './booking-service'
 
 export class MockBookingService implements BookingService {
@@ -59,12 +59,23 @@ export class MockBookingService implements BookingService {
       return { valid: false, errors, warnings }
     }
 
-    // Validation 2: Service exists and is active
-    const service = MOCK_SERVICES.find(s => s.id === request.serviceId && s.isActive)
+    // Validation 2: Service exists in this business and is still bookable
+    // (فهرست مدیریتی همان منبع دادهٔ موک است: غیرفعال‌کردن سرویس همین‌جا جلوی
+    // رزرو تازه را می‌گیرد؛ رزروهای ثبت‌شدهٔ قبلی دست نمی‌خورند.)
+    const businessServices = resolveBusinessServices(request.businessId)
+    const service = businessServices.find(s => s.id === request.serviceId)
     if (!service) {
       errors.push({
         code: 'SERVICE_UNAVAILABLE',
-        message: 'این خدمت دیگر در دسترس نیست.',
+        message: 'چنین سرویسی در این کسب‌وکار ثبت نشده است. یک سرویس دیگر را انتخاب کنید.',
+        field: 'service'
+      })
+      return { valid: false, errors, warnings }
+    }
+    if (service.status !== 'active') {
+      errors.push({
+        code: 'SERVICE_UNAVAILABLE',
+        message: `«${service.name}» برای رزرو تازه فعال نیست. سرویس دیگری را انتخاب کنید.`,
         field: 'service'
       })
       return { valid: false, errors, warnings }
@@ -153,7 +164,7 @@ export class MockBookingService implements BookingService {
     // Check for warnings (price change)
     const priceWarning = validation.warnings.find(w => w.type === 'price_change')
     if (priceWarning) {
-      const service = MOCK_SERVICES.find(s => s.id === request.serviceId)
+      const service = resolveBusinessServices(request.businessId).find(s => s.id === request.serviceId)
       return {
         success: false,
         error: {
@@ -166,6 +177,7 @@ export class MockBookingService implements BookingService {
 
     // Create booking
     const bookingId = `bok_${Date.now()}`
+    const bookedService = resolveBusinessServices(request.businessId).find(s => s.id === request.serviceId)
     const newBooking: Booking = {
       id: bookingId,
       customerId: userId,
@@ -176,6 +188,11 @@ export class MockBookingService implements BookingService {
       end: request.end,
       status: 'pending',
       price: request.price,
+      // اسنپ‌شات لحظهٔ ثبت: تغییر نام، تغییر مدت یا حذف سرویس در آینده این
+      // رکورد را نمی‌شکند (قیمت از قبل در `price` اسنپ‌شات می‌شد).
+      serviceSnapshot: bookedService
+        ? { name: bookedService.name, durationMinutes: bookedService.durationMinutes }
+        : undefined,
       notes: request.notes,
       createdAt: new Date().toISOString()
     }

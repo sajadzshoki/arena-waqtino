@@ -23,7 +23,8 @@ const counts = computed(() => {
   const m = summary.value?.metrics
   if (!m) return null
   return {
-    services: `${toFaDigits(m.serviceCount)} سرویس`,
+    services: `${toFaDigits(m.serviceCount)} سرویس قابل رزرو`,
+    servicesHint: `${toFaDigits(m.serviceCount)} سرویس قابل رزرو · وضعیت و قیمت از همین‌جا`,
     employees: m.employeeCount > 0 ? `${toFaDigits(m.employeeCount)} پرسنل` : 'بدون پرسنل',
     upcoming: `${toFaDigits(m.upcomingCount)} نوبت پیش‌رو`,
     pending: m.pendingCount > 0 ? `${toFaDigits(m.pendingCount)} در انتظار تأیید` : 'مورد بازی نیست'
@@ -58,7 +59,7 @@ const counts = computed(() => {
     <template v-else-if="business">
       <SettingsSection
         title="همین حالا در دسترس"
-        description="هر ردیف به یک صفحهٔ واقعی می‌رود"
+        description="هر ردیف به یک صفحهٔ واقعی می‌رود؛ سرویس‌ها از فاز ۹ مدیریت می‌شوند"
       >
         <SettingsRow
           icon="i-lucide-building-2"
@@ -74,6 +75,13 @@ const counts = computed(() => {
         />
         <SettingsRow
           v-if="businessId"
+          icon="i-lucide-tags"
+          title="سرویس‌ها و قیمت‌ها"
+          :subtitle="counts ? counts.servicesHint : 'ساخت، ویرایش، فعال و غیرفعال‌کردن سرویس‌ها'"
+          :to="`/owner/business/${businessId}/services`"
+        />
+        <SettingsRow
+          v-if="businessId"
           icon="i-lucide-list"
           title="کسب‌وکارهای من"
           subtitle="تغییر کسب‌وکاری که مدیریت می‌کنید"
@@ -86,13 +94,6 @@ const counts = computed(() => {
         title="در فازهای بعدی"
         description="این بخش‌ها هنوز ساخته نشده‌اند؛ برای همین باز نمی‌شوند."
       >
-        <SettingsInfoRow
-          icon="i-lucide-scissors"
-          title="سرویس‌ها و قیمت‌ها"
-          :value="counts.services"
-          subtitle="افزودن و ویرایش سرویس‌ها"
-          locked
-        />
         <SettingsInfoRow
           icon="i-lucide-users"
           title="پرسنل"

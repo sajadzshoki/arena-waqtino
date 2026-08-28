@@ -108,6 +108,13 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 کنترل‌ها: `UCheckbox`/`URadioGroup`/`USwitch` مستقیم با `color="primary"` · `WqChip`
 (تنها pill) · `WqSelectCard` (کارت انتخابی با چک).
 
+**ورودی عددی فارسی** (قیمت/مدت — از فاز ۹): `inputmode="numeric"` + `dir="ltr"`،
+رشتهٔ خام کاربر تا لحظهٔ ترک فیلد دست‌نخورده می‌ماند (cursor نمی‌پرد) و بعد با
+`groupFaNumber` قالب‌بندی می‌شود؛ `parseFaNumber` «خالی» را از «عدد نیست» جدا
+می‌کند تا پیام خطا دقیق باشد. مقدار دامنه همیشه عدد است — رشتهٔ محلی‌سازی‌شده
+هرگز ذخیره نمی‌شود. برای انتخاب‌های سریع از `WqChip` با `class="min-h-12"`
+استفاده می‌کنیم (هدف لمسی ۴۸px با شکل pill حفظ شود).
+
 ### اورلی — قانون انتخاب
 | موقعیت | ابزار |
 | --- | --- |
@@ -163,7 +170,7 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 | `owner/OwnerMetricsStrip` | سه شاخص: امروز / پیش‌رو / در انتظار تأیید | با همه‌صفر **رندر نمی‌شود** (عدد بی‌معنی نه) |
 | `owner/OwnerQuickActions` | شبکهٔ ۲×۲ دسترسی سریع | فقط مقصد‌های واقعی همین فاز |
 | `owner/OwnerBusinessCard` | کارت کسب‌وکارِ مدیر در فهرست | کارت = یک ورودی؛ «در حال مدیریت» به‌جای دکمهٔ تکراری |
-| `owner/OwnerBusinessSummary` | نمای کلی کسب‌وکار در داشبورد | `SettingsSection` + `SettingsInfoRow`؛ بدون فرم و دکمهٔ ذخیره |
+| `owner/OwnerBusinessSummary` | نمای کلی کسب‌وکار در داشبورد | `SettingsSection` + `SettingsInfoRow`؛ فقط ردیف «سرویس‌ها» لینک مدیریتی است (فاز ۹)، فرم و دکمهٔ ذخیره ندارد |
 | `owner/OwnerAccessState` | «مال شما نیست» / «پیدا نشد» + راه بازگشت | پاسخ سرویس را نشان می‌دهد، نه فرض UI |
 | `owner/OwnerNoBusinessState` | صاحبِ بدون کسب‌وکار | حالت خالی عمدی، با مسیر واقعی؛ بدون فرم جعلی |
 | `owner/OwnerDashboardSkeleton`, `owner/OwnerBusinessCardSkeleton` | اسکلت‌های هم‌شکل صفحه | جای اسپینر تمام‌صفحه؛ هنگام سوییچ هم همین |
@@ -174,6 +181,27 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 `--wq-dur-*` + `pressable` برای حرکت. رنگ اصلی فقط روی یک عنصر (نوبت بعدی)
 می‌نشیند تا حس پنل ادمین آبی/سازمانی ندهد.
 
+### سرویس‌های کسب‌وکار (از فاز ۹)
+
+| کامپوننت | نقش | قانون استفاده |
+| --- | --- | --- |
+| `owner/OwnerServiceCard` | ردیف فشردهٔ سرویس در فهرست مدیر | سلسله‌مراتب نام ← وضعیت ← قیمت ← مدت؛ غیرفعال با **خط‌چین + برچسب** (نه فقط کم‌رنگی)؛ اکشن‌ها در `WqIconButton` انتهای سطر |
+| `owner/OwnerServiceStatusBadge` | نشان وضعیت سرویس | از `SERVICE_STATUS_META`؛ متن + آیکون همیشه همراه‌اند |
+| `owner/OwnerServiceActionsSheet` | شیت اکشن‌های خود سطر | `WqSheet` + `WqListRow`؛ هر ردیف «پیامد» را زیر عنوان دارد و `حذف` پس از `USeparator` و با `destructive` |
+| `owner/OwnerServiceDeleteDialog` | تأیید حذف / توضیح بلوک حذف | یک `WqConfirm` با دو حالت؛ هیچ `window.confirm` ای نیست؛ در حالت بلوکه دکمهٔ اصلی «غیرفعال‌کردن» است (بن‌بست نه) |
+| `owner/OwnerServiceForm` | فیلدهای مشترک ساخت/ویرایش | کامپوننت احمق: هیچ قاعده‌ای در آن نیست، فقط `v-model` + `:error-for` از `useServiceForm` |
+| `owner/OwnerServicesSkeleton` | اسکلت فهرست/فرم | جای اسپینر تمام‌صفحه؛ `rows` به‌اندازهٔ محتوای واقعی |
+
+- فهرست مدیریتی **جدول نیست**: کارت‌های تو‌در‌تو و جدول desktop هم نه — همان
+  ردیف‌های لمسی با `gap-2` که روی دسکتاپ در `--wq-content-max` وسط می‌نشینند.
+- اکشن‌های آیتم‌محور در شیت خود سطرند (منوی هاور روی موبایل وجود ندارد) و
+  اکشن مخرب همیشه با دیالوگ + نامِ شیء تأیید می‌شود؛ سوییچ وضعیتِ برگشت‌پذیر
+  برعکس، **بی**تأیید و فقط با toast بازخوردی است.
+- `AppStickyAction` برای «ذخیره» در فرم‌ها؛ متن دکمه وضعیت را می‌گوید
+  («تغییری برای ذخیره نیست»)، و توضیح کوتاه زیرش پیامد انتخاب را
+  («سرویس تازه با وضعیت «غیرفعال» ساخته می‌شود»).
+- صفحه‌های عمیقِ مدیریت با `AppBackHeader` باز می‌شوند (`tabbar: false`) و
+  اکشن اصلی (`افزودن`) در خود هدر sticky است تا همیشه دمِ دست بماند.
 ### حالت‌ها
 `AppLoadingState` (اسپینر یا `rows` برای اسکلت) · `AppEmptyState` (با slot اکشن) ·
 `AppErrorState` (`retryable` + `@retry`) · `AppOfflineState`.
@@ -203,10 +231,23 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 
 
 ```text
-استاندارد:  AppPageHeader → بخش‌ها (WqSectionHeader) 
+استاندارد:  AppPageHeader → بخش‌ها (WqSectionHeader)
 جزئیات:    AppBackHeader → بخش‌ها → AppStickyAction (اختیاری)
-فرم:      AppBackHeader → WqInput/… → AppStickyAction (submit)
+فرم:       AppBackHeader → WqInput/… → AppStickyAction (submit)
+فهرست مدیریتی (فاز ۹):
+   AppBackHeader (اکشن «افزودن» در هدر) → چیپ‌های فیلتر با شمارش
+   → ردیف‌های فشرده (OwnerServiceCard) → پاورقی توضیحی
+   + شیت اکشن و دیالوگ حذف، یک‌بار در انتهای صفحه
+فرم ساخت/ویرایش (فاز ۹):
+   AppBackHeader → پیش‌زمینهٔ کوتاه → OwnerServiceForm
+   → AppStickyAction (submit, loading, disabled) → WqConfirm (خروج بی‌ذخیره)
 ```
+
+- هر دو الگوی بالا **چهار حالت** را دارند: اسکلت اولیه، خطا با retry، خالی با
+  CTA معنادار، و موفقیت با بازخورد (toast + ناوبری بعد از موفقیت، نه قبلش).
+- فیلترهای وضعیت روی همان کش انجام می‌شود (`filter` در `useState`) و شمارش‌شان
+  با `toFaDigits` از همان آرایهٔ فیلترنشده می‌آید — تا «۲ غیرفعال» با
+  «همهٔ ۷» یکی باشد.
 
 ## ۹. قوانین RTL
 

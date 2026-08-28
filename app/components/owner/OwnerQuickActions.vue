@@ -2,15 +2,24 @@
 /**
  * اکشن‌های سریع فضای کاری — فقط مقصد‌هایی که در این فاز واقعاً کار می‌کنند.
  *
- * عمداً هیچ دکمهٔ «سرویس‌ها/پرسنل/دسترس‌پذیری» اینجا نیست؛ آن‌ها در همان صفحهٔ
- * مدیریت با برچسب صادقانهٔ «به‌زودی» دیده می‌شوند، نه به‌صورت دکمهٔ مرده در
- * داشبورد.
+ * «سرویس‌ها» از فاز ۹ این‌جا هست (چرخهٔ کامل ساخت/ویرایش/وضعیت/حذف)؛ «پرسنل» و
+ * «دسترس‌پذیری» هنوز در صفحهٔ مدیریت با برچسب صادقانهٔ «به‌زودی» می‌مانند، نه
+ * به‌صورت دکمهٔ مرده در داشبورد.
  */
 import type { EntityId } from '~/types/common'
 
 const props = defineProps<{ businessId: EntityId }>()
 
-const actions = computed(() => [
+interface QuickAction {
+  key: string
+  label: string
+  icon: string
+  to: string
+  /** تیپ آخر ردیف کامل می‌کشد تا گرید ۲×۲ «یک خانهٔ خالی» نماند */
+  wide?: boolean
+}
+
+const actions = computed<QuickAction[]>(() => [
   {
     key: 'manage',
     label: 'مدیریت کسب‌وکار',
@@ -24,6 +33,12 @@ const actions = computed(() => [
     to: `/owner/business/${props.businessId}/info`
   },
   {
+    key: 'services',
+    label: 'سرویس‌ها و قیمت‌ها',
+    icon: 'i-lucide-tags',
+    to: `/owner/business/${props.businessId}/services`
+  },
+  {
     key: 'customer-view',
     label: 'دید مشتری',
     icon: 'i-lucide-eye',
@@ -33,7 +48,8 @@ const actions = computed(() => [
     key: 'businesses',
     label: 'کسب‌وکارهای من',
     icon: 'i-lucide-store',
-    to: '/owner/businesses'
+    to: '/owner/businesses',
+    wide: true
   }
 ])
 </script>
@@ -45,6 +61,7 @@ const actions = computed(() => [
       :key="action.key"
       :to="action.to"
       class="pressable flex min-h-16 items-center gap-2.5 rounded-xl border border-line bg-surface px-3"
+      :class="action.wide && 'col-span-2'"
     >
       <span
         class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-primary"

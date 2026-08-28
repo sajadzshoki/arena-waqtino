@@ -129,6 +129,24 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
   probeClear()
   probeRefresh()
 })
+
+/* ——— بازنشانی دادهٔ محلی (فقط توسعه — از لایهٔ سرویس، نه از mock) ——— */
+const resetting = ref(false)
+const management = services.serviceManagement
+
+async function resetServices(): Promise<void> {
+  resetting.value = true
+  try {
+    await management.resetLocalChanges()
+    toast.success('دادهٔ سرویس‌ها به حالت پایه برگشت.')
+  }
+  catch (e) {
+    toast.error(toServiceError(e).message)
+  }
+  finally {
+    resetting.value = false
+  }
+}
 </script>
 
 <template>
@@ -438,6 +456,11 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
           <span class="t-label">شبیه‌سازی پاسخ خالی</span>
           <USwitch v-model="mockFlags.forceEmpty.value" color="primary" />
         </div>
+        <p class="t-caption text-foreground-tertiary">
+          این دو کلید صفحه‌های کشف و رزرو را می‌گیرند (جست‌وجو، پروفایل
+          کسب‌وکار، فرآیند رزرو). فهرست سرویس‌های مدیر عمداً از همان دادهٔ پایه
+          می‌خواند — وگرنه با «پاسخ خالی» روشن، سناریوهای فاز ۹ ساخته نمی‌شدند.
+        </p>
         <div class="flex items-start justify-between gap-3">
           <span class="min-w-0">
             <span class="t-label block">شبیه‌سازی نشست نامعتبر (۴۰۱)</span>
@@ -447,6 +470,20 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
             </span>
           </span>
           <USwitch v-model="mockFlags.forceUnauthorized.value" color="primary" />
+        </div>
+        <USeparator />
+        <div class="flex items-start justify-between gap-3">
+          <span class="min-w-0">
+            <span class="t-label block">بازنشانی تغییرات محلی سرویس‌ها</span>
+            <span class="t-caption block">
+              هر چه در فاز ۹ ساخته/ویرایش/غیرفعال/حذف شده در کوکی
+              «wq_business_services» می‌نشیند؛ این دکمه همان delta را پاک می‌کند
+              تا دادهٔ پایه برگردد و دمو از اول قابل تکرار باشد.
+            </span>
+          </span>
+          <WqButton size="md" variant="tertiary" :loading="resetting" @click="resetServices">
+            بازنشانی
+          </WqButton>
         </div>
         <USeparator />
         <div class="min-h-16">

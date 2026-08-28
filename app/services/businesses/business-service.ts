@@ -2,6 +2,7 @@ import type { Business, BusinessCategory, BusinessWithDistance } from '~/types/b
 import type { EntityId, Paginated } from '~/types/common'
 import type { Employee } from '~/types/employee'
 import type { BookableService } from '~/types/service'
+import type { BookingServiceSnapshot } from '~/types/booking'
 
 /**
  * قرارداد سرویس کسب‌وکارها.
@@ -27,8 +28,14 @@ export interface BusinessService {
   /** کسب‌وکارهای نزدیک (mock فاصله تا بک‌اند لوکیشن آماده شود) */
   listNearby(): Promise<BusinessWithDistance[]>
 
-  /** خدمات فعال یک کسب‌وکار */
+  /** خدمات فعال یک کسب‌وکار — همان فهرستی که رزرو و صفحهٔ کسب‌وکار می‌بینند */
   listServices(businessId: EntityId): Promise<BookableService[]>
+  /**
+   * نام/مدت سرویس برای نمایشِ تاریخچه (رزرو ثبت‌شده). برخلاف `listServices`
+   * فیلتر «فعال» ندارد و برای سرویس حذف‌شده هم پاسخ می‌دهد، تا یک رزرو
+   * قدیمی بعد از غیرفعال/حذف‌شدن سرویس بی‌نام نماند. `null` = چیزی نمی‌دانیم.
+   */
+  getServiceForHistory(serviceId: EntityId): Promise<BookingServiceSnapshot | null>
   /** کارمندان فعال یک کسب‌وکار */
   listEmployees(businessId: EntityId): Promise<Employee[]>
 }

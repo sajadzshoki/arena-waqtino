@@ -35,6 +35,14 @@ export function useBookingFlow() {
   // Errors
   const error = ref<string | null>(null)
 
+  /**
+   * «Draft کهنه»: سرویسی که از پیش انتخاب شده (deep link یا ادامهٔ رزرو) دیگر در
+   * فهرست قابل‌رزرو نیست، چون مدیرش آن را غیرفعال کرده است. به‌جای اینکه کاربر
+   * در مرحلهٔ آخر یک خطای بی‌دلیل بگیرد، انتخاب پاک می‌شود و همین توضیح را
+   * بالای فهرست سرویس‌ها می‌بیند تا سرویس دیگری انتخاب کند.
+   */
+  const staleServiceNotice = useState<string | null>('booking:stale-service', () => null)
+
   // Cached data
   const business = ref<Business | null>(null)
   const category = ref<BusinessCategory | null>(null)
@@ -82,8 +90,23 @@ export function useBookingFlow() {
 
       business.value = biz
       category.value = categories.find(c => c.id === biz.categoryId) ?? null
-      businessServices.value = svcs.filter(s => s.isActive)
+      // `listServices` خودش فقط سرویس‌های active را می‌دهد (تصمیم status در لایهٔ
+      // سرویس است)؛ اینجا فقط بررسی می‌کنیم انتخاب قبلی هنوز قابل رزرو باشد.
+      businessServices.value = svcs
       employees.value = emps.filter(e => e.isActive)
+
+      if (draft.value.serviceId && !svcs.some(s => s.id === draft.value.serviceId)) {
+        staleServiceNotice.value
+          = 'سرویسی که انتخاب کرده بودید دیگر برای رزرو تازه باز نیست. یک سرویس فعال را انتخاب کنید.'
+        draft.value.serviceId = null
+        draft.value.employeeId = undefined
+        draft.value.date = null
+        draft.value.timeSlot = null
+        currentStep.value = 'service'
+      }
+      else {
+        staleServiceNotice.value = null
+      }
     }
     catch {
       error.value = 'خطا در دریافت اطلاعات کسب‌وکار.'
@@ -229,6 +252,7 @@ export function useBookingFlow() {
   /** Set service */
   function setService(serviceId: EntityId) {
     draft.value.serviceId = serviceId
+    staleServiceNotice.value = null
 
     // If employee was selected, check if still valid for new service
     if (draft.value.employeeId) {
@@ -335,6 +359,7 @@ export function useBookingFlow() {
     draft: draft,
     currentStep: currentStep,
     warnings: warnings,
+    staleServiceNotice,
     loadingBusiness: loadingBusiness,
     loadingSlots: loadingSlots,
     loadingDates: loadingDates,

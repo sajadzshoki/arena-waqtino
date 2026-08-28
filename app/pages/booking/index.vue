@@ -18,6 +18,7 @@ const {
   draft,
   currentStep,
   warnings,
+  staleServiceNotice,
   loadingBusiness,
   loadingSlots,
   loadingDates,
@@ -246,6 +247,14 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
         <!-- Step 1: Service -->
         <div v-if="currentStep === 'service'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب خدمت</h2>
+          <div
+            v-if="staleServiceNotice"
+            class="mb-4 flex items-start gap-2 rounded-xl border border-warning-border bg-warning-soft p-3"
+            role="status"
+          >
+            <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0 text-warning" />
+            <p class="t-body-sm text-foreground">{{ staleServiceNotice }}</p>
+          </div>
           <BookingServiceSelect
             :services="businessServices"
             :selected-id="draft.serviceId"

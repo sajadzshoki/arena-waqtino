@@ -6,13 +6,13 @@ import type { AuthService } from '~/services/auth/auth-service'
 import {
   MOCK_BUSINESSES,
   MOCK_CATEGORIES,
-  MOCK_EMPLOYEES,
-  MOCK_SERVICES
+  MOCK_EMPLOYEES
 } from '~/services/mocks/businesses'
+import { resolveBookingServiceSnapshot, resolveBusinessServices } from '~/services/mocks/service-state'
 import { allMockBookings } from '~/services/mocks/bookings'
 import { mockCustomerName } from '~/services/mocks/customers'
-import { requireMockSession } from '~/services/mocks/session'
 import { ServiceError } from '~/utils/errors'
+import { requireOwnerUserId, resolveOwnedBusiness } from './owner-access'
 import type { OwnerService } from './owner-service'
 
 /**
@@ -30,9 +30,9 @@ import type { OwnerService } from './owner-service'
 export class MockOwnerService implements OwnerService {
   constructor(private readonly auth: AuthService) {}
 
+  /** کاربر جاری — از همان کمکی مشترک مالکیت (یک قاعدهٔ نشست، همه‌جا). */
   private async requireUserId(): Promise<EntityId> {
-    const session = await requireMockSession(this.auth)
-    return session.user.id
+    return requireOwnerUserId(this.auth)
   }
 
   /** روز جاری (محل سرویس) — از نیمه‌شب تا نیمه‌شب بعد. */
@@ -76,7 +76,8 @@ export class MockOwnerService implements OwnerService {
       todayCount: this.liveToday(businessId, now).length,
       upcomingCount: upcoming.length,
       pendingCount: upcoming.filter(b => b.status === 'pending').length,
-      serviceCount: MOCK_SERVICES.filter(s => s.businessId === businessId && s.isActive).length,
+      // همان منبع‌واحد‌حقیقت فاز ۹: شماری که بعد از ساخت/غیرفعال‌کردن سرویس درست می‌ماند
+      serviceCount: resolveBusinessServices(businessId).filter(s => s.status === 'active').length,
       employeeCount: MOCK_EMPLOYEES.filter(e => e.businessId === businessId && e.isActive).length
     }
   }
@@ -90,7 +91,8 @@ export class MockOwnerService implements OwnerService {
   }
 
   private toItem(booking: Booking): OwnerBookingItem {
-    const service = MOCK_SERVICES.find(s => s.id === booking.serviceId)
+    // تاریخچه با اسنپ‌شات خودش خوانده می‌شود؛ تغییر نام یا حذف سرویس، رزرو قبلی را خراب نمی‌کند
+    const snapshot = resolveBookingServiceSnapshot(booking)
     const employee = booking.employeeId
       ? MOCK_EMPLOYEES.find(e => e.id === booking.employeeId)
       : undefined
@@ -100,23 +102,19 @@ export class MockOwnerService implements OwnerService {
       end: booking.end,
       status: booking.status,
       customerName: mockCustomerName(booking.customerId),
-      serviceName: service?.name ?? 'خدمت نامشخص',
+      serviceName: snapshot?.name ?? 'سرویس حذف‌شده',
       employeeName: employee?.name ?? null,
       price: booking.price,
       notes: booking.notes
     }
   }
 
-  /** مالکیت + وجود؛ ترتیب بررسی مهم است تا «نیست» از «مال تو نیست» جدا بماند. */
-  private async resolveOwned(businessId: EntityId, userId: EntityId): Promise<Business> {
-    const business = MOCK_BUSINESSES.find(b => b.id === businessId)
-    if (!business) {
-      throw ServiceError.notFound('چنین کسب‌وکاری در وقتینو ثبت نشده است.')
-    }
-    if (business.ownerUserId !== userId) {
-      throw ServiceError.forbidden('شما مدیر این کسب‌وکار نیستید؛ فقط کسب‌وکارهای خودتان قابل مدیریت‌اند.')
-    }
-    return business
+  /**
+   * مالکیت + وجود — از همان کمکی مشترک فاز ۹ (مدیریت سرویس‌ها هم همین را
+   * صدا می‌زند، پس دو قاعدهٔ مالکیتی در اپ نداریم).
+   */
+  private async resolveOwned(businessId: EntityId): Promise<Business> {
+    return resolveOwnedBusiness(this.auth, businessId)
   }
 
   async listOwnedBusinesses(): Promise<OwnedBusiness[]> {
@@ -125,6 +123,7 @@ export class MockOwnerService implements OwnerService {
     if (flags.enabled.value && flags.forceError.value) throw ServiceError.network()
 
     const userId = await this.requireUserId()
+
     // forceEmpty فقط روی «فهرست» معنا دارد (سناریوی «کسب‌وکاری ندارم»)،
     // چون واکشی یک کسب‌وکار مشخص باید مثل api همان ۴۰۳/۴۰۴ را بدهد.
     if (flags.enabled.value && flags.forceEmpty.value) return []
@@ -140,8 +139,7 @@ export class MockOwnerService implements OwnerService {
     await delay(200)
     if (flags.enabled.value && flags.forceError.value) throw ServiceError.network()
 
-    const userId = await this.requireUserId()
-    return this.summaryOf(await this.resolveOwned(businessId, userId), new Date())
+    return this.summaryOf(await this.resolveOwned(businessId), new Date())
   }
 
   async getDashboard(businessId: EntityId): Promise<OwnerDashboard> {
@@ -149,9 +147,8 @@ export class MockOwnerService implements OwnerService {
     await delay()
     if (flags.enabled.value && flags.forceError.value) throw ServiceError.network()
 
-    const userId = await this.requireUserId()
     const now = new Date()
-    const business = await this.resolveOwned(businessId, userId)
+    const business = await this.resolveOwned(businessId)
     const category: BusinessCategory | null =
       MOCK_CATEGORIES.find(c => c.id === business.categoryId) ?? null
     const upcoming = this.upcoming(businessId, now)

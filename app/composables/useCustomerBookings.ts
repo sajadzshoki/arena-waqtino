@@ -19,24 +19,30 @@ export function useCustomerBookings() {
    * Enrich a booking with business, service, and employee details
    */
   async function enrichBooking(booking: Booking): Promise<BookingWithDetails> {
-    const [business, businessServices, employees, categories] = await Promise.all([
+    // نام/مدت از «تاریخچهٔ خود رزرو» خوانده می‌شود (اسنپ‌شات، وگرنه سرویس زنده یا
+    // گورِ سرویس) — نه از فهرست قابل‌رزرو؛ وگرنه غیرفعال‌کردن یک سرویس، رزروهای
+    // قبلی مشتری را بی‌نام می‌کرد.
+    const [business, employees, categories, history] = await Promise.all([
       services.businesses.getById(booking.businessId),
-      services.businesses.listServices(booking.businessId),
       services.businesses.listEmployees(booking.businessId),
-      services.businesses.listCategories()
+      services.businesses.listCategories(),
+      booking.serviceSnapshot
+        ? Promise.resolve(booking.serviceSnapshot)
+        : services.businesses.getServiceForHistory(booking.serviceId)
     ])
 
-    const service = businessServices.find(s => s.id === booking.serviceId)
     const employee = booking.employeeId ? employees.find(e => e.id === booking.employeeId) : null
     const category = business ? categories.find(c => c.id === business.categoryId) : null
 
     return {
       ...booking,
       businessName: business?.name ?? 'کسب‌وکار نامشخص',
-      serviceName: service?.name ?? 'خدمت نامشخص',
+      serviceName: history?.name ?? 'سرویس حذف‌شده',
       employeeName: employee?.name,
       businessCategoryName: category?.name,
-      serviceDuration: service?.durationMinutes ?? 0
+      // مدت: اسنپ‌شات، وگرنه بازهٔ خود رزرو (هیچ‌وقت عدد ساختگی نه)
+      serviceDuration: history?.durationMinutes
+        ?? Math.max(0, Math.round((new Date(booking.end).getTime() - new Date(booking.start).getTime()) / 60_000))
     }
   }
 

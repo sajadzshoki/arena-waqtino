@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /**
- * نمای کلی کسب‌وکار در داشبورد مالک — همان دادهٔ پروفایل، فشرده و فقط‌خواندنی.
+ * نمای کلی کسب‌وکار در داشبورد مالک — فشرده و فقط‌خواندنی، با همان اعدادی که
+ * صفحات مدیریت نشان می‌دهند.
  *
- * ویرایش در این فاز ساخته نمی‌شود؛ به‌جای دکمهٔ ذخیرهٔ جعلی، یک نکتهٔ صادقانه
- * در پاورقی هست و لینک «اطلاعات و تماس» که صفحهٔ واقعی را نشان می‌دهد.
+ * ردیف «سرویس‌ها» از فاز ۹ لینک است (چرخهٔ حیات سرویس ساخته شده)؛ بقیه هنوز
+ * ویرایش‌پذیر نیستند، پس به‌جای دکمهٔ ذخیرهٔ جعلی، نکتهٔ صادقانهٔ پاورقی و
+ * لینک «اطلاعات و تماس» همان صفحهٔ واقعی را نشان می‌دهد.
  */
 import type { OwnedBusiness } from '~/types/owner'
 import { formatFaDate } from '~/utils/datetime'
@@ -14,7 +16,8 @@ const rows = computed(() => {
   const b = props.owned.business
   return {
     category: props.owned.category?.name ?? 'دستهٔ نامشخص',
-    services: `${toFaDigits(props.owned.metrics.serviceCount)} سرویس ثبت‌شده`,
+    services: `${toFaDigits(props.owned.metrics.serviceCount)} سرویس قابل رزرو`,
+    servicesHint: 'وضعیت، قیمت و مدت هر سرویس از همین‌جا مدیریت می‌شود',
     employees:
       props.owned.metrics.employeeCount > 0
         ? `${toFaDigits(props.owned.metrics.employeeCount)} پرسنل فعال`
@@ -33,10 +36,12 @@ const rows = computed(() => {
       title="دستهٔ فعالیت"
       :value="rows.category"
     />
-    <SettingsInfoRow
+    <SettingsRow
       icon="i-lucide-scissors"
       title="سرویس‌ها"
       :value="rows.services"
+      :subtitle="rows.servicesHint"
+      :to="`/owner/business/${owned.business.id}/services`"
     />
     <SettingsInfoRow
       icon="i-lucide-users"
@@ -60,7 +65,8 @@ const rows = computed(() => {
     />
 
     <template #footer>
-      ویرایش اطلاعات کسب‌وکار در فاز بعدی اضافه می‌شود؛ فعلاً همین صفحه فقط‌خواندنی است.
+      ویرایش اطلاعات کسب‌وکار در فاز بعدی اضافه می‌شود؛ شمارش سرویس‌ها از
+      همان فهرست مدیریتی خوانده می‌شود و با هر تغییر، همین‌جا تازه می‌شود.
     </template>
   </SettingsSection>
 </template>

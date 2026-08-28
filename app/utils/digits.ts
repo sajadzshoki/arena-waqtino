@@ -9,6 +9,28 @@ export function normalizeDigits(input: string): string {
     .replace(AR_DIGITS_RE, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
 }
 
+/**
+ * تبدیل رشتهٔ ورودی کاربر (ارقام فارسی/عربی، جداکنندهٔ هزارگان، فاصله) به عدد.
+ * `null` یعنی «عدد نیست» — فرم‌ها با همین، پیام «خالی» را از «نامعتبر» جدا
+ * نگه می‌دارند. مقدار نرمال‌شدهٔ عددی دامنه می‌رود، نه رشتهٔ محلی‌سازی‌شده.
+ */
+export function parseFaNumber(input: string): number | null {
+  const compact = normalizeDigits(input).replace(/[\s٬,_\u066C]/g, '')
+  if (compact.length === 0) return null
+  if (!/^\d+$/.test(compact)) return null
+  const value = Number(compact)
+  return Number.isSafeInteger(value) ? value : null
+}
+
+/**
+ * عدد را با جداکنندهٔ هزارگان و ارقام فارسی در ورودی می‌نویسد (قالب‌بندیِ
+ * حین ترک فیلد). همان `Intl` محلی که `formatToman` استفاده می‌کند، تا جداکننده
+ * یکی باشد و «رشتهٔ قالب‌بندی‌شدهٔ دوم» ساخته نشود.
+ */
+export function groupFaNumber(value: number): string {
+  return value.toLocaleString('fa-IR', { maximumFractionDigits: 0 })
+}
+
 /** نمایش عدد/رشته با ارقام فارسی. */
 export function toFaDigits(input: string | number): string {
   return String(input).replace(/\d/g, d => FA_DIGITS[Number(d)] ?? d)

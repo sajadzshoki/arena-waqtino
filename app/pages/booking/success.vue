@@ -32,10 +32,9 @@ onMounted(async () => {
     booking.value = bok
 
     // Load related data
-    const [biz, bizCategories, bizServices, bizEmployees] = await Promise.all([
+    const [biz, bizCategories, bizEmployees] = await Promise.all([
       services.businesses.getById(bok.businessId),
       services.businesses.listCategories(),
-      services.businesses.listServices(bok.businessId),
       bok.employeeId ? services.businesses.listEmployees(bok.businessId) : Promise.resolve([])
     ])
 
@@ -43,8 +42,12 @@ onMounted(async () => {
     const cat = bizCategories.find(c => c.id === biz?.categoryId)
     categoryName.value = cat?.name ?? ''
 
-    const srv = bizServices.find(s => s.id === bok.serviceId)
-    serviceName.value = srv?.name ?? ''
+    // نام خدمت از «تاریخچهٔ خود رزرو» خوانده می‌شود: اسنپ‌شاتِ زمان رزرو، وگرنه
+    // رکوردِ تاریخچه (که سرویسِ حذف‌شده را هم از گورِ محلی درمی‌آورد). فهرست
+    // قابل‌رزرو منبع رسید نیست: حذف یا غیرفعال‌شدن سرویس نباید رسیدِ مشتری را
+    // بی‌نام کند یا نامش را با یک ویرایشِ تازه عوض کند.
+    const history = bok.serviceSnapshot ?? await services.businesses.getServiceForHistory(bok.serviceId)
+    serviceName.value = history?.name ?? 'سرویس حذف‌شده'
 
     if (bok.employeeId) {
       const emp = bizEmployees.find(e => e.id === bok.employeeId)

@@ -113,34 +113,47 @@ app/
     profile/         ProfileIdentity، ProfileAvatarEditor
     customer/        BusinessCard*، BusinessSaveToggle، اسکلت‌ها
     owner/           فضای کاری مدیر: هدر زمینه، سوییچر، نوبت بعدی، فهرست امروز،
-                     شاخص‌ها، اکشن‌های سریع، کارت کسب‌وکار، حالت دسترسی/خالی، اسکلت‌ها
+                     شاخص‌ها، اکشن‌های سریع، کارت کسب‌وکار، حالت دسترسی/خالی، اسکلت‌ها؛
+                     سرویس‌ها (فاز ۹): OwnerServiceCard، OwnerServiceForm،
+                     OwnerServiceActionsSheet، OwnerServiceDeleteDialog،
+                     OwnerServiceStatusBadge، OwnerServicesSkeleton
     search/ bookings/ business/ employee/  (کامپوننت‌های دامنه‌ای)
   composables/       useAuth، useUserMode، useServices، useAppToast،
                      useSavedBusinesses (منبع‌واحد‌حقیقت نشان‌شده‌ها)، useUserProfile،
                      useProfileForm، useProfileAvatar، useThemePreference،
                      useAuthRecovery، useLogout، useMockFlags، useAsyncAction،
                      useOwnerBusinesses / useBusinessContext / useOwnerDashboard /
-                     useOwnerBusinessEntry (زمینه و دادهٔ فضای کاری)
-  config/            navigation.ts، booking-status.ts، business-status.ts
+                     useOwnerBusinessEntry (زمینه و دادهٔ فضای کاری)،
+                     useBusinessServices / useServiceActions / useServiceForm /
+                     useUnsavedChangesGuard (فاز ۹: چرخهٔ حیات سرویس)
+  config/            navigation.ts، booking-status.ts، business-status.ts،
+                     service-status.ts (نگاشت وضعیت سرویس + اکشن مجاز)،
+                     service-policy.ts (سیاست حذف)، service-form.ts (گزینه‌های فرم)
                      (پیکربندی دامنه، auto-import)
   layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
   pages/             index.vue، saved.vue، profile(/edit).vue، settings.vue،
                      notifications.vue، booking*، business/[id] (جزئیات مشتری)،
-                     owner/{index,businesses,business/[businessId]{,/info,/manage}}،
+                     owner/{index,businesses,business/[businessId]{,/info,/manage,
+                     /services{,/new,/[serviceId](/edit)}}}،
                      employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی،
                      فقط-توسعه)
   plugins/           01.services.ts، 02.session.ts، 03-user-scope.client.ts
   services/          index.ts (registry) — auth/ users/ favorites/ avatars/
                      businesses/ bookings/ owner/ …
                      (هر دامنه: قرارداد + پیاده‌سازی mock)
+                     owner/: owner-service.ts، service-management-service.ts،
+                     owner-access.ts (مالکیت مشترک)، mock-service-management-service.ts
     mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses، extras،
                      owner-scenarios، customers)،
                      session.ts (نگهبان نشست)، user-state.ts (کوکی `wq_user_data`)،
-                     avatar-assets.ts
+                     service-state.ts (کوکی `wq_business_services`: delta + گور
+                     سرویس، تنها منبع‌واحد‌حقیقت سرویس‌ها)، avatar-assets.ts
   types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts + owner.ts
-                     (OwnedBusiness / OwnerDashboard / BusinessAccess)
-  utils/             digits، datetime، duration، delay، errors (ServiceError)،
-                     validation.ts (قواعد مشترک فرم/سرویس)
+                     (OwnedBusiness / OwnerDashboard / BusinessAccess) + service.ts
+                     (BookableService / ServiceInput / ManagedService / ServiceStatus)
+  utils/             digits (شامل parseFaNumber/groupFaNumber)، datetime، duration،
+                     delay، errors (ServiceError + conflict)،
+                     validation.ts (قواعد مشترک فرم/سرویس: validateServiceForm)
 docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 ```
 
@@ -183,6 +196,7 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 | حالت فعال | `wq_mode` | کوکی | ۳۶۵ روز |
 | نشان‌شده‌ها + پروفایل ویرایش‌شده | `wq_user_data` → `Record<userId, {favorites, profile}>` | کوکی | ۳۶۵ روز |
 | کسب‌وکارِ زمینهٔ مدیر | `wq_owner_business` → `Record<userId, businessId>` | کوکی | ۳۶۵ روز |
+| سرویس‌های کسب‌وکار (delta فاز ۹) | `wq_business_services` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
 | ترجیح تم | `wq-color-mode` | `localStorage` | همیشگی |
 | تاریخچهٔ مشاهده / پیش‌نویس رزرو | `useState` | حافظهٔ همین بار اجرا | تا پایان نشست مرورگر |
 
@@ -193,6 +207,16 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
   رزرو) را reset می‌کند و در مقابل، دادهٔ دامنه را برای نشست تازه آماده
   می‌کند (`ensureLoaded` برای نشان‌شده‌ها و فهرست کسب‌وکارهای مدیر). منطق
   login/logout در صفحه‌ها پخش نمی‌شود.
+- **سرویس‌ها به کسب‌وکار قید می‌شوند، نه به کاربر** (`wq_business_services`
+  کلیدِ بیرونی‌اش `businessId` است). دلیل دوگانه: (۱) اگر شناسهٔ کاربر هم در
+  کلید می‌آمد، دو مدیر یک کسب‌وکار دو نسخه از یک واقعیت می‌دیدند؛ (۲) خروج از
+  حساب نباید دادهٔ یک کسب‌وکار را نابود کند. با این حال *کش* فهرست
+  (`owner:services:*`) در پلاگین دامنهٔ کاربر reset می‌شود تا دادهٔ حساب قبلی
+  روی حساب تازه نچسبد.
+- نوشتن روی delta، نه کپی کل فهرست: سقف کوکی ~۴KB است و کپی‌کردن ۸ سرویس
+  آن را می‌شکست (کوکیِ بزرگ بی‌صدا دور ریخته می‌شود = گم‌شدن دادهٔ کاربر).
+  `removed` هم گورِ سرویس است، نه فقط حذف: تاریخچهٔ نوبت باید بگوید آن نوبت
+  «چه چیزی» بوده.
 - سوییچ **حالت** (مشتری↔صاحب↔کارمند) هیچ reset ای انجام نمی‌دهد: حالت فقط
   ناوبری و فرود را عوض می‌کند، نه مالکیت داده. بنابراین دادهٔ مشترک کاربر
   (نشست، پروفایل، نشان‌شده‌ها) و زمینهٔ مدیر هر دو سالم می‌مانند.
@@ -272,13 +296,98 @@ mocks/businesses.ts · mocks/owner-scenarios.ts · mocks/bookings.ts · mocks/cu
 
 ### جای‌فاز بعدی
 
-مدیریت نوبت‌ها، سرویس‌ها، پرسنل و دسترس‌پذیری در `/owner/business/[businessId]/manage`
-با ردیف‌های قفل‌شده و برچسب صادقانهٔ «به‌زودی» معرفی شده‌اند. همان
-`OwnerDashboard` و همان `OwnerService` آن‌ها را تغذیه می‌کنند؛ افزوده‌شدنشان
-یعنی: یک route، یک متد روی سرویس، و فعال‌شدن یک ردیف — بدون تغییر معماری و
-بدون state تازهٔ موازی.
+از فاز ۹، «سرویس‌ها» از همان ریلِ شرح‌داده‌شده بیرون آمده است: یک route
+(`…/services`)، یک قرارداد جدید (`ServiceManagementService`)، و فعال‌شدن ردیف
+صفحهٔ مدیریت — بدون تغییر در `OwnerService` و بدون state موازی. نوبت‌ها،
+پرسنل و دسترس‌پذیری هنوز با برچسب صادقانهٔ «به‌زودی» قفل‌اند و همان الگو را
+دنبال می‌کنند.
 
-## ۱۰. آنچه عمداً ساخته نشده (مقید به فاز ۰)
+## ۱۰. سرویس‌های کسب‌وکار: چرخهٔ حیات در یک منبع (فاز ۹)
+
+سرویس، یک موجودیت است با دو نمای مصرفی. کل طراحی از همین جمله می‌آید: اگر
+مشتری و مدیر دو دادهٔ موازی داشته باشند، هم‌رسانی‌شان به مسابقهٔ refetch
+تبدیل می‌شود.
+
+```
+app/pages/owner/business/[businessId]/services/**      فهرست · افزودن · جزئیات · ویرایش
+   ↓
+useBusinessServices(businessId)   کش per-businessId + اکشن‌های نوشتن + sync کش
+useServiceActions(businessId)     toggle/حذف با سیاست و دیالوگ (مشترک فهرست و جزئیات)
+useServiceForm({mode,…})          فرم مشترک ساخت/ویرایش + dirty + validate + submit
+useUnsavedChangesGuard(dirty)     نگهبان خروج (نگهبان مسیر + beforeunload)
+   ↓
+ServiceManagementService          list/get/create/update/setStatus/remove (+resetLocalChanges توسعه)
+MockServiceManagementService      مالکیت، رابطهٔ سرویس↔کسب‌وکار، دفاع دومِ اعتبارسنجی، سیاست حذف
+   ↓
+app/services/mocks/service-state.ts   تنها نقطهٔ خواندن/نوشتن حالت سرویس‌ها (کوکی delta)
+```
+
+خواندن‌های *دیگر* هم همان یک منبع را می‌خوانند: `MockBusinessService.listServices`
+(فقط active)، `MockBookingService.validateDraft/create`، و `MockOwnerService.metricsOf`
+(«شمارش سرویس‌ها» در داشبورد). پس «غیرفعال کردم» یعنی در هر چهار جا همین
+لحظه اعمال شده — بدون رویداد، بدون store مرکزی تازه.
+
+### مدل و وضعیت
+
+- `BookableService.status: 'active' | 'inactive'` جای `isActive` را گرفت. بولین
+  «قابل‌نمایش‌بودن» نمی‌توانست معنی «غیرفعال ≠ حذف» را حمل کند؛ چرخهٔ حیات
+  نیاز به *وضعیت* دارد، نه پرچم.
+- `durationMinutes` و `price` عدد نرمال‌شده‌اند. ورودی رشتهٔ خام می‌ماند و
+  فقط در لحظهٔ ذخیره parse می‌شود؛ `groupFaNumber`/`formatToman` رشته‌ی نمایشی
+  می‌سازند. رشتهٔ محلی‌سازی‌شده هرگز مقدار دامنه نمی‌شود.
+- ترجمهٔ وضعیت متمرکز است: `SERVICE_STATUS_META` برچسب، رنگ، آیکون، `hint`،
+  `bookable` و **اکشن مجاز** (`toggle.to/label/consequence`) را با هم می‌دهد؛
+  `serviceStatusMeta()` برای وضعیت ناشناخته حالت خنثی می‌دهد تا پاسخ تازهٔ
+  بک‌اند UI را نشکند. هیچ کامپوننتی «فعال/غیرفعال» را hardcode نمی‌کند.
+- `ManagedService = BookableService + liveBookingCount + bookingCount +
+  deletePolicy` — آنچه مدیر برای تصمیم لازم دارد در همان رکورد است، نه در
+  شرط‌های UI.
+
+### انزوای چندکسب‌وکاری
+
+کش `Record<businessId, ManagedService[]>` است (همان الگوی داشبورد فاز ۸) و
+هر نوشتن فقط کلیدِ همان کسب‌وکار را بازنویسی می‌کند. رابطهٔ سرویس↔کسب‌وکار
+در لایهٔ سرویس هم دوباره چک می‌شود: `get(biz_ayeneh, srv_narenj_haircut)`
+عمداً **Not Found** می‌گیرد، نه ۴۰۳ — تا وجود رکورد به مدیر دیگری لو نرود.
+
+### نوشتن و بازگشت به UI
+
+اکشن‌ها `{ ok, service, message }` برمی‌گردانند (نه throw)، چون صفحه باید
+toast/nav را بدون try/catch بنویسد؛ `message` همان پیام فارسی `ServiceError`
+است و ۴۰۱ پیش از آن از مسیر مرکزی احراز هویت رد می‌شود. بعد از موفقیت، کش
+همان کسب‌وکار upsert/remove می‌شود و `useOwnerDashboardCache().invalidate(businessId)`
+صدا زده می‌شود — تا «۶ سرویس قابل رزرو»ی داشبورد با واقعیّت میانهٔ صفحه
+یکی بماند.
+
+### حذف: سیاست، نه سلیقهٔ UI
+
+`app/config/service-policy.ts` سه پیچ دارد (`blockWhenLiveBookings`,
+`allowWhenHistoryOnly`, `minAgeDaysBeforeDelete`) و نتیجه به‌صورت
+`ServiceDeletePolicy` روی خود رکورد می‌آید. دیالوگ حذف دو حالت دارد: تأیید
+قطعی، یا «حذف نمی‌شود، چون نوبت پیش‌رو دارد — غیرفعالش کن». `remove()`
+سیاست را **دوباره** در لایهٔ سرویس بررسی می‌کند و `ServiceError.conflict`
+می‌دهد، تا یک فهرست کهنه نتواند چیزی را که همین حالا نوبت گرفته حذف کند.
+
+### تاریخچه در برابر تغییرات امروز
+
+`Booking.price` از قبل اسنپ‌شات لحظهٔ ثبت بود؛ فاز ۹ `serviceSnapshot
+{name, durationMinutes}` را هم هنگام `create` می‌نویسد. خواننده‌ها با این
+اولویت می‌روند: اسنپ‌شات رزرو ← رکورد زندهٔ سرویس ← گورِ سرویسِ حذف‌شده
+(`resolveBookingServiceSnapshot`). خواننده‌ها همین مسیر را می‌روند، نه
+فهرستِ قابل‌رزرو: `useCustomerBookings` (تاریخچهٔ مشتری)، رسیدِ `/booking/success`،
+و نوبت‌های فضای کار مالک. نتیجه: تغییر نام، تغییر مدت، غیرفعال‌سازی و حذف
+سرویس، هیچ‌کدام متن رزروهای قبلی را بازنویسی نمی‌کنند.
+
+### draft رزرو در برابر سرویس غیرفعال
+
+دو لایهٔ دفاع: (۱) `useBookingFlow.loadBusinessData` اگر سرویسِ انتخابی در
+فهرست قابل‌رزرو نباشد، انتخاب و قلم‌های وابسته را پاک می‌کند، کاربر را به
+گام «انتخاب خدمت» می‌گرداند و بالای فهرست توضیح می‌دهد؛ (۲)
+`MockBookingService.validateDraft` در بررسی نهایی همان را با پیام فارسی
+(`field: 'service'`) رد می‌کند. deep link به سرویس غیرفعال هم از همین مسیر
+می‌گذرد — پس «رزرو روی چیزی که نیست» ممکن نیست، نه اینکه خطای عجیب بدهد.
+
+## ۱۱. آنچه عمداً ساخته نشده (مقید به فاز ۰)
 
 - صفحات واقعی مشتری/کسب‌وکار/کارمند، جریان رزرو، چت، اعلان‌ها.
 - پنل ادمین (خارج از اسکوپ کل پروژه).
@@ -287,6 +396,14 @@ mocks/businesses.ts · mocks/owner-scenarios.ts · mocks/bookings.ts · mocks/cu
 - (فاز ۷) مرکز اعلان‌ها، پوش‌نوتیفیکیشن، چت، دیدگاه‌ها، حذف حساب، تغییر شمارهٔ
   موبایل با تأیید — صفحهٔ `/notifications` عمداً فقط حالت صادقانهٔ «فعلاً در
   دسترس نیست» است.
+- (فاز ۹) **قیمت‌گذاری پیچیده** (تخفیف، دستهٔ قیمت، تبدیل ارز، واحد پول دیگر) و
+  سرویس رایگان: قیمت ۰ عمداً در فرم رد می‌شود («سرویس رایگان» هنوز در مدل
+  کسب‌وکار تعریف نشده)؛ `WqPrice` صفر را فقط برای دادهٔ قدیمی «رایگان» می‌زند.
+- (فاز ۹) «موتور وابستگی» که محاسبه کند با حذف یک سرویس چه چیزی می‌سوزد —
+  سیاست حذف عمداً چند پیچِ قابل‌تنظیم در `app/config/service-policy.ts` است تا
+  پاسخ را بک‌اند بدهد، نه اینکه front-end گراف حل کند.
+- (فاز ۹) مدیریت پرسنل، تخصیص سرویس به پرسنل و دسترس‌پذیری؛ `employeeIds` روی
+  مدل سرویس دست‌نخورده ماند تا فاز کارمندان همان رابطه را پر کند.
 - (فاز ۸) هر نوع **نوشتن** در فضای کاری: ثبت/ویرایش کسب‌وکار، CRUD سرویس و
   پرسنل، پیکربندی دسترس‌پذیری، مدیریت کامل نوبت‌ها (تأیید/لغو/جابه‌جایی)،
   مدیریت مشتریان، تحلیل و نمودار، پرداخت، چت، حالت کارمند، و هر نوع ادمین.

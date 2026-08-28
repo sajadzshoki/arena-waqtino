@@ -41,6 +41,7 @@ withDefaults(
         class="t-body-sm t-num text-foreground-secondary"
         :dir="ltr ? 'ltr' : undefined"
       >{{ value }}</span>
+      <slot name="trailing" />
       <UIcon
         v-if="locked"
         name="i-lucide-lock"

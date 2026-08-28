@@ -1,4 +1,5 @@
 import type { Booking } from '~/types/booking'
+import { MOCK_OWNER_BOOKINGS } from './owner-scenarios'
 
 /**
  * نوبت‌های mock برای کاربر توسعهٔ اصلی (usr_dev_sara) — پوشش همهٔ وضعیت‌ها.
@@ -84,3 +85,13 @@ export const MOCK_BOOKINGS: Booking[] = [
     createdAt: isoIn(-24, 13, 30)
   })
 ]
+
+/**
+ * منبع‌واحد‌حقیقت رزروها برای همهٔ نماها (مشتری و صاحب کسب‌وکار).
+ *
+ * تابع است نه آرایهٔ ثابت، چون `MockBookingService` رزرو تازه را در
+ * `MOCK_BOOKINGS` push می‌کند؛ پس هر خواندن باید ترکیب تازه را ببیند.
+ */
+export function allMockBookings(): Booking[] {
+  return [...MOCK_BOOKINGS, ...MOCK_OWNER_BOOKINGS]
+}

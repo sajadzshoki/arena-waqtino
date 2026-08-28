@@ -112,23 +112,33 @@ app/
     settings/        SettingsSection، SettingsRow، SettingsInfoRow (آجرهای صفحهٔ تنظیمات)
     profile/         ProfileIdentity، ProfileAvatarEditor
     customer/        BusinessCard*، BusinessSaveToggle، اسکلت‌ها
+    owner/           فضای کاری مدیر: هدر زمینه، سوییچر، نوبت بعدی، فهرست امروز،
+                     شاخص‌ها، اکشن‌های سریع، کارت کسب‌وکار، حالت دسترسی/خالی، اسکلت‌ها
     search/ bookings/ business/ employee/  (کامپوننت‌های دامنه‌ای)
   composables/       useAuth، useUserMode، useServices، useAppToast،
                      useSavedBusinesses (منبع‌واحد‌حقیقت نشان‌شده‌ها)، useUserProfile،
                      useProfileForm، useProfileAvatar، useThemePreference،
-                     useAuthRecovery، useLogout، useMockFlags، useAsyncAction
-  config/            navigation.ts، booking-status.ts (پیکربندی دامنه، auto-import)
+                     useAuthRecovery، useLogout، useMockFlags، useAsyncAction،
+                     useOwnerBusinesses / useBusinessContext / useOwnerDashboard /
+                     useOwnerBusinessEntry (زمینه و دادهٔ فضای کاری)
+  config/            navigation.ts، booking-status.ts، business-status.ts
+                     (پیکربندی دامنه، auto-import)
   layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
   pages/             index.vue، saved.vue، profile(/edit).vue، settings.vue،
-                     notifications.vue، booking*، business*، employee*،
-                     dev/design.vue (شوکیس + کلیدهای شبیه‌سازی، فقط-توسعه)
+                     notifications.vue، booking*، business/[id] (جزئیات مشتری)،
+                     owner/{index,businesses,business/[businessId]{,/info,/manage}}،
+                     employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی،
+                     فقط-توسعه)
   plugins/           01.services.ts، 02.session.ts، 03-user-scope.client.ts
   services/          index.ts (registry) — auth/ users/ favorites/ avatars/
-                     businesses/ bookings/ … (هر دامنه: قرارداد + پیاده‌سازی mock)
-    mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses، extras)،
+                     businesses/ bookings/ owner/ …
+                     (هر دامنه: قرارداد + پیاده‌سازی mock)
+    mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses، extras،
+                     owner-scenarios، customers)،
                      session.ts (نگهبان نشست)، user-state.ts (کوکی `wq_user_data`)،
                      avatar-assets.ts
-  types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts
+  types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts + owner.ts
+                     (OwnedBusiness / OwnerDashboard / BusinessAccess)
   utils/             digits، datetime، duration، delay، errors (ServiceError)،
                      validation.ts (قواعد مشترک فرم/سرویس)
 docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
@@ -172,14 +182,20 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 | نشست | `wq_session` | کوکی | ۳۰ روز |
 | حالت فعال | `wq_mode` | کوکی | ۳۶۵ روز |
 | نشان‌شده‌ها + پروفایل ویرایش‌شده | `wq_user_data` → `Record<userId, {favorites, profile}>` | کوکی | ۳۶۵ روز |
+| کسب‌وکارِ زمینهٔ مدیر | `wq_owner_business` → `Record<userId, businessId>` | کوکی | ۳۶۵ روز |
 | ترجیح تم | `wq-color-mode` | `localStorage` | همیشگی |
 | تاریخچهٔ مشاهده / پیش‌نویس رزرو | `useState` | حافظهٔ همین بار اجرا | تا پایان نشست مرورگر |
 
 - دادهٔ کاربر-محور **به `userId` قید می‌شود**؛ برای چنداکانتیسم چیز دیگری
   اختراع نکرده‌ایم — فقط اینکه دو حساب روی هم نوشته نشوند.
 - `plugins/03-user-scope.client.ts` تنها جایی است که با تغییر/خروج کاربر،
-  stateهای گذرا (`saved:*`, `profile:*`, تاریخچهٔ مشاهده، پیش‌نویس رزرو) را
-  reset می‌کند. منطق login/logout در صفحه‌ها پخش نمی‌شود.
+  stateهای گذرا (`saved:*`, `profile:*`, `owner:*`, تاریخچهٔ مشاهده، پیش‌نویس
+  رزرو) را reset می‌کند و در مقابل، دادهٔ دامنه را برای نشست تازه آماده
+  می‌کند (`ensureLoaded` برای نشان‌شده‌ها و فهرست کسب‌وکارهای مدیر). منطق
+  login/logout در صفحه‌ها پخش نمی‌شود.
+- سوییچ **حالت** (مشتری↔صاحب↔کارمند) هیچ reset ای انجام نمی‌دهد: حالت فقط
+  ناوبری و فرود را عوض می‌کند، نه مالکیت داده. بنابراین دادهٔ مشترک کاربر
+  (نشست، پروفایل، نشان‌شده‌ها) و زمینهٔ مدیر هر دو سالم می‌مانند.
 - عمداً ماندگار نمی‌شود: خطاهای فرم، متن موقت، باز/بسته‌بودن شیت‌ها،
   پیش‌نمایش آواتارِ فایلِ انتخابی (فقط `useState('avatar:local-previews')`).
   دلیل: دادهٔ کاربری نه، حالت UI است.
@@ -187,13 +203,92 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
   منبع‌حقیقت را از بک‌اند می‌گیرند (کوکی‌ها متعلق به لایهٔ mock‌اند:
   `app/services/mocks/*`).
 
-## ۹. آنچه عمداً ساخته نشده (مقید به فاز ۰)
+## ۹. فضای کاری صاحب کسب‌وکار (فاز ۸)
+
+سه مفهوم، سه نقطهٔ مسئول — هیچ‌کدام در صفحه تکرار نمی‌شوند:
+
+| مفهوم | صاحب | چه سؤالی را جواب می‌دهد |
+| --- | --- | --- |
+| دادهٔ کسب‌وکارِ مدیر | `OwnerService` (`app/services/owner/`) | چه چیزی را می‌توانم مدیریت کنم؟ + شمارش‌ها |
+| زمینهٔ کاری | `useBusinessContext()` | الان کدام کسب‌وکار را مدیریت می‌کنم؟ |
+| دادهٔ داشبورد هر کسب‌وکار | `useOwnerDashboard()` | امروز/نوبت بعدی/شاخص‌های همین کسب‌وکار |
+
+```
+app/pages/owner/**              صفحات نازک — فقط ترکیب‌بندی و «فاز نمایش»
+   ↓
+useOwnerBusinessEntry           ورود + ماشین فاز (مشترک داشبورد/اطلاعات/مدیریت)
+useBusinessContext              زمینه + کوکی + تصمیم resolve (open / choose / empty / error)
+useOwnerBusinesses              کش فهرست کسب‌وکارهای مدیر (ادغام درخواست‌های هم‌زمان)
+useOwnerDashboard               داشبورد، کش‌شده به‌ازای businessId
+   ↓
+OwnerService (MockOwnerService)
+   ↓
+mocks/businesses.ts · mocks/owner-scenarios.ts · mocks/bookings.ts · mocks/customers.ts
+```
+
+- صفحه هیچ فیلتری روی رزروها انجام نمی‌دهد، آمار جمع نمی‌زند و وضعیت را
+  ترجمه نمی‌کند: `getDashboard(businessId)` همان `OwnerDashboard` را می‌دهد
+  (نوبت بعدی، امروز، `OwnerBusinessMetrics`). روزِ «امروز»، پنجرهٔ محلی سرویس
+  است، نه `new Date()` داخل کامپوننت.
+- `business-status.ts` مثل `booking-status.ts` تنها جای ترجمهٔ وضعیت چرخهٔ
+  حیات است (`BUSINESS_STATUS_META` + `businessStatusMeta`)؛ وضعیتی که بک‌اند
+  بعداً اضافه کند، فقط همان فایل را جابه‌جا می‌کند و `BusinessStatusBadge`
+  برای مقدار ناشناخته هم نمی‌شکند (حالت خنثی با برچسب «نامشخص»).
+
+### مالکیت: واقعی، در لایهٔ سرویس
+
+- مرجع مالکیت، رکورد کسب‌وکار است: `business.ownerUserId === session.user.id`.
+  `getOwnedBusiness(id)` اگر نبود `ServiceError.notFound` و اگر بود ولی مالِ
+  کاربر نبود `ServiceError.forbidden` می‌دهد؛ صفحه فقط همان را به فاز
+  `not_found` / `forbidden` نگاشت می‌کند (با `OwnerAccessState` و راه بازگشت).
+- مخفی‌کردن لینک، دسترسی نیست: گارد `capability: 'business'` روی مسیر +
+  اعتبارسنجی سرویس روی **هر** id. `/owner/business/biz_pars` برای سارا که آن‌جا
+  کارمند است، عمداً رد می‌شود.
+- در `apiMode='api'` همان دو پاسخ (۴۰۴/۴۰۳) از سرور می‌آیند؛ UI تغییری
+  نمی‌خواهد — سرور مرجع باقی می‌ماند.
+
+### انزوای داده بین چند کسب‌وکار
+
+- کش داشبورد `Record<businessId, OwnerDashboard>` است و صفحه `data[currentId]`
+  را می‌خواند؛ «نوبت‌های کسب‌وکار الف داخل کسب‌وکار ب» به‌خاطر شکل state
+  ناممکن است، نه به‌خاطر نظم کدنویسی.
+- با سوییچ، کلید عوض می‌شود → پیش از پاسخ تازه `initializing` است و صفحه
+  اسکلت نشان می‌دهد: نه صفرهای بی‌معنی، نه نام و دادهٔ قبلی.
+- بازگشت به کسب‌وکار قبلی از همان کش می‌آید (بدون واکشی اضافه) و
+  `refresh()` همان یک کلید را تازه می‌کند؛ خطای یک کسب‌وکار، کشِ دیگری را
+  نمی‌شکند.
+- فهرست `useOwnerBusinesses` تنها منبع نام/تصویر/شمارش‌هاست و `enter()` آن را
+  با پاسخ تازه هم‌راستا می‌کند (`syncOne`) تا هدر و کارت‌ها یک عدد را بگویند.
+
+### تصمیم زمینه (URL first)
+
+| وضعیت | رفتار |
+| --- | --- |
+| id در URL و مالِ کاربر | همان کسب‌وکار باز می‌شود (deep link بعد از refresh هم همین) |
+| یک کسب‌وکار | بدون پرسش انتخاب می‌شود |
+| انتخاب ذخیره‌شدهٔ معتبر | همان برگردانده می‌شود (`wq_owner_business`) |
+| چند کسب‌وکار، بدون انتخاب | صفحهٔ `/owner` فهرست انتخاب را نشان می‌دهد (نه حدس) |
+| هیچ کسب‌وکاری | حالت خالی عمدی در همان فضای کاری؛ کاربر به حالت مشتری پرتاب نمی‌شود |
+
+### جای‌فاز بعدی
+
+مدیریت نوبت‌ها، سرویس‌ها، پرسنل و دسترس‌پذیری در `/owner/business/[businessId]/manage`
+با ردیف‌های قفل‌شده و برچسب صادقانهٔ «به‌زودی» معرفی شده‌اند. همان
+`OwnerDashboard` و همان `OwnerService` آن‌ها را تغذیه می‌کنند؛ افزوده‌شدنشان
+یعنی: یک route، یک متد روی سرویس، و فعال‌شدن یک ردیف — بدون تغییر معماری و
+بدون state تازهٔ موازی.
+
+## ۱۰. آنچه عمداً ساخته نشده (مقید به فاز ۰)
 
 - صفحات واقعی مشتری/کسب‌وکار/کارمند، جریان رزرو، چت، اعلان‌ها.
 - پنل ادمین (خارج از اسکوپ کل پروژه).
 - فرم‌های کامل ثبت‌نام/ورود (پوستهٔ composable + سرویس آماده است).
 - اتصال API واقعی (`apiMode==='api'` عمداً خطای راهنما می‌دهد).
 - (فاز ۷) مرکز اعلان‌ها، پوش‌نوتیفیکیشن، چت، دیدگاه‌ها، حذف حساب، تغییر شمارهٔ
-  موبایل با تأیید، داشبورد/مدیریت کسب‌وکار و هر نوع ادمین — صفحهٔ
-  `/notifications` عمداً فقط حالت صادقانهٔ «فعلاً در دسترس نیست» است.
+  موبایل با تأیید — صفحهٔ `/notifications` عمداً فقط حالت صادقانهٔ «فعلاً در
+  دسترس نیست» است.
+- (فاز ۸) هر نوع **نوشتن** در فضای کاری: ثبت/ویرایش کسب‌وکار، CRUD سرویس و
+  پرسنل، پیکربندی دسترس‌پذیری، مدیریت کامل نوبت‌ها (تأیید/لغو/جابه‌جایی)،
+  مدیریت مشتریان، تحلیل و نمودار، پرداخت، چت، حالت کارمند، و هر نوع ادمین.
+  داشبورد فاز ۸ فقط *می‌خواند*؛ آمار و نمودار تزئینی نمی‌سازد.
 - شمارندهٔ جعلی، تاریخ انقضای جعلی نشست و هر «شبیه‌سازی» که واقعیت نداشته باشد.

@@ -3,7 +3,7 @@ import type { AuthSession } from '~/types/user'
 import type { Booking } from '~/types/booking'
 import type { EntityId } from '~/types/common'
 import type { CreateBookingRequest, CreateBookingResponse, CreateBookingErrorResponse, BookingValidationResult } from '~/types/booking-flow'
-import { MOCK_BOOKINGS } from '~/services/mocks/bookings'
+import { allMockBookings, MOCK_BOOKINGS } from '~/services/mocks/bookings'
 import { MOCK_BOOKED_SLOTS } from '~/services/mocks/extras'
 import { MOCK_SERVICES } from '~/services/mocks/businesses'
 import type { BookingScope, BookingService, CancelBookingRequest, CancelBookingResponse, CancelBookingErrorResponse, RescheduleBookingRequest, RescheduleBookingResponse, RescheduleBookingErrorResponse } from './booking-service'
@@ -26,7 +26,7 @@ export class MockBookingService implements BookingService {
     const isUpcoming = (b: Booking) =>
       new Date(b.start).getTime() >= now && (b.status === 'pending' || b.status === 'confirmed')
 
-    const items = MOCK_BOOKINGS.filter(
+    const items = allMockBookings().filter(
       b => b.customerId === userId && (scope === 'upcoming' ? isUpcoming(b) : !isUpcoming(b))
     )
 
@@ -39,7 +39,7 @@ export class MockBookingService implements BookingService {
 
   async getById(id: EntityId): Promise<Booking | null> {
     await delay(200)
-    return MOCK_BOOKINGS.find(b => b.id === id) ?? null
+    return allMockBookings().find(b => b.id === id) ?? null
   }
 
   async validateDraft(request: CreateBookingRequest): Promise<BookingValidationResult> {
@@ -192,7 +192,7 @@ export class MockBookingService implements BookingService {
   async cancel(request: CancelBookingRequest): Promise<CancelBookingResponse | CancelBookingErrorResponse> {
     await delay(500)
 
-    const booking = MOCK_BOOKINGS.find(b => b.id === request.bookingId)
+    const booking = allMockBookings().find(b => b.id === request.bookingId)
     if (!booking) {
       return {
         success: false,
@@ -255,7 +255,7 @@ export class MockBookingService implements BookingService {
   async reschedule(request: RescheduleBookingRequest): Promise<RescheduleBookingResponse | RescheduleBookingErrorResponse> {
     await delay(600)
 
-    const booking = MOCK_BOOKINGS.find(b => b.id === request.bookingId)
+    const booking = allMockBookings().find(b => b.id === request.bookingId)
     if (!booking) {
       return {
         success: false,

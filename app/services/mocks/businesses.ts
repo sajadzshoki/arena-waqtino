@@ -85,7 +85,8 @@ export const MOCK_BUSINESSES: Business[] = [
     rating: { average: 4.3, count: 156 },
     isVerified: false,
     status: 'active',
-    ownerUserId: 'usr_owner_energy',
+    // بهرام (09222222222) مدیر همین کسب‌وکار است — مالکیت از همین فیلد خوانده می‌شود
+    ownerUserId: 'usr_dev_bahram',
     createdAt: '2026-01-20T09:00:00.000Z'
   },
   {
@@ -236,7 +237,27 @@ export const MOCK_BUSINESSES: Business[] = [
     status: 'active',
     ownerUserId: 'usr_owner_barber',
     createdAt: '2025-06-15T10:30:00.000Z'
-  }
+  },
+  {
+    // سناریوی فاز ۸: کسب‌وکار دومِ «سارا» — تازه ثبت‌شده، هنوز نوبتی ندارد
+    // و در وضعیت «در انتظار بررسی» است (نمایش صادقانهٔ حالت خالی + وضعیت غیرفعال).
+    id: 'biz_ayeneh',
+    slug: 'ayeneh-salon',
+    name: 'آرایشگاه زنانه آینه',
+    categoryId: 'cat_beauty',
+    description:
+      'آرایشگاه زنانه آینه در یوسف‌آباد؛ اصلاح مو، رنگ و مش، شینیون و بستهٔ عروسی. تازه به وقتینو پیوسته و در حال تکمیل خدمات و ساعت کاری است.',
+    phone: '02155667788',
+    address: { city: 'تهران', district: 'یوسف‌آباد', street: 'خیابان فرشته، پلاک ۹' },
+    coverImageUrl: null,
+    logoUrl: null,
+    gallery: [],
+    rating: { average: 0, count: 0 },
+    isVerified: false,
+    status: 'pending_review',
+    ownerUserId: 'usr_dev_sara',
+    createdAt: '2026-08-20T10:15:00.000Z'
+  },
 ]
 
 export const MOCK_EMPLOYEES: Employee[] = [

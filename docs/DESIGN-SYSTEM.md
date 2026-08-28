@@ -152,6 +152,28 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 `useSavedBusinesses()` می‌خوانند؛ حذف/اضافه‌شدن همان لحظه در همهٔ صفحه‌ها اعمال می‌شود.
 `BusinessCardCompact` (+ `BusinessCardCompactSkeleton count`) کارت صفحهٔ نشان‌شده‌هاست.
 
+### فضای کاری مدیر (از فاز ۸)
+
+| کامپوننت | نقش | قانون استفاده |
+| --- | --- | --- |
+| `owner/OwnerBusinessHeader` | هدر زمینه: کدام کسب‌وکار + وضعیت + دکمهٔ «تغییر» | بالای همهٔ صفحه‌های فضای کاری؛ دکمهٔ تغییر فقط با بیش از یک کسب‌وکار |
+| `owner/OwnerBusinessSwitcher` | شیت پایین انتخاب کسب‌وکار (`WqSheet` + `WqSelectCard`) | هیچ‌وقت دراپ‌داون سایدباری؛ state باز/بسته در `useState('owner:ui:switcher')` |
+| `owner/OwnerNextAppointment` | نزدیک‌ترین نوبت (ظرف `primary-soft`) | تنها بلوک «مهم» صفحه؛ بدون اکشن مدیریتی |
+| `owner/OwnerScheduleList` | ردیف‌های فشردهٔ نوبت (ساعت، مشتری، سرویس، پرسنل، وضعیت) | فقط نمایش؛ ردیف مدیریتی فاز بعدی است |
+| `owner/OwnerMetricsStrip` | سه شاخص: امروز / پیش‌رو / در انتظار تأیید | با همه‌صفر **رندر نمی‌شود** (عدد بی‌معنی نه) |
+| `owner/OwnerQuickActions` | شبکهٔ ۲×۲ دسترسی سریع | فقط مقصد‌های واقعی همین فاز |
+| `owner/OwnerBusinessCard` | کارت کسب‌وکارِ مدیر در فهرست | کارت = یک ورودی؛ «در حال مدیریت» به‌جای دکمهٔ تکراری |
+| `owner/OwnerBusinessSummary` | نمای کلی کسب‌وکار در داشبورد | `SettingsSection` + `SettingsInfoRow`؛ بدون فرم و دکمهٔ ذخیره |
+| `owner/OwnerAccessState` | «مال شما نیست» / «پیدا نشد» + راه بازگشت | پاسخ سرویس را نشان می‌دهد، نه فرض UI |
+| `owner/OwnerNoBusinessState` | صاحبِ بدون کسب‌وکار | حالت خالی عمدی، با مسیر واقعی؛ بدون فرم جعلی |
+| `owner/OwnerDashboardSkeleton`, `owner/OwnerBusinessCardSkeleton` | اسکلت‌های هم‌شکل صفحه | جای اسپینر تمام‌صفحه؛ هنگام سوییچ هم همین |
+| `business/BusinessStatusBadge` | نشان وضعیت چرخهٔ حیات کسب‌وکار | از `BUSINESS_STATUS_META`؛ متن + آیکون، هیچ‌وقت فقط رنگ |
+
+تراکم فضای کاری از حالت مشتری «کاری‌تر» است ولی همان توکن‌ها:
+`rounded-xl` + `border-line` برای کارت‌ها، `t-num` برای ساعت و شمارش‌ها،
+`--wq-dur-*` + `pressable` برای حرکت. رنگ اصلی فقط روی یک عنصر (نوبت بعدی)
+می‌نشیند تا حس پنل ادمین آبی/سازمانی ندهد.
+
 ### حالت‌ها
 `AppLoadingState` (اسپینر یا `rows` برای اسکلت) · `AppEmptyState` (با slot اکشن) ·
 `AppErrorState` (`retryable` + `@retry`) · `AppOfflineState`.
@@ -166,6 +188,19 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 صفحه با `definePageMeta({ tabbar: false })` تب‌بار را مخفی می‌کند.
 
 ## ۸. الگوهای صفحه
+
+الگوی «فضای کاری» (فاز ۸) — سلسله‌مراتب از «الان» به «کلیات»:
+
+```
+هدر زمینه (کدام کسب‌وکار) → نوبت بعدی → نوبت‌های امروز → شاخص‌ها → دسترسی سریع → نمای کلی
+```
+
+- هر بخش یک `WqSectionHeader` دارد؛ محتوای خالی با خط‌چین و یک جمله توضیح
+  می‌ماند (نه حذفِ بی‌سروصدا، نه جدول صفرها).
+- سوییچ کسب‌وکار = اسکلتِ همان صفحه، نه «نمایش دادهٔ قبلی».
+- صفحه‌های عمیق (`/info`, `/manage`) با `AppBackHeader` باز می‌شوند و `tabbar`
+  ندارند؛ تب فعالِ ناوبری پایین با `activeWhen` همان‌جا روشن می‌ماند.
+
 
 ```text
 استاندارد:  AppPageHeader → بخش‌ها (WqSectionHeader) 

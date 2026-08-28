@@ -82,11 +82,15 @@ export function useSavedBusinesses() {
     }
   }
 
-  /** یک‌بار بارگذاری برای هر کاربر — فراخوانی‌های همزمان ادغام می‌شوند. */
+  /**
+   * یک‌بار بارگذاری برای هر کاربر — فراخوانی‌های همزمان روی یک درخواست ادغام
+   * می‌شوند. اگر درخواستی در جریان است همان انتظار کشیده می‌شود (نه بازگشت
+   * زودهنگام)، تا صفحه پیش از پاسخ، «خالی» را یک‌لحظه نشان ندهد.
+   */
   async function ensureLoaded(): Promise<void> {
     if (!isAuthenticated.value) return
-    if (status.value === 'ready' || status.value === 'loading') return
     if (inflight) return inflight
+    if (status.value === 'ready') return
     inflight = refresh().finally(() => {
       inflight = null
     })

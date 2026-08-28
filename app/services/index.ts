@@ -18,6 +18,8 @@ import type { AvailabilityService } from './availability/availability-service'
 import { MockAvailabilityService } from './availability/mock-availability-service'
 import type { AvatarService } from './avatars/avatar-service'
 import { MockAvatarService } from './avatars/mock-avatar-service'
+import type { OwnerService } from './owner/owner-service'
+import { MockOwnerService } from './owner/mock-owner-service'
 
 /**
  * کارخانهٔ سرویس‌ها — تنها نقطهٔ تصمیم «mock یا API واقعی».
@@ -39,6 +41,8 @@ export interface AppServices {
   favorites: FavoriteService
   /** استراتژی آواتار (mock: پیش‌نمایش محلی + آواتارهای آماده) */
   avatars: AvatarService
+  /** فضای کاری صاحب کسب‌وکار: مالکیت، فهرست کسب‌وکارها و دادهٔ داشبورد */
+  owner: OwnerService
   reviews: ReviewService
   chat: ChatService
   availability: AvailabilityService
@@ -69,6 +73,7 @@ export function createServices(): AppServices {
     notifications: new MockNotificationService(),
     favorites: new MockFavoriteService(auth),
     avatars,
+    owner: new MockOwnerService(auth),
     reviews: new MockReviewService(),
     chat: new MockChatService(),
     availability: new MockAvailabilityService()

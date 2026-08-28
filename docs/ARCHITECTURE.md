@@ -120,7 +120,12 @@ app/
                      پرسنل (فاز ۱۰): OwnerEmployeeCard، OwnerEmployeeStatusBadge،
                      OwnerEmployeeActionsSheet، OwnerEmployeeServicePicker،
                      OwnerEmployeeAssignmentSheet، OwnerEmployeeForm،
-                     OwnerEmployeeRemoveDialog، OwnerEmployeesSkeleton
+                     OwnerEmployeeRemoveDialog، OwnerEmployeesSkeleton؛
+                     ساعت کاری (فاز ۱۱): OwnerAvailabilityEditorPanel (بدنهٔ مشترک
+                     فهرست/ویرایش)، OwnerAvailabilityEditor، OwnerAvailabilityDay،
+                     OwnerAvailabilityInterval، OwnerScheduleSummary،
+                     OwnerBusinessHoursCard، OwnerEmployeeHoursRow،
+                     OwnerAvailabilitySkeleton — و ui/WqTimeField (قلم ساعت)
     search/ bookings/ business/ employee/  (کامپوننت‌های دامنه‌ای)
   composables/       useAuth، useUserMode، useServices، useAppToast،
                      useSavedBusinesses (منبع‌واحد‌حقیقت نشان‌شده‌ها)، useUserProfile،
@@ -132,20 +137,29 @@ app/
                      useUnsavedChangesGuard (فاز ۹: چرخهٔ حیات سرویس)،
                      useBusinessEmployees / useEmployeeActions / useEmployeeForm /
                      useEmployeeAssignment / useEmployeeServiceOptions
-                     (فاز ۱۰: پرسنل و رابطهٔ سرویس↔پرسنل)
+                     (فاز ۱۰: پرسنل و رابطهٔ سرویس↔پرسنل)،
+                     useBusinessAvailability (کش per-businessIdِ برنامهٔ هفته +
+                     نوشتن + busy/actionError) / useScheduleEditor (فاز ۱۱: ماشین
+                     draft — قاعدهٔ روز، بازه‌ها، dirty، save، revert)
   config/            navigation.ts، booking-status.ts، business-status.ts،
                      service-status.ts (نگاشت وضعیت سرویس + اکشن مجاز)،
                      service-policy.ts (سیاست حذف)، service-form.ts (گزینه‌های فرم)،
                      employee-status.ts (نگاشت وضعیت پرسنل: برچسب/رنگ/آیکون/
                      پیامد/مجازبودن اکشن — تنها منبع «وضعیت یعنی چه»)،
                      employee-policy.ts (سیاست حذف پرسنل)،
-                     employee-form.ts (گزینه‌های فرم پرسنل)
+                     employee-form.ts (گزینه‌های فرم پرسنل)،
+                     availability.ts (WEEKDAY_ORDER، برچسب‌های فارسی، سیاست
+                     `AVAILABILITY_POLICY`: سقف بازه/حداقل دقیقه/قاعدهٔ «حذف
+                     آخرین بازه ⇒ روز تعطیل»، الگوی شروع)،
+                     timezone.ts (APP_TIMEZONE و پنجرهٔ افق رزرو — تنها جای
+                     «منطق منطقهٔ زمانی»)
                      (پیکربندی دامنه، auto-import)
   layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
   pages/             index.vue، saved.vue، profile(/edit).vue، settings.vue،
                      notifications.vue، booking*، business/[id] (جزئیات مشتری)،
                      owner/{index,businesses,business/[businessId]{,/info,/manage,
-                     /services{,/new,/[serviceId](/edit)},/employees{,/new,/[employeeId](/edit)}}}،
+                     /services{,/new,/[serviceId](/edit)},/employees{,/new,/[employeeId](/edit)},
+                     /availability{,/business,/employees/[employeeId]}}}،
                      employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی،
                      فقط-توسعه)
   plugins/           01.services.ts، 02.session.ts، 03-user-scope.client.ts
@@ -155,7 +169,14 @@ app/
                      owner/: owner-service.ts، service-management-service.ts،
                      owner-access.ts (مالکیت مشترک)، mock-service-management-service.ts،
                      employee-management-service.ts (قرارداد فاز ۱۰)،
-                     mock-employee-management-service.ts
+                     mock-employee-management-service.ts،
+                     availability-management-service.ts (قرارداد فاز ۱۱:
+                     getBusiness/saveBusiness/listEmployees/getEmployee/
+                     saveEmployee/resetEmployeeToBusinessDefault)،
+                     mock-availability-management-service.ts،
+                     ../availability/: availability-service.ts (قرارداد خواندن)،
+                     mock-availability-service.ts (پوستهٔ نازک)،
+                     availability-core.ts (موتور مشترکِ پنجرهٔ کاری/اسلات)
     mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses، extras،
                      owner-scenarios، customers)،
                      session.ts (نگهبان نشست)، user-state.ts (کوکی `wq_user_data`)،
@@ -163,17 +184,29 @@ app/
                      سرویس، تنها منبع‌واحد‌حقیقت سرویس‌ها)،
                      employee-state.ts (کوکی `wq_business_employees`: delta + گور
                      پرسنل + `assignedEmployeeIds` که نمای سرویس از آن ساخته
-                     می‌شود)، avatar-assets.ts
+                     می‌شود)، availability-state.ts (کوکی `wq_business_availability`:
+                     دلتای برنامهٔ هفتهٔ کسب‌وکار + رکورد اختصاصی پرسنل — تنها نقطهٔ
+                     نوشتن، و `resolve*` های خواندن که seed را merge می‌کنند)،
+                     avatar-assets.ts
   types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts + owner.ts
                      (OwnedBusiness / OwnerDashboard / BusinessAccess) + service.ts
                      (BookableService / ServiceInput / ManagedService / ServiceStatus) +
                      employee.ts (Employee / BookableEmployee / EmployeeInput /
-                     ManagedEmployee / EmployeeRemovePolicy / employeeDisplayName)
+                     ManagedEmployee / EmployeeRemovePolicy / employeeDisplayName) +
+                     availability.ts (Weekday، AvailabilityDay/Interval/Schedule،
+                     ScheduleSource، DayAvailabilityStatus، DayAvailability،
+                     DateAvailabilityEntry)
   utils/             digits (شامل parseFaNumber/groupFaNumber)، datetime، duration،
                      delay، errors (ServiceError + conflict)،
                      validation.ts (قواعد مشترک فرم/سرویس: validateServiceForm،
-                     validateEmployeeForm/employeeInputError — یک قاعده برای
-                     فرم و برای دفاع دوم در لایهٔ سرویس)
+                     validateEmployeeForm/employeeInputError،
+                     validateSchedule/employeeScheduleConflictDays — یک قاعده برای
+                     فرم و برای دفاع دوم در لایهٔ سرویس)،
+                     schedule-time.ts (تنها جای «ساعت/روزِ هفته/کلید تاریخ»:
+                     normalizeTime، instantOf/localTimeOf، upcomingDateKeys،
+                     weekdayOf، قالب‌های شمسی)، schedule.ts (جبرِ بازه‌ها:
+                     overlap/contains/intersect/sort)،
+                     schedule-summary.ts (خلاصهٔ خوانای هفته برای نمایش)
 docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 ```
 
@@ -218,6 +251,7 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 | کسب‌وکارِ زمینهٔ مدیر | `wq_owner_business` → `Record<userId, businessId>` | کوکی | ۳۶۵ روز |
 | سرویس‌های کسب‌وکار (delta فاز ۹) | `wq_business_services` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
 | پرسنل کسب‌وکار (delta فاز ۱۰) | `wq_business_employees` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
+| ساعت کاری کسب‌وکار و پرسنل (delta فاز ۱۱) | `wq_business_availability` → `{ businesses: { [businessId]: { business?: AvailabilityDay[], employees?: { [employeeId]: { source, days } } } } }` | کوکی | ۳۶۵ روز |
 | ترجیح تم | `wq-color-mode` | `localStorage` | همیشگی |
 | تاریخچهٔ مشاهده / پیش‌نویس رزرو | `useState` | حافظهٔ همین بار اجرا | تا پایان نشست مرورگر |
 
@@ -240,6 +274,13 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
   تا دادهٔ حساب قبلی به حساب تازه نچسبد؛ خودِ کوکی دست‌نخورده می‌ماند.
   `removed` در این دامنه گورِ **نام** است: نوبتی که دیروز به «امید کاظمی» بوده،
   فردا هم با همان نام خوانده می‌شود، حتی اگر رکورد پرسنل حذف شده باشد.
+- ساعت کاری هم **به کسب‌وکار** قید می‌شود؛ `employeeId` هرگز تنها کلید نیست
+  (پرسنل یک کسب‌وکار با همان شناسه در کسب‌وکار دیگر معنایی ندارد و سرویس
+  `NOT_FOUND` می‌دهد، نه دادهٔ اشتباه). در این دامنه «مطابق ساعات کاری
+  کسب‌وکار» یعنی **نبودِ** رکورد، پس دلتا فقط برنامه‌های اختصاصیِ واقعاً
+  تنظیم‌شده را نگه می‌دارد و reset کردن، رکورد را حذف می‌کند نه خالی.
+  کش دامنه (`owner:availability:*`) با تغییر/خروج کاربر reset می‌شود
+  (`resetAvailability()` در `plugins/03-user-scope.client.ts`)؛ کوکی می‌ماند.
 - نوشتن روی delta، نه کپی کل فهرست: سقف کوکی ~۴KB است و کپی‌کردن ۸ سرویس
   آن را می‌شکست (کوکیِ بزرگ بی‌صدا دور ریخته می‌شود = گم‌شدن دادهٔ کاربر).
   `removed` هم گورِ سرویس است، نه فقط حذف: تاریخچهٔ نوبت باید بگوید آن نوبت
@@ -530,7 +571,108 @@ unlinkEmployeeFromUser(businessId, employeeId)       // قطع اتصال؛ رک
 همان `Employee.id` به‌عنوان کلید زمینه استفاده می‌کنند؛ هیچ مهاجرت داده‌ای
 لازم نیست.
 
-## ۱۲. آنچه عمداً ساخته نشده (مقید به فاز ۰)
+## ۱۲. ساعت کاری: پنجره‌ها، نه اسلات‌های ذخیره‌شده (فاز ۱۱)
+
+ساعت کاری «لیست اسلات‌ها» نیست؛ **پنجره‌های تکرارشوندهٔ هفتگی** است و اسلات‌ها
+موقع خواندن از `پنجرهٔ کاری ∩ پنجرهٔ نفر + مدت سرویس + نوبت‌های موجود` ساخته
+می‌شوند. اگر برنامهٔ هفته عوض شود، هیچ اسلاتِ یتیمی پشت نمی‌ماند:
+
+```
+app/pages/owner/business/[businessId]/availability/**        مرکز · برنامهٔ کسب‌وکار · برنامهٔ نفر
+app/pages/booking/index.vue                                  گام تاریخ/ساعت (مصرف‌کنندهٔ همین دامنه)
+   ↓
+useScheduleEditor({ businessId, employeeId? })   draft، قاعدهٔ روز/بازه، dirty، save، revert
+useBusinessAvailability(businessId)              کش per-businessId + نوشتن + busy/actionError
+   ↓
+AvailabilityManagementService   getBusiness/saveBusiness/listEmployees/getEmployee/saveEmployee/resetEmployeeToBusinessDefault
+AvailabilityService             getDayAvailability(query) · getDateAvailability(businessId, dates, opts)
+MockBookingService              validateDraft/create/reschedule ← همان پنجره‌ها (تداخل و «خارج از ساعت»)
+   ↓
+app/services/availability/availability-core.ts   dayContext → buildSlots → resolveDayAvailability
+app/services/mocks/availability-state.ts         تنها نقطهٔ خواندن/نوشتن (کوکی delta)
+```
+
+### مدل: پیکربندی، نه رویداد
+
+`AvailabilitySchedule = { days: AvailabilityDay[] }` و
+`AvailabilityDay = { weekday: 'saturday' … 'friday', enabled, intervals[] }`؛
+`intervals` همیشه `[{ start: 'HH:mm', end: 'HH:mm' }]` است — «باز/بسته» هرگز به
+`openingTime/closingTime` تقلیل پیدا نمی‌کند، چون ناهار/شیفتهای تکه‌ای روز اول
+فاز است نه بعدی. روزِ هفته در دامنه **نام** است (`'friday'`)، نه عدد: هیچ
+تبدیلِ `getDay()` پراکنده‌ای در UI باقی نمی‌ماند و «تعطیلی جمعه» از قانون
+تقویمی به دادهٔ کسب‌وکار منتقل می‌شود. برچسب فارسی فقط در لایهٔ نمایش
+(`weekdayLabel`) اضافه می‌شود.
+
+### «مطابق کسب‌وکار» یعنی نبودِ رکورد
+
+پرسنل `ScheduleSource = 'business-default' | 'custom'` دارد و **برنامه را کپی
+نمی‌کند**؛ تا وقتی source پیش‌فرض است، ردیفی در دلتا نیست
+(`persistEmployeeSchedule` در حالت پیش‌فرض رکورد را حذف می‌کند). دو پیامد:
+تغییر ساعت کسب‌وکار بی‌مهاجرت به همهٔ پرسنل سرایت می‌کند، و «بازگشت به
+پیش‌فرض» یک حذف ساده است نه بازنویسی آرایه.
+
+برنامهٔ اختصاصی باید **داخل بازه‌های واقعی** کسب‌وکار باشد — مقایسه با
+«نخستین باز شدن و آخرین بستن» عمداً انجام نمی‌شود، وگرنه «۰۹ تا ۱۹» روی
+کسب‌وکاری که ۱۲ تا ۱۴ ناهار است قبول می‌شد. روزی که کسب‌وکار در آن تعطیل است،
+هیچ بازه‌ای برای نفر پذیرفته نیست. قانون یکی‌ست و در دو جا اجرا می‌شود:
+`validateSchedule` + `employeeScheduleConflictDays` در فرم، و همان توابع در
+لایهٔ سرویس (دفاع دوم).
+
+تغییر ساعت کسب‌وکار، برنامهٔ پرسنل را **بازنویسی یا حذف نمی‌کند**؛ موقع خواندن
+`intersectDays` آن را با پنجرهٔ امروز ماسک می‌کند و `conflictDays`/
+`conflictMessage` روی نمای پرسنل می‌نشیند تا owner بداند ساعتی که نوشته فعلاً
+اعمال نمی‌شود.
+
+### چهار قاعدهٔ ویرایش که در کامپوننت نیستند
+
+۱) روز خاموش ⇒ ویرایشگر بازه‌ها خاموش، ولی بازه‌ها **نگه داشته** می‌شوند تا با
+روشن‌کردن دوباره برگردند. ۲) روز روشن ⇒ دست‌کم یک بازه؛ برداشتن *آخرین* بازه
+عمداً روز را تعطیل می‌کند (`AVAILABILITY_POLICY.disableDayWhenLastIntervalRemoved`)
+به‌جای اینکه کاربر را با «روز روشنِ بی‌ساعت» تنها بگذارد. ۳) `start < end`؛
+۱۸:۰۰→۰۹:۰۰ رد می‌شود و هرگز بی‌صدا جابه‌جا نمی‌شود (بازهٔ شبانه در این فاز
+ممنوع است، پس «حدس» نداریم). ۴) هم‌پوشانی رد، مرزِ چسبیده مجاز؛ ترتیب نمایش و
+ذخیره همیشه زمانی است. `validateSchedule` همان‌ها را روی payload هم می‌گیرد تا
+«payload دستی» از دیوار رد نشود.
+
+### draft ≠ دادهٔ ذخیره‌شده
+
+`useScheduleEditor` با کپیِ draft کار می‌کند؛ keystroke هیچ نوشتنی در مخزن
+نمی‌کند (تست شد: کوکی قبل و بعد از ویرایش برابر است) و `save` صریح است. مقایسهٔ
+dirty **معنادار** است: روز خاموش با بازهٔ نگه‌داشته == روز خاموشِ بی‌بازه، پس
+«خاموش/روشن و برگشتن» دیالوگ «تغییرات ذخیره‌نشده» را باز نمی‌کند و صفحهٔ
+کسب‌وکاری که هرگز تنظیم نشده از همان اول «تغییر دارد» نمی‌گوید.
+
+### موتور مشترکِ رزرو و مدیر
+
+`availability-core.dayContext()` تنها جایی است که می‌فهمد یک روز برای یک
+سرویس/نفر چه وضعیتی دارد و `status` را برمی‌گرداند:
+`available | fully-booked | closed | not-configured | past | unavailable`.
+«تعطیل» و «پُر» هرگز یکی نمی‌شوند، و «سرویس غیرفعال»/«پرسنل غیرفعال»/«سرویس
+اختصاص‌نیافته» با `unavailable` + پیام فارسی جدا می‌شوند. `MockBookingService`
+هم از همان `dayContext` + `withinWindows` استفاده می‌کند (نه یک کپی منطق):
+`validateDraft` بیرون‌ازپنجره/تداخل/روز تعطیل را رد می‌کند و `reschedule` هم
+همین را — با `excludeBookingId` تا نوبتِ در حال جابه‌جایی خودش را نبیند.
+ظرفیت از **نوبت‌های زنده** خوانده می‌شود (`bookingsOfDay`)، پس «دو منبع رزرو»
+نداریم؛ `MOCK_BOOKED_SLOTS` فقط قفلِ in-memory همان سرویس است.
+
+### انزوای داده
+
+کلید دلتا `businessId` است و `employeeId` هرگز تنها خوانده/نوشته نمی‌شود؛
+مالکیت در `resolveOwnedBusiness` بررسی می‌شود (FORBIDDEN برای کسب‌وکار دیگر،
+NOT_FOUND برای پرسنلِ کسب‌وکار دیگر تا وجودش لو نرود). نوشتن در یک کسب‌وکار،
+دیگری را تکان نمی‌دهد و `listEmployees(biz_ayeneh)` هرگز پرسنل نارنج را
+برنمی‌گرداند. منطقهٔ زمانی از `app/config/timezone.ts` می‌آید؛ هیچ UI تبدیل
+منطقهٔ زمانی نیست و هیچ کامپوننتی ساعت را به UTC تبدیل نمی‌کند.
+
+### آماده برای استثناها، بدون ساختنشان
+
+`resolveDayAvailability` روز را از `dayContext` می‌گیرد؛ جای افزودن
+`AvailabilityException[]` (مرخصی، تعطیلات رسمی، override یک‌روزه) همان
+`dayContext` است — یک `filter/override` روی پنجرهٔ همان تاریخ، بدون تغییر
+هیچ‌کدام از مصرف‌کننده‌ها. عمداً ساخته نشدند: نه تاریخِ خاص، نه مرخصی، نه
+break در دامنه، نه drag&drop/تقویم.
+
+## ۱۳. آنچه عمداً ساخته نشده (مقید به فاز ۰)
 
 - صفحات واقعی مشتری/کسب‌وکار/کارمند، جریان رزرو، چت، اعلان‌ها.
 - پنل ادمین (خارج از اسکوپ کل پروژه).
@@ -549,10 +691,24 @@ unlinkEmployeeFromUser(businessId, employeeId)       // قطع اتصال؛ رک
   `linkEmployeeToUser`/`unlink` — فقط خواندنِ `linkedAccount` به‌عنوان اطلاعات
   خنثی. دلیل: اتصال، قرارداد بک‌اند می‌خواهد و ساختن «دکمهٔ دعوت»ی که کاری
   نمی‌کند، همان «قابلیت شکستهٔ جعلی» است که ممنوع کرده‌ایم.
-- (فاز ۱۰) **دسترس‌پذیری و ساعت کاری پرسنل** (فاز ۱۱) و **حالت کارمند/Employee
-  Mode**: `/employee*` عمداً همان `AppPlaceholderPage`ها می‌ماند. فاز ۱۰ فقط
-  زمینه را آماده می‌کند: `Employee` با کلید per-business، وضعیت و رابطه روی یک
-  رکورد، و `useBusinessEmployees` که همان منبع را می‌خواند.
+- (فاز ۱۰) **حالت کارمند/Employee Mode**: `/employee*` عمداً همان
+  `AppPlaceholderPage`ها می‌ماند. فاز ۱۰ فقط زمینه را آماده می‌کند: `Employee`
+  با کلید per-business، وضعیت و رابطه روی یک رکورد، و `useBusinessEmployees`
+  که همان منبع را می‌خواند.
+- (فاز ۱۱) **استثناهای تقویمی**: تعطیلات رسمی، مرخصی/غیبت، «آن روز خاص را عوض
+  کن»، ظرفیت هم‌زمان، booking buffer/استراحت بین نوبت‌ها، مدیریت شیفت، نمای
+  تقویم، drag & drop، و «مسدودسازی نوبت‌های گذشته هنگام تغییر ساعت» — مدل باز
+  است (`AvailabilitySchedule` + جایی که `AvailabilityException[]` به
+  `dayContext` اضافه می‌شود) ولی هیچ‌کدام از این‌ها در فاز ۱۱ معنا نداشت؛
+  ساعت کاری **پنجره** است و محاسبهٔ ظرفیت واقعی قرارداد بک‌اند می‌خواهد.
+- (فاز ۱۱) **UI منطقهٔ زمانی** و چندمنطقه‌ای: `APP_TIMEZONE` پیکربندی اپ است؛
+  «هر کسب‌وکار منطقهٔ زمانی خودش» عمداً ساخته نشد (ساختارش در
+  `AvailabilitySchedule.timezone` باز است، ولی انتخاب‌کننده و تبدیل در UI
+  ممنوع — منطق زمان فقط در `utils/schedule-time.ts`).
+- (فاز ۱۱) **ویرایش ساعت از حالت کارمند** و نمایش ساعت کاری در صفحهٔ مشتری:
+  نمای مشتری از همان `AvailabilityService` وقت می‌گیرد، ولی «برنامهٔ هفتهٔ
+  کسب‌وکار» به‌عنوان بلوک اطلاعاتی در `/business/[id]` عمداً اضافه نشد (اسکوپ
+  فاز، ابزار owner است).
 - (فاز ۱۰) **هر نوشتن روی دادهٔ مشترک مشتری**: نمای مشتریِ پرسنل
   (`BookableEmployee`) فقط‌خواندنی است و شمارهٔ تماس/شناسهٔ حساب را هرگز نمی‌برد؛
   سناریوهای «ویرایش پرسنل از اپ مشتری» عمداً وجود ندارد.

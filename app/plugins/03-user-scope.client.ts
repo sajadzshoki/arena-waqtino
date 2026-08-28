@@ -23,6 +23,7 @@ export default defineNuxtPlugin(() => {
   const { reset: resetDashboards } = useOwnerDashboardCache()
   const { reset: resetServices } = useBusinessServicesCache()
   const { reset: resetEmployees } = useBusinessEmployeesCache()
+  const { reset: resetAvailability } = useBusinessAvailabilityCache()
   const { clearHistory } = useRecentlyViewed()
   const { clearDraft } = useBookingFlow()
 
@@ -36,6 +37,7 @@ export default defineNuxtPlugin(() => {
     resetDashboards()
     resetServices()
     resetEmployees()
+    resetAvailability()
     clearHistory()
     clearDraft()
   }

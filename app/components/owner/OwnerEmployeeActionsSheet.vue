@@ -28,6 +28,13 @@ const meta = computed(() => (props.employee ? employeeStatusMeta(props.employee.
 const base = computed(() =>
   props.employee ? `/owner/business/${props.employee.businessId}/employees/${props.employee.id}` : ''
 )
+/** ساعت کاری پرسنل در درخت «دسترس‌پذیری» است (فاز ۱۱)، نه زیرِ مسیر پرسنل —
+ *  چون آن صفحه هم ساعت کسب‌وکار و هم ساعت نفر را یک‌جا نشان می‌دهد. */
+const availabilityPath = computed(() =>
+  props.employee
+    ? `/owner/business/${props.employee.businessId}/availability/employees/${props.employee.id}`
+    : ''
+)
 
 const removeSubtitle = computed(() => {
   const employee = props.employee
@@ -65,6 +72,14 @@ const assignSubtitle = computed(() => {
         title="ویرایش پرسنل"
         subtitle="نام، عنوان شغلی، تماس و وضعیت"
         :to="`${base}/edit`"
+      />
+      <USeparator />
+      <WqListRow
+        icon="i-lucide-calendar-clock"
+        title="ساعات کاری این نفر"
+        subtitle="مطابق کسب‌وکار یا برنامهٔ اختصاصی — در همان صفحه قابل تغییر است"
+        :to="availabilityPath"
+        @click="open = false"
       />
       <USeparator />
       <WqListRow

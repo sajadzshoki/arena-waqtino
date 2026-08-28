@@ -7,6 +7,11 @@
  * پیام‌ها فارسی، انسانی و عمل‌گرا هستند ( کاربر بداند دقیقاً چه درست کند ).
  */
 
+import { AVAILABILITY_POLICY, WEEKDAY_ORDER, weekdayLabel } from '~/config/availability'
+import { activeIntervals, containsInterval, intervalsOverlap } from '~/utils/schedule'
+import { formatIntervalFa, minutesToTime, timeToMinutes } from '~/utils/schedule-time'
+import type { AvailabilityDay, AvailabilityInterval, Weekday } from '~/types/availability'
+
 export const PROFILE_NAME_MIN = 2
 export const PROFILE_NAME_MAX = 24
 
@@ -329,3 +334,171 @@ export function employeeInputError(input: EmployeeInput): string | null {
   }
   return null
 }
+
+
+/* ─────────────────────────── ساعات کاری (فاز ۱۱) ─────────────────────────── */
+
+/**
+ * قاعدهٔ واحد «برنامهٔ هفتگی معتبر است؟» — همان چیزی که فرم برای نمایش خطا و
+ * لایهٔ سرویس برای «دفاع دوم» صدا می‌زنند. دو پیامدش عمداً یکی است:
+ *   • هیچ روزی با `enabled: true` و بدون بازهٔ معتبر ذخیره نمی‌شود؛
+ *   • هیچ بازه‌ای با `start >= end` یا هم‌پوشانی ذخیره نمی‌شود.
+ *
+ * دو تصمیم سیاستی که در همین‌جا متمرکزاند (نه در کامپوننت):
+ *   ۱) بازهٔ شبانه («۱۸:۰۰ تا ۰۹:۰۰») *رد* می‌شود، نه بی‌صدا وارونه‌سازی؛
+ *      اگر واقعاً شیفت شب لازم شد، فاز خودش باید تصمیم بگیرد.
+ *   ۲) روز تعطیل، بازه‌هایش را نگه می‌دارد؛ پس اعتبارسنجی فقط روزهای
+ *      *روشن* را باز می‌کند و بقیه را دست نمی‌زند.
+ */
+export interface ScheduleValidation {
+  ok: boolean
+  /** پیام کلی برای بالای فرم (نخستین خطای دیدنی) */
+  message: string | null
+  dayErrors: Partial<Record<Weekday, string>>
+  intervalErrors: Partial<Record<`${Weekday}:${number}`, string>>
+  /** برنامهٔ نرمال‌شده: ۷ روز، مرتب، ساعت‌های `HH:mm` — همان چیزی که ذخیره می‌شود */
+  days: AvailabilityDay[]
+}
+
+const NO_ERRORS: ScheduleValidation['intervalErrors'] = {}
+
+export function validateSchedule(
+  days: AvailabilityDay[],
+  policy: { maxIntervalsPerDay?: number, minIntervalMinutes?: number } = {}
+): ScheduleValidation {
+  const maxIntervals = policy.maxIntervalsPerDay ?? AVAILABILITY_POLICY.maxIntervalsPerDay
+  const minMinutes = policy.minIntervalMinutes ?? AVAILABILITY_POLICY.minIntervalMinutes
+  const dayErrors: Record<string, string> = {}
+  const intervalErrors: Record<string, string> = {}
+
+  const byWeekday = new Map<Weekday, AvailabilityDay>()
+  const unknown: string[] = []
+  for (const day of days) {
+    if (!WEEKDAY_ORDER.includes(day.weekday)) {
+      unknown.push(String(day.weekday))
+      continue
+    }
+    if (byWeekday.has(day.weekday)) {
+      dayErrors[day.weekday] = `«${weekdayLabel(day.weekday)}» دوباره آمده؛ هر روز یک بار کافی است.`
+      continue
+    }
+    byWeekday.set(day.weekday, day)
+  }
+
+  const normalized: AvailabilityDay[] = WEEKDAY_ORDER.map((weekday) => {
+    const day = byWeekday.get(weekday)
+    if (!day) return { weekday, enabled: false, intervals: [] }
+    if (!day.enabled) return { weekday, enabled: false, intervals: [...day.intervals] }
+
+    const intervals: AvailabilityInterval[] = []
+    for (const interval of day.intervals) {
+      const start = timeToMinutes(interval?.start)
+      const end = timeToMinutes(interval?.end)
+      const key = `${weekday}:${intervals.length}`
+      if (start === null || end === null) {
+        intervalErrors[key] = `ساعت «${weekdayLabel(weekday)}» قابل خواندن نیست؛ نمونهٔ درست: ۰۹:۳۰`
+        intervals.push({ start: String(interval?.start ?? ''), end: String(interval?.end ?? '') })
+        continue
+      }
+      if (start >= end) {
+        intervalErrors[key] = `${weekdayLabel(weekday)}: ساعت پایان باید بعد از ساعت شروع باشد.`
+        dayErrors[weekday] ??= `بازهٔ «${formatIntervalFa(interval)}» نامعتبر است.`
+        intervals.push({ start: minutesToTime(start), end: minutesToTime(end) })
+        continue
+      }
+      if (end - start < minMinutes) {
+        intervalErrors[key] = `هر بازه باید دست‌کم ${toFaDigits(minMinutes)} دقیقه باشد.`
+        dayErrors[weekday] ??= `بازهٔ «${weekdayLabel(weekday)}» خیلی کوتاه است.`
+        intervals.push({ start: minutesToTime(start), end: minutesToTime(end) })
+        continue
+      }
+      const overlaps = intervals.some(other => intervalsOverlap(other, { start: minutesToTime(start), end: minutesToTime(end) }))
+      if (overlaps) {
+        intervalErrors[key] = `این بازه با بازهٔ دیگرِ ${weekdayLabel(weekday)} هم‌پوشانی دارد.`
+        dayErrors[weekday] ??= `ساعت‌های ${weekdayLabel(weekday)} هم‌پوشانی دارند.`
+      }
+      intervals.push({ start: minutesToTime(start), end: minutesToTime(end) })
+    }
+
+    if (intervals.length === 0) {
+      dayErrors[weekday] = `${weekdayLabel(weekday)} روشن است ولی ساعتی ندارد؛ یک بازه اضافه کنید یا روز را تعطیل کنید.`
+    }
+    else if (intervals.length > maxIntervals) {
+      dayErrors[weekday] = `در ${weekdayLabel(weekday)} بیشتر از ${toFaDigits(maxIntervals)} بازه نمی‌توان داشت.`
+    }
+    return {
+      weekday,
+      enabled: true,
+      intervals: [...intervals].sort((a, b) => (timeToMinutes(a.start) ?? 0) - (timeToMinutes(b.start) ?? 0))
+    }
+  })
+
+  if (unknown.length > 0) {
+    return {
+      ok: false,
+      message: `روزهای ناشناخته: ${unknown.join('، ')}`,
+      dayErrors,
+      intervalErrors,
+      days: normalized
+    }
+  }
+
+  const firstDay = WEEKDAY_ORDER.find(w => dayErrors[w])
+  const message = firstDay
+    ? dayErrors[firstDay]!
+    : Object.values(intervalErrors)[0] ?? null
+
+  return {
+    ok: message === null,
+    message,
+    dayErrors,
+    intervalErrors: message === null ? NO_ERRORS : intervalErrors,
+    days: normalized
+  }
+}
+
+/**
+ * قاعدهٔ «برنامهٔ پرسنل داخل ساعات کسب‌وکار است» (فاز ۱۱):
+ * مقایسه با *بازه‌های واقعی* همان روز است، نه با «نخستین باز شدن و آخرین
+ * بستن» — پس «۱۲ تا ۱۴ تعطیل» وسط روز هم معنا دارد. روزی که کسب‌وکار در آن
+ * تعطیل است، هیچ بازه‌ای برای نفر پذیرفته نیست.
+ */
+export function employeeScheduleConflictDays(
+  employeeDays: AvailabilityDay[],
+  businessDays: AvailabilityDay[] | null
+): Weekday[] {
+  if (!businessDays) return []
+  return WEEKDAY_ORDER.filter((weekday) => {
+    const biz = activeIntervals(businessDays, weekday)
+    const emp = activeIntervals(employeeDays, weekday)
+    if (emp.length === 0) return false
+    if (biz.length === 0) return true
+    return emp.some(interval => !biz.some(outer => containsInterval(outer, interval)))
+  })
+}
+
+export function employeeScheduleConflictMessage(
+  employeeDays: AvailabilityDay[],
+  businessDays: AvailabilityDay[] | null
+): string | null {
+  const days = employeeScheduleConflictDays(employeeDays, businessDays)
+  if (days.length === 0) return null
+  const closed = days.filter(w => activeIntervals(businessDays ?? [], w).length === 0)
+  const parts: string[] = []
+  if (closed.length > 0) {
+    parts.push(`${listFa(closed.map(weekdayLabel))} در ساعات کسب‌وکار تعطیل است`)
+  }
+  const outside = days.filter(w => !closed.includes(w))
+  if (outside.length > 0) {
+    parts.push(`ساعت ${listFa(outside.map(weekdayLabel))} بیرون از بازهٔ کاری کسب‌وکار است`)
+  }
+  return `${parts.join(' و ')}. برنامهٔ پرسنل نمی‌تواند گسترهٔ پذیرش کسب‌وکار را باز کند.`
+}
+
+/** «شنبه، یک‌شنبه و جمعه» — فهرست فارسیِ روزها برای پیام‌های خطا */
+function listFa(items: string[]): string {
+  if (items.length === 0) return ''
+  if (items.length === 1) return `«${items[0]}»`
+  return `${items.slice(0, -1).map(i => `«${i}»`).join('، ')} و «${items[items.length - 1]}»`
+}
+

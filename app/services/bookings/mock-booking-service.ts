@@ -8,6 +8,9 @@ import { MOCK_BOOKED_SLOTS } from '~/services/mocks/extras'
 import { resolveBusinessEmployees } from '~/services/mocks/employee-state'
 import { resolveBusinessServices } from '~/services/mocks/service-state'
 import { employeeDisplayName } from '~/types/employee'
+import { dateKeyOf, localTimeOf, timeToMinutes } from '~/utils/schedule-time'
+import { APP_TIMEZONE } from '~/config/timezone'
+import { dayContext, withinWindows } from '~/services/availability/availability-core'
 import type { BookingScope, BookingService, CancelBookingRequest, CancelBookingResponse, CancelBookingErrorResponse, RescheduleBookingRequest, RescheduleBookingResponse, RescheduleBookingErrorResponse } from './booking-service'
 
 export class MockBookingService implements BookingService {
@@ -129,6 +132,26 @@ export class MockBookingService implements BookingService {
         message: `قیمت این خدمت تغییر کرده است. قیمت جدید: ${formatToman(service.price)}`,
         type: 'price_change'
       })
+    }
+
+    // Validation 3b: پنجرهٔ کاری (فاز ۱۱) — دفاع دوم.
+    // پیش‌نویسِ کهنه (ساعتی که بعد از آن owner ساعت کاری را عوض کرده) یا یک
+    // درخواست مستقیم نباید نوبتی بیرون از بازهٔ کاری آن روز بسازد. نکتهٔ مهم:
+    // اگر کسب‌وکار *اصلاً* ساعت کاری تنظیم نکرده باشد، محدودیتی وضع نمی‌شود —
+    // «نبودِ داده» یعنی «محدودیتی اعلام نشده»، نه «همه‌جا باز» و نه «همه‌جا بسته».
+    const windowError = this.availabilityConflict(
+      request.businessId,
+      request.employeeId ?? null,
+      request.start,
+      request.end
+    )
+    if (windowError) {
+      errors.push({
+        code: windowError.code,
+        message: windowError.message,
+        field: 'timeSlot'
+      })
+      return { valid: false, errors, warnings }
     }
 
     // Validation 4: Slot availability
@@ -307,7 +330,7 @@ export class MockBookingService implements BookingService {
     booking.cancelReason = request.reason
 
     // Free up the slot
-    const slotKey = this.bookingSlotKey(booking)
+    const slotKey = this.slotKeyOf(booking.businessId, booking.start)
     MOCK_BOOKED_SLOTS.delete(slotKey)
 
     return {
@@ -353,8 +376,26 @@ export class MockBookingService implements BookingService {
       }
     }
 
-    // Check if new slot is available
-    const newSlotKey = `${booking.businessId}:${this.dateStrFromDate(new Date(request.newStart))}:${this.timeStrFromDate(new Date(request.newStart))}`
+    // پنجرهٔ کاری روز تازه (فاز ۱۱) — با حذف خودِ نوبت از اشغال، تا جابه‌جایی به
+    // همان ساعت یا ساعتِ هم‌پوشان با *خودش* خطا نگیرد
+    const moved = this.availabilityConflict(
+      booking.businessId,
+      booking.employeeId ?? null,
+      request.newStart,
+      request.newEnd,
+      booking.id
+    )
+    if (moved) {
+      return {
+        success: false,
+        error: {
+          code: 'SLOT_UNAVAILABLE',
+          message: moved.message
+        }
+      }
+    }
+
+    const newSlotKey = this.slotKeyOf(booking.businessId, request.newStart)
     if (MOCK_BOOKED_SLOTS.has(newSlotKey)) {
       return {
         success: false,
@@ -366,7 +407,7 @@ export class MockBookingService implements BookingService {
     }
 
     // Free up the old slot
-    const oldSlotKey = this.bookingSlotKey(booking)
+    const oldSlotKey = this.slotKeyOf(booking.businessId, booking.start)
     MOCK_BOOKED_SLOTS.delete(oldSlotKey)
 
     // Update the booking
@@ -382,26 +423,61 @@ export class MockBookingService implements BookingService {
     }
   }
 
+  /**
+   * کلید «این ساعت گرفته شده» — از فاز ۱۱ با *وقت کسب‌وکار* ساخته می‌شود، نه
+   * منطقهٔ زمانی مرورگر/سرور: وگرنه همان نوبت در تهران و در UTC دو کلید متفاوت
+   * می‌گرفت و قفل اسلات بی‌صدا شل می‌شد.
+   */
+  private slotKeyOf(businessId: EntityId, start: string): string {
+    return `${businessId}:${dateKeyOf(start, APP_TIMEZONE)}:${(localTimeOf(start, APP_TIMEZONE) ?? '').replace(':', '')}`
+  }
+
   private slotKey(request: CreateBookingRequest): string {
-    const start = new Date(request.start)
-    const dateStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
-    const timeStr = `${String(start.getHours()).padStart(2, '0')}${String(start.getMinutes()).padStart(2, '0')}`
-    return `${request.businessId}:${dateStr}:${timeStr}`
+    return this.slotKeyOf(request.businessId, request.start)
   }
 
-  private bookingSlotKey(booking: Booking): string {
-    const start = new Date(booking.start)
-    const dateStr = this.dateStrFromDate(start)
-    const timeStr = this.timeStrFromDate(start)
-    return `${booking.businessId}:${dateStr}:${timeStr}`
-  }
+  /**
+   * کنترل پنجرهٔ کاری: «آیا این بازه داخل ساعت کاری آن روز است و با نوبتِ
+   * دیگری نمی‌جنگد؟» پاسخ `null` یعنی اشکالی نیست.
+   */
+  private availabilityConflict(
+    businessId: EntityId,
+    employeeId: EntityId | null,
+    startIso: string,
+    endIso: string,
+    excludeBookingId?: EntityId
+  ): { code: string, message: string } | null {
+    const context = dayContext({
+      businessId,
+      date: dateKeyOf(startIso, APP_TIMEZONE),
+      employeeId,
+      excludeBookingId: excludeBookingId ?? null
+    })
 
-  private dateStrFromDate(date: Date): string {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  }
+    // فقط «تعطیل بودنِ اعلام‌شده» جلوی نوبت را می‌گیرد؛ «ساعت کاری تنظیم نشده»
+    // محدودیت نمی‌سازد (فازهای قبل هم چنین قیدی نداشتند) و «سرویس/پرسنل
+    // غیرفعال» را همان validateDraft قبل‌تر و با پیام درست رد کرده است.
+    if (context.status === 'closed') {
+      return { code: 'DAY_CLOSED', message: context.message ?? 'در آن روز پذیرشی تعریف نشده است.' }
+    }
+    if (context.intervals.length === 0) return null
 
-  private timeStrFromDate(date: Date): string {
-    return `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}`
+    const start = timeToMinutes(localTimeOf(startIso, APP_TIMEZONE)) ?? 0
+    const end = timeToMinutes(localTimeOf(endIso, APP_TIMEZONE)) ?? start
+    const { fits, overlapsBooking } = withinWindows(context.intervals, start, end, context.bookings)
+    if (!fits) {
+      return {
+        code: 'OUT_OF_HOURS',
+        message: 'ساعت انتخابی بیرون از بازهٔ کاری آن روز است؛ زمان دیگری انتخاب کنید.'
+      }
+    }
+    if (overlapsBooking) {
+      return {
+        code: 'SLOT_UNAVAILABLE',
+        message: 'این زمان با نوبت دیگری تداخل دارد. لطفاً زمان دیگری انتخاب کنید.'
+      }
+    }
+    return null
   }
 
   private mapErrorCode(code: string): CreateBookingErrorResponse['error']['code'] {

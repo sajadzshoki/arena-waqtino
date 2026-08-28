@@ -36,6 +36,10 @@ const {
   requiresEmployee,
   isDraftComplete,
   noSlotsAvailable,
+  dayStatus,
+  dayMessage,
+  dayWindow,
+  availabilityError,
   initDraft,
   setService,
   setEmployee,
@@ -309,7 +313,9 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
             :dates="dateAvailability"
             :selected-date="draft.date"
             :loading="loadingDates"
+            :error="availabilityError"
             @select="handleDateSelect"
+            @retry="loadDateAvailability()"
           />
         </div>
 
@@ -317,14 +323,19 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
         <div v-if="currentStep === 'time'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب زمان</h2>
           <p v-if="draft.date" class="t-caption mb-3 text-foreground-secondary">
-            {{ formatDateLabel(new Date(draft.date)) }}
+            {{ formatDateKeyLabel(draft.date) }}
           </p>
           <BookingTimeSelect
             :slots="availableSlots"
             :selected-slot="draft.timeSlot"
             :loading="loadingSlots"
             :no-slots-available="noSlotsAvailable"
+            :status="dayStatus"
+            :message="dayMessage"
+            :window="dayWindow"
+            :error="availabilityError"
             @select="handleTimeSelect"
+            @retry="loadTimeSlots(draft.date ?? '')"
           />
         </div>
 

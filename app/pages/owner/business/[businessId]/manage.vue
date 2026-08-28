@@ -13,11 +13,29 @@ const routeBusinessId = computed(() => String(route.params.businessId ?? ''))
 const { phase, businessId, boot, business, summary, accessMessage } =
   useOwnerBusinessEntry(routeBusinessId)
 
+/** ساعات کاری (فاز ۱۱) — ردیف مدیریت باید بگوید برنامه تنظیم شده یا نه. */
+const availability = useBusinessAvailability(businessId)
+
 const accessKind = computed(() =>
   phase.value === 'forbidden' || phase.value === 'not_found' ? phase.value : null
 )
 
-onMounted(boot)
+async function enterThenLoad(): Promise<void> {
+  await boot()
+  if (phase.value === 'ok') await availability.ensure()
+}
+
+onMounted(enterThenLoad)
+
+/** «شنبه تا چهارشنبه · ۰۹:۰۰–۱۸:۰۰» یا صریح «تنظیم‌نشده» — از همان دادهٔ فاز ۱۱ */
+const hoursHint = computed(() => {
+  const schedule = availability.business.value
+  if (!schedule) return 'روزها و بازهٔ زمانی پذیرش نوبت'
+  if (!schedule.schedule) return 'هنوز ساعات کاری این کسب‌وکار تنظیم نشده است'
+  return schedule.summary
+    ? `${schedule.summary.headline} · ${toFaDigits(availability.employees.value.filter(e => e.source === 'custom').length)} نفر با ساعت اختصاصی`
+    : 'برنامهٔ هفته تنظیم شده است'
+})
 
 const counts = computed(() => {
   const m = summary.value?.metrics
@@ -62,7 +80,7 @@ const counts = computed(() => {
     <template v-else-if="business">
       <SettingsSection
         title="همین حالا در دسترس"
-        description="هر ردیف به یک صفحهٔ واقعی می‌رود؛ سرویس‌ها از فاز ۹ مدیریت می‌شوند"
+        description="هر ردیف به یک صفحهٔ واقعی می‌رود؛ سرویس‌ها، پرسنل و ساعات کاری از همین‌جا مدیریت می‌شوند"
       >
         <SettingsRow
           icon="i-lucide-building-2"
@@ -92,6 +110,13 @@ const counts = computed(() => {
         />
         <SettingsRow
           v-if="businessId"
+          icon="i-lucide-calendar-clock"
+          title="ساعات کاری و دسترس‌پذیری"
+          :subtitle="hoursHint"
+          :to="`/owner/business/${businessId}/availability`"
+        />
+        <SettingsRow
+          v-if="businessId"
           icon="i-lucide-list"
           title="کسب‌وکارهای من"
           subtitle="تغییر کسب‌وکاری که مدیریت می‌کنید"
@@ -104,12 +129,6 @@ const counts = computed(() => {
         title="در فازهای بعدی"
         description="این بخش‌ها هنوز ساخته نشده‌اند؛ برای همین باز نمی‌شوند."
       >
-        <SettingsInfoRow
-          icon="i-lucide-calendar-clock"
-          title="ساعات کاری و دسترس‌پذیری"
-          subtitle="روزها و بازهٔ زمانی پذیرش نوبت"
-          locked
-        />
         <SettingsInfoRow
           icon="i-lucide-clipboard-list"
           title="مدیریت نوبت‌ها"

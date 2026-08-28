@@ -1,6 +1,9 @@
 import type { Business, BusinessCategory } from '~/types/business'
 import type { Employee } from '~/types/employee'
 import type { BookableService } from '~/types/service'
+import type { AvailabilityDay, AvailabilitySchedule, Weekday } from '~/types/availability'
+import { APP_TIMEZONE } from '~/config/timezone'
+import { WEEKDAY_ORDER } from '~/config/availability'
 
 /**
  * داده‌های اولیهٔ واقع‌گرایانهٔ فارسی برای توسعه.
@@ -760,3 +763,116 @@ export const MOCK_DISTANCES: Record<string, number> = {
   biz_petland: 3.8,
   biz_barbershop: 8.2
 }
+
+/**
+ * برنامهٔ ساعت کاری هفتگی (فاز ۱۱) — seed.
+ *
+ * دو نوع رکورد در یک آرایه:
+ *   • بدون `employeeId` → ساعت *پیش‌فرض کسب‌وکار*
+ *   • با `employeeId` + `source: 'custom'` → برنامهٔ اختصاصی یک نفر
+ * پرسنلی که ردیف ندارد یعنی «مطابق کسب‌وکار» کار می‌کند — این حالت *بازنمایی*
+ * صریح همان `business-default` است، نه فراموشی داده. برای همین هیچ‌جا هفت سطر
+ * برای هر نفر کپی نمی‌شود.
+ *
+ * `biz_ayeneh` عمداً ردیف ندارد: صفحهٔ ساعات کاری باید «تنظیم‌نشده» را هم
+ * تجربه کند (حالت خالی، نه صفر ساختگی).
+ */
+
+type SeedDay = Partial<Record<Weekday, Array<[string, string]>>>
+
+function seedWeek(businessId: string, days: SeedDay, employeeId?: string): AvailabilitySchedule {
+  const weekDays: AvailabilityDay[] = WEEKDAY_ORDER.map((weekday) => {
+    const intervals = days[weekday]
+    return {
+      weekday,
+      enabled: Array.isArray(intervals) && intervals.length > 0,
+      intervals: (intervals ?? []).map(([start, end]) => ({ start, end }))
+    }
+  })
+  return {
+    businessId,
+    ...(employeeId ? { employeeId } : {}),
+    timezone: APP_TIMEZONE,
+    days: weekDays,
+    source: employeeId ? 'custom' : 'business-default',
+    updatedAt: '2026-04-18T10:12:00.000Z'
+  }
+}
+
+const FULL_WEEK = (start: string, end: string): SeedDay => ({
+  saturday: [[start, end]],
+  sunday: [[start, end]],
+  monday: [[start, end]],
+  tuesday: [[start, end]],
+  wednesday: [[start, end]]
+})
+
+export const MOCK_SCHEDULES: AvailabilitySchedule[] = [
+  // آرایشگاه زنانه نارنج: چهارشنبه با استراحت ناهار (دو بازه در روز)، پنج‌شنبه کوتاه، جمعه تعطیل
+  seedWeek('biz_narenj', {
+    ...FULL_WEEK('09:00', '19:00'),
+    wednesday: [['09:00', '13:00'], ['15:00', '19:00']],
+    thursday: [['10:00', '16:00']]
+  }),
+  // دندان‌پزشکی پارس: سه‌شنبه نیم‌روز، پنج‌شنبه و جمعه تعطیل
+  seedWeek('biz_pars', {
+    ...FULL_WEEK('08:00', '17:00'),
+    wednesday: [['09:00', '13:00']]
+  }),
+  // باشگاه انرژی: همهٔ روزها باز، آخر هفته کوتاه‌تر
+  seedWeek('biz_energy', {
+    saturday: [['06:00', '22:00']],
+    sunday: [['06:00', '22:00']],
+    monday: [['06:00', '22:00']],
+    tuesday: [['06:00', '22:00']],
+    wednesday: [['06:00', '22:00']],
+    thursday: [['08:00', '18:00']],
+    friday: [['08:00', '14:00']]
+  }),
+  seedWeek('biz_shoka', {
+    ...FULL_WEEK('08:00', '18:00'),
+    thursday: [['08:00', '14:00']]
+  }),
+  seedWeek('biz_ruyesh', {
+    ...FULL_WEEK('08:00', '20:00'),
+    thursday: [['09:00', '15:00']]
+  }),
+  seedWeek('biz_noora', {
+    ...FULL_WEEK('10:00', '19:00'),
+    thursday: [['10:00', '16:00']]
+  }),
+  seedWeek('biz_aramesh', { ...FULL_WEEK('09:00', '18:00') }),
+  seedWeek('biz_tamiraz', {
+    ...FULL_WEEK('07:00', '20:00'),
+    thursday: [['07:00', '20:00']],
+    friday: [['08:00', '14:00']]
+  }),
+  seedWeek('biz_petland', {
+    ...FULL_WEEK('09:00', '18:00'),
+    thursday: [['09:00', '15:00']]
+  }),
+  seedWeek('biz_barbershop', {
+    ...FULL_WEEK('09:00', '21:00'),
+    thursday: [['09:00', '21:00']]
+  }),
+
+  // ── برنامه‌های اختصاصی پرسنل ──
+  // مینا (نارنج): کوتاه‌تر از کسب‌وکار + فاصلهٔ ناهار — یعنی «پرسنل ⊆ کسب‌وکار» با دو بازه
+  seedWeek('biz_narenj', {
+    saturday: [['10:00', '14:00'], ['16:00', '19:00']],
+    sunday: [['10:00', '14:00'], ['16:00', '19:00']],
+    monday: [['10:00', '14:00']],
+    tuesday: [['10:00', '14:00'], ['16:00', '19:00']],
+    wednesday: [['10:00', '13:00'], ['16:00', '19:00']],
+    thursday: [['11:00', '16:00']]
+  }, 'emp_mina_narenj'),
+  // نایک (نارنج): فقط شیفت صبح
+  seedWeek('biz_narenj', {
+    ...FULL_WEEK('09:00', '13:00')
+  }, 'emp_nike_narenj'),
+  // دکتر رنجبر (پارس): فقط دو روز، داخل ساعات کلینیک
+  seedWeek('biz_pars', {
+    saturday: [['09:00', '13:00']],
+    monday: [['14:00', '17:00']]
+  }, 'emp_dr_ranjbar')
+]

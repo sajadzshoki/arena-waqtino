@@ -136,15 +136,22 @@ const management = services.serviceManagement
 
 const assignments = services.employeeManagement
 
+const hours = services.availabilityManagement
+
 /**
- * دو domain، دو delta مستقل — پس هر دو پاک می‌شوند تا «دموی کاملِ فاز ۹ و ۱۰»
- * یکجا از اول شروع شود؛ هیچ‌کدام دیگری را پاک نمی‌کند.
+ * سه domain، سه delta مستقل (سرویس‌ها، پرسنل، ساعات کاری) — پس هر سه پاک می‌شوند
+ * تا «دموی کاملِ فاز ۹ تا ۱۱» یکجا از اول شروع شود؛ هیچ‌کدام دیگری را پاک
+ * نمی‌کند و پاک‌کردن یک domain خواستهٔ domain دیگر نیست.
  */
 async function resetLocalData(): Promise<void> {
   resetting.value = true
   try {
-    await Promise.all([management.resetLocalChanges(), assignments.resetLocalChanges()])
-    toast.success('دادهٔ سرویس‌ها و پرسنل به حالت پایه برگشت.')
+    await Promise.all([
+      management.resetLocalChanges(),
+      assignments.resetLocalChanges(),
+      hours.resetLocalChanges()
+    ])
+    toast.success('دادهٔ سرویس‌ها، پرسنل و ساعات کاری به حالت پایه برگشت.')
   }
   catch (e) {
     toast.error(toServiceError(e).message)
@@ -481,12 +488,12 @@ async function resetLocalData(): Promise<void> {
         <USeparator />
         <div class="flex items-start justify-between gap-3">
           <span class="min-w-0">
-            <span class="t-label block">بازنشانی تغییرات محلی سرویس‌ها و پرسنل</span>
+            <span class="t-label block">بازنشانی تغییرات محلی سرویس‌ها، پرسنل و ساعات کاری</span>
             <span class="t-caption block">
-              هر چه در فاز ۹ و ۱۰ ساخته/ویرایش/اختصاص/غیرفعال/حذف شده در کوکی‌های
-              «wq_business_services» و «wq_business_employees» می‌نشیند؛ این دکمه
-              همان deltaها را پاک می‌کند تا دادهٔ پایه برگردد و دمو از اول قابل
-              تکرار باشد.
+              هر چه در فاز ۹ تا ۱۱ ساخته/ویرایش/اختصاص/غیرفعال/حذف یا تنظیم شده در
+              کوکی‌های «wq_business_services»، «wq_business_employees» و
+              «wq_business_availability» می‌نشیند؛ این دکمه همان deltaها را پاک
+              می‌کند تا دادهٔ پایه برگردد و دمو از اول قابل تکرار باشد.
             </span>
           </span>
           <WqButton size="md" variant="tertiary" :loading="resetting" @click="resetLocalData">

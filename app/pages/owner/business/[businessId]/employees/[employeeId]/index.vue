@@ -315,6 +315,18 @@ async function onAssignmentSave(): Promise<void> {
         >
           {{ assignedRows.length > 0 ? 'مدیریت سرویس‌ها' : 'اختصاص سرویس‌ها' }}
         </WqButton>
+
+        <!-- ساعت کاری (فاز ۱۱): صفحه‌اش جدا است، چون مبنایش برنامهٔ هفتهٔ
+             کسب‌وکار است — اینجا فقط درِ همان صفحه را باز می‌کنیم. -->
+        <WqButton
+          variant="tertiary"
+          block
+          class="mt-2 min-h-12"
+          icon="i-lucide-calendar-clock"
+          :to="`${basePath}/availability/employees/${routeEmployeeId}`"
+        >
+          ساعات کاری این نفر
+        </WqButton>
       </WqSectionHeader>
 
       <!-- ۳) متاداده (فقط آنچه واقعاً ثبت شده) -->

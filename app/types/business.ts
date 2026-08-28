@@ -39,3 +39,12 @@ export interface Business {
   ownerUserId: EntityId
   createdAt: ISODateTime
 }
+
+/** کسب‌وکار + فاصلهٔ تقریبی از کاربر — برای بخش «نزدیک شما». */
+export interface BusinessWithDistance extends Business {
+  /** فاصلهٔ تقریبی به کیلومتر */
+  distanceKm: number
+}
+
+/** ترتیب نمایش بخش‌های صفحهٔ کشف. */
+export type DiscoverySectionKey = 'featured' | 'popular' | 'nearby' | 'recent'

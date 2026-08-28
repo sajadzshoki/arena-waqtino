@@ -29,10 +29,20 @@ export function useAppToast() {
     toast.add({ title, description, color: 'primary', icon })
   }
 
+  function warning(title: string, description?: string): void {
+    toast.add({
+      title,
+      description,
+      color: 'warning',
+      icon: 'i-lucide-triangle-alert',
+      duration: 5000
+    })
+  }
+
   /** پیام خنثی/اطلاع‌رسانی سبک بدون رنگ برند */
   function neutral(title: string, icon = 'i-lucide-info'): void {
     toast.add({ title, color: 'neutral', icon })
   }
 
-  return { success, error, info, neutral }
+  return { success, error, info, warning, neutral }
 }

@@ -47,17 +47,21 @@ async function toggleFavorite() {
 
 const isFav = computed(() => business.value ? isFavorite(business.value.id) : false)
 
-// Booking handoff
-function bookService(_serviceId: string) {
+// Booking handoff — navigate to booking flow
+function bookService(serviceId: string) {
   if (!business.value) return
-  toast.neutral('رزرو نوبت در نسخهٔ آینده فعال می‌شود.', 'i-lucide-calendar')
-  // navigateTo({ path: '/booking', query: { business: business.value.id, service: serviceId } })
+  navigateTo({
+    path: '/booking',
+    query: { business: business.value.id, service: serviceId }
+  })
 }
 
 function bookGeneral() {
   if (!business.value) return
-  toast.neutral('رزرو نوبت در نسخهٔ آینده فعال می‌شود.', 'i-lucide-calendar')
-  // navigateTo({ path: '/booking', query: { business: business.value.id } })
+  navigateTo({
+    path: '/booking',
+    query: { business: business.value.id }
+  })
 }
 
 // Share

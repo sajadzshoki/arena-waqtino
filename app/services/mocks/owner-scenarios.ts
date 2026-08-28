@@ -127,6 +127,20 @@ export const MOCK_OWNER_BOOKINGS: Booking[] = [
     price: 890_000,
     createdAt: isoIn(-5, 9, 0)
   }),
+  make({
+    // فاز ۱۰: نوبتِ *گذشته* برای «سامین» — تنها پرسنلی که حذفش مجاز است،
+    // تا دیالوگ حذف بتواند صادقانه بگوید «تاریخچه می‌ماند».
+    id: 'bok_own_13',
+    customerId: 'usr_cust_mahsa',
+    businessId: 'biz_narenj',
+    serviceId: 'srv_narenj_haircut',
+    employeeId: 'emp_samin_narenj',
+    start: isoIn(-6, 11, 0),
+    duration: 45,
+    status: 'completed',
+    price: 700_000,
+    createdAt: isoIn(-9, 10, 0)
+  }),
   // ── باشگاه انرژی (صاحب: بهرام — سناریوی «یک کسب‌وکار») ──────────────────
   make({
     id: 'bok_own_10',

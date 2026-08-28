@@ -1,6 +1,6 @@
 import type { Business, BusinessCategory } from '~/types/business'
 import type { EntityId } from '~/types/common'
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
 import type { BookableService } from '~/types/service'
 
 /**
@@ -14,7 +14,7 @@ export function useBusinessDetails(businessId: Ref<EntityId> | EntityId) {
   const business = ref<Business | null>(null)
   const category = ref<BusinessCategory | null>(null)
   const businessServices = ref<BookableService[]>([])
-  const employees = ref<Employee[]>([])
+  const employees = ref<BookableEmployee[]>([])
   const distance = ref<number | null>(null)
 
   const loading = ref(false)

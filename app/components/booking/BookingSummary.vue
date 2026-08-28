@@ -5,14 +5,15 @@
 import type { BookingFlowDraft } from '~/types/booking-flow'
 import type { Business, BusinessCategory } from '~/types/business'
 import type { BookableService } from '~/types/service'
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
 
 defineProps<{
   draft: BookingFlowDraft
   business: Business | null
   category: BusinessCategory | null
   service: BookableService | null
-  employee: Employee | null | undefined // null = "no preference", undefined = not selected
+  /** نمای مشتری پرسنل (فاز ۱۰) — `displayName` از لایهٔ سرویس آماده می‌آید. */
+  employee: BookableEmployee | null | undefined // null = «فرقی نمی‌کند»، undefined = انتخاب‌نشده
   warnings?: Array<{ code: string; message: string; type: string }>
 }>()
 
@@ -87,9 +88,9 @@ function formatDate(date: string): string {
           </template>
           <template v-else>
             <div class="flex items-center gap-2">
-              <WqAvatar :name="employee.name" :src="employee.avatarUrl" size="sm" />
+              <WqAvatar :name="employee.displayName" :src="employee.avatarUrl" size="sm" />
               <div>
-                <p class="t-body-sm font-medium text-foreground">{{ employee.name }}</p>
+                <p class="t-body-sm font-medium text-foreground">{{ employee.displayName }}</p>
                 <p v-if="employee.title" class="t-caption text-foreground-secondary">{{ employee.title }}</p>
               </div>
             </div>

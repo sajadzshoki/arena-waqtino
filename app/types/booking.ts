@@ -24,6 +24,12 @@ export interface Booking {
    * خواننده باید از سرویس زنده/گورِ سرویس پرشان کند.
    */
   serviceSnapshot?: BookingServiceSnapshot
+  /**
+   * اسنپ‌شات نام پرسنل در لحظهٔ ثبت (فاز ۱۰) — «این نفر بعداً نامش عوض شد یا از
+   * این کسب‌وکار حذف شد» نباید تاریخچهٔ نوبت را بی‌نام یا گمراه کند. رزروهای
+   * قدیمی‌تر ممکن است نداشته باشند؛ خواننده از رکورد زنده/گورِ پرسنل پرش می‌کند.
+   */
+  employeeSnapshot?: BookingEmployeeSnapshot
   notes?: string
   cancelledBy?: BookingCancelledBy
   cancelReason?: string
@@ -38,6 +44,11 @@ export interface Booking {
 export interface BookingServiceSnapshot {
   name: string
   durationMinutes: number
+}
+
+/** نام پرسنلی که نوبت را انجام می‌دهد/داده — همان لحظهٔ ثبت. */
+export interface BookingEmployeeSnapshot {
+  name: string
 }
 
 export interface BookingWithDetails extends Booking {

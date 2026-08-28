@@ -5,12 +5,20 @@ import type { EntityId } from '~/types/common'
 import type { CreateBookingRequest, CreateBookingResponse, CreateBookingErrorResponse, BookingValidationResult } from '~/types/booking-flow'
 import { allMockBookings, MOCK_BOOKINGS } from '~/services/mocks/bookings'
 import { MOCK_BOOKED_SLOTS } from '~/services/mocks/extras'
+import { resolveBusinessEmployees } from '~/services/mocks/employee-state'
 import { resolveBusinessServices } from '~/services/mocks/service-state'
+import { employeeDisplayName } from '~/types/employee'
 import type { BookingScope, BookingService, CancelBookingRequest, CancelBookingResponse, CancelBookingErrorResponse, RescheduleBookingRequest, RescheduleBookingResponse, RescheduleBookingErrorResponse } from './booking-service'
 
 export class MockBookingService implements BookingService {
   private get userId(): string | null {
     return useCookie<AuthSession | null>('wq_session').value?.user.id ?? null
+  }
+
+  /** نام پرسنل از همان منبع رابطه/وضعیت فاز ۱۰ — برای اسنپ‌شات لحظهٔ ثبت. */
+  private employeeNameOf(businessId: EntityId, employeeId: EntityId): string | null {
+    const employee = resolveBusinessEmployees(businessId).find(e => e.id === employeeId)
+    return employee ? employeeDisplayName(employee) : null
   }
 
   async listMine(scope: BookingScope = 'upcoming'): Promise<Booking[]> {
@@ -79,6 +87,39 @@ export class MockBookingService implements BookingService {
         field: 'service'
       })
       return { valid: false, errors, warnings }
+    }
+
+    // Validation 2b: Employee (فاز ۱۰) — رابطه و وضعیت دوباره همین‌جا بررسی
+    // می‌شود، نه فقط در فیلتر UI: یک پیش‌نویس کهنه یا یک درخواست مستقیم نباید
+    // نوبت را به نفر غیرفعال یا به نفرِ «این سرویس را انجام نمی‌دهد» بچسباند.
+    if (request.employeeId) {
+      const employee = resolveBusinessEmployees(request.businessId).find(e => e.id === request.employeeId)
+      if (!employee) {
+        errors.push({
+          code: 'EMPLOYEE_UNAVAILABLE',
+          message: 'چنین پرسنلی در این کسب‌وکار ثبت نشده است. پرسنل دیگری را انتخاب کنید.',
+          field: 'employee'
+        })
+        return { valid: false, errors, warnings }
+      }
+      if (employee.status !== 'active') {
+        errors.push({
+          code: 'EMPLOYEE_UNAVAILABLE',
+          message: `«${employeeDisplayName(employee)}» دیگر برای رزرو تازه فعال نیست. پرسنل دیگری را انتخاب کنید.`,
+          field: 'employee'
+        })
+        return { valid: false, errors, warnings }
+      }
+      if (!employee.serviceIds.includes(request.serviceId)) {
+        errors.push({
+          code: 'EMPLOYEE_UNAVAILABLE',
+          message:
+            `«${employeeDisplayName(employee)}» این سرویس را انجام نمی‌دهد؛ ` +
+            'یا پرسنل دیگری را انتخاب کنید یا بدون انتخاب پرسنل ادامه دهید.',
+          field: 'employee'
+        })
+        return { valid: false, errors, warnings }
+      }
     }
 
     // Validation 3: Service price matches
@@ -178,6 +219,9 @@ export class MockBookingService implements BookingService {
     // Create booking
     const bookingId = `bok_${Date.now()}`
     const bookedService = resolveBusinessServices(request.businessId).find(s => s.id === request.serviceId)
+    const bookedEmployee = request.employeeId
+      ? this.employeeNameOf(request.businessId, request.employeeId)
+      : null
     const newBooking: Booking = {
       id: bookingId,
       customerId: userId,
@@ -193,6 +237,9 @@ export class MockBookingService implements BookingService {
       serviceSnapshot: bookedService
         ? { name: bookedService.name, durationMinutes: bookedService.durationMinutes }
         : undefined,
+      // نام پرسنل هم در همان لحظهٔ ثبت قفل می‌شود (فاز ۱۰): تغییر نام،
+      // غیرفعال‌کردن یا حذف او از کسب‌وکار، متن این نوبت را عوض نمی‌کند.
+      employeeSnapshot: bookedEmployee ? { name: bookedEmployee } : undefined,
       notes: request.notes,
       createdAt: new Date().toISOString()
     }
@@ -361,6 +408,7 @@ export class MockBookingService implements BookingService {
     switch (code) {
       case 'SLOT_UNAVAILABLE': return 'SLOT_UNAVAILABLE'
       case 'SERVICE_UNAVAILABLE': return 'VALIDATION_ERROR'
+      case 'EMPLOYEE_UNAVAILABLE': return 'VALIDATION_ERROR'
       case 'DATE_IN_PAST': return 'VALIDATION_ERROR'
       case 'DURATION_MISMATCH': return 'VALIDATION_ERROR'
       default: return 'SERVER_ERROR'

@@ -2,9 +2,9 @@
 /**
  * اکشن‌های سریع فضای کاری — فقط مقصد‌هایی که در این فاز واقعاً کار می‌کنند.
  *
- * «سرویس‌ها» از فاز ۹ این‌جا هست (چرخهٔ کامل ساخت/ویرایش/وضعیت/حذف)؛ «پرسنل» و
- * «دسترس‌پذیری» هنوز در صفحهٔ مدیریت با برچسب صادقانهٔ «به‌زودی» می‌مانند، نه
- * به‌صورت دکمهٔ مرده در داشبورد.
+ * «سرویس‌ها» (فاز ۹) و «پرسنل» (فاز ۱۰) این‌جا هستند — هر دو چرخهٔ کامل دارند؛
+ * «دسترس‌پذیری» و «مدیریت نوبت‌ها» هنوز در صفحهٔ مدیریت با برچسب صادقانهٔ
+ * «به‌زودی» می‌مانند، نه به‌صورت دکمهٔ مرده در داشبورد.
  */
 import type { EntityId } from '~/types/common'
 
@@ -15,8 +15,6 @@ interface QuickAction {
   label: string
   icon: string
   to: string
-  /** تیپ آخر ردیف کامل می‌کشد تا گرید ۲×۲ «یک خانهٔ خالی» نماند */
-  wide?: boolean
 }
 
 const actions = computed<QuickAction[]>(() => [
@@ -39,6 +37,12 @@ const actions = computed<QuickAction[]>(() => [
     to: `/owner/business/${props.businessId}/services`
   },
   {
+    key: 'employees',
+    label: 'پرسنل',
+    icon: 'i-lucide-users',
+    to: `/owner/business/${props.businessId}/employees`
+  },
+  {
     key: 'customer-view',
     label: 'دید مشتری',
     icon: 'i-lucide-eye',
@@ -48,8 +52,7 @@ const actions = computed<QuickAction[]>(() => [
     key: 'businesses',
     label: 'کسب‌وکارهای من',
     icon: 'i-lucide-store',
-    to: '/owner/businesses',
-    wide: true
+    to: '/owner/businesses'
   }
 ])
 </script>
@@ -61,7 +64,6 @@ const actions = computed<QuickAction[]>(() => [
       :key="action.key"
       :to="action.to"
       class="pressable flex min-h-16 items-center gap-2.5 rounded-xl border border-line bg-surface px-3"
-      :class="action.wide && 'col-span-2'"
     >
       <span
         class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-primary"

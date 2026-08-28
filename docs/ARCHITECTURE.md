@@ -116,7 +116,11 @@ app/
                      شاخص‌ها، اکشن‌های سریع، کارت کسب‌وکار، حالت دسترسی/خالی، اسکلت‌ها؛
                      سرویس‌ها (فاز ۹): OwnerServiceCard، OwnerServiceForm،
                      OwnerServiceActionsSheet، OwnerServiceDeleteDialog،
-                     OwnerServiceStatusBadge، OwnerServicesSkeleton
+                     OwnerServiceStatusBadge، OwnerServicesSkeleton؛
+                     پرسنل (فاز ۱۰): OwnerEmployeeCard، OwnerEmployeeStatusBadge،
+                     OwnerEmployeeActionsSheet، OwnerEmployeeServicePicker،
+                     OwnerEmployeeAssignmentSheet، OwnerEmployeeForm،
+                     OwnerEmployeeRemoveDialog، OwnerEmployeesSkeleton
     search/ bookings/ business/ employee/  (کامپوننت‌های دامنه‌ای)
   composables/       useAuth، useUserMode، useServices، useAppToast،
                      useSavedBusinesses (منبع‌واحد‌حقیقت نشان‌شده‌ها)، useUserProfile،
@@ -125,16 +129,23 @@ app/
                      useOwnerBusinesses / useBusinessContext / useOwnerDashboard /
                      useOwnerBusinessEntry (زمینه و دادهٔ فضای کاری)،
                      useBusinessServices / useServiceActions / useServiceForm /
-                     useUnsavedChangesGuard (فاز ۹: چرخهٔ حیات سرویس)
+                     useUnsavedChangesGuard (فاز ۹: چرخهٔ حیات سرویس)،
+                     useBusinessEmployees / useEmployeeActions / useEmployeeForm /
+                     useEmployeeAssignment / useEmployeeServiceOptions
+                     (فاز ۱۰: پرسنل و رابطهٔ سرویس↔پرسنل)
   config/            navigation.ts، booking-status.ts، business-status.ts،
                      service-status.ts (نگاشت وضعیت سرویس + اکشن مجاز)،
-                     service-policy.ts (سیاست حذف)، service-form.ts (گزینه‌های فرم)
+                     service-policy.ts (سیاست حذف)، service-form.ts (گزینه‌های فرم)،
+                     employee-status.ts (نگاشت وضعیت پرسنل: برچسب/رنگ/آیکون/
+                     پیامد/مجازبودن اکشن — تنها منبع «وضعیت یعنی چه»)،
+                     employee-policy.ts (سیاست حذف پرسنل)،
+                     employee-form.ts (گزینه‌های فرم پرسنل)
                      (پیکربندی دامنه، auto-import)
   layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
   pages/             index.vue، saved.vue، profile(/edit).vue، settings.vue،
                      notifications.vue، booking*، business/[id] (جزئیات مشتری)،
                      owner/{index,businesses,business/[businessId]{,/info,/manage,
-                     /services{,/new,/[serviceId](/edit)}}}،
+                     /services{,/new,/[serviceId](/edit)},/employees{,/new,/[employeeId](/edit)}}}،
                      employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی،
                      فقط-توسعه)
   plugins/           01.services.ts، 02.session.ts، 03-user-scope.client.ts
@@ -142,18 +153,27 @@ app/
                      businesses/ bookings/ owner/ …
                      (هر دامنه: قرارداد + پیاده‌سازی mock)
                      owner/: owner-service.ts، service-management-service.ts،
-                     owner-access.ts (مالکیت مشترک)، mock-service-management-service.ts
+                     owner-access.ts (مالکیت مشترک)، mock-service-management-service.ts،
+                     employee-management-service.ts (قرارداد فاز ۱۰)،
+                     mock-employee-management-service.ts
     mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses، extras،
                      owner-scenarios، customers)،
                      session.ts (نگهبان نشست)، user-state.ts (کوکی `wq_user_data`)،
                      service-state.ts (کوکی `wq_business_services`: delta + گور
-                     سرویس، تنها منبع‌واحد‌حقیقت سرویس‌ها)، avatar-assets.ts
+                     سرویس، تنها منبع‌واحد‌حقیقت سرویس‌ها)،
+                     employee-state.ts (کوکی `wq_business_employees`: delta + گور
+                     پرسنل + `assignedEmployeeIds` که نمای سرویس از آن ساخته
+                     می‌شود)، avatar-assets.ts
   types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts + owner.ts
                      (OwnedBusiness / OwnerDashboard / BusinessAccess) + service.ts
-                     (BookableService / ServiceInput / ManagedService / ServiceStatus)
+                     (BookableService / ServiceInput / ManagedService / ServiceStatus) +
+                     employee.ts (Employee / BookableEmployee / EmployeeInput /
+                     ManagedEmployee / EmployeeRemovePolicy / employeeDisplayName)
   utils/             digits (شامل parseFaNumber/groupFaNumber)، datetime، duration،
                      delay، errors (ServiceError + conflict)،
-                     validation.ts (قواعد مشترک فرم/سرویس: validateServiceForm)
+                     validation.ts (قواعد مشترک فرم/سرویس: validateServiceForm،
+                     validateEmployeeForm/employeeInputError — یک قاعده برای
+                     فرم و برای دفاع دوم در لایهٔ سرویس)
 docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 ```
 
@@ -197,6 +217,7 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 | نشان‌شده‌ها + پروفایل ویرایش‌شده | `wq_user_data` → `Record<userId, {favorites, profile}>` | کوکی | ۳۶۵ روز |
 | کسب‌وکارِ زمینهٔ مدیر | `wq_owner_business` → `Record<userId, businessId>` | کوکی | ۳۶۵ روز |
 | سرویس‌های کسب‌وکار (delta فاز ۹) | `wq_business_services` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
+| پرسنل کسب‌وکار (delta فاز ۱۰) | `wq_business_employees` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
 | ترجیح تم | `wq-color-mode` | `localStorage` | همیشگی |
 | تاریخچهٔ مشاهده / پیش‌نویس رزرو | `useState` | حافظهٔ همین بار اجرا | تا پایان نشست مرورگر |
 
@@ -213,6 +234,12 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
   حساب نباید دادهٔ یک کسب‌وکار را نابود کند. با این حال *کش* فهرست
   (`owner:services:*`) در پلاگین دامنهٔ کاربر reset می‌شود تا دادهٔ حساب قبلی
   روی حساب تازه نچسبد.
+- پرسنل هم **به کسب‌وکار** قید می‌شود (`wq_business_employees`)، چون «پرسنلِ
+  کدام کسب‌وکار است» مالکیت داده را تعریف می‌کند. سوییچ/خروج حساب فقط *کش*
+  `owner:employees:*` را بازنشانی می‌کند (`useBusinessEmployeesCache().reset()`)
+  تا دادهٔ حساب قبلی به حساب تازه نچسبد؛ خودِ کوکی دست‌نخورده می‌ماند.
+  `removed` در این دامنه گورِ **نام** است: نوبتی که دیروز به «امید کاظمی» بوده،
+  فردا هم با همان نام خوانده می‌شود، حتی اگر رکورد پرسنل حذف شده باشد.
 - نوشتن روی delta، نه کپی کل فهرست: سقف کوکی ~۴KB است و کپی‌کردن ۸ سرویس
   آن را می‌شکست (کوکیِ بزرگ بی‌صدا دور ریخته می‌شود = گم‌شدن دادهٔ کاربر).
   `removed` هم گورِ سرویس است، نه فقط حذف: تاریخچهٔ نوبت باید بگوید آن نوبت
@@ -387,7 +414,123 @@ toast/nav را بدون try/catch بنویسد؛ `message` همان پیام ف�
 (`field: 'service'`) رد می‌کند. deep link به سرویس غیرفعال هم از همین مسیر
 می‌گذرد — پس «رزرو روی چیزی که نیست» ممکن نیست، نه اینکه خطای عجیب بدهد.
 
-## ۱۱. آنچه عمداً ساخته نشده (مقید به فاز ۰)
+## ۱۱. پرسنل: یک رابطه، دو نما (فاز ۱۰)
+
+«پرسنل» و «کاربر» دو موجودیت‌اند. این جداسازی، کل معماری این فاز را تعیین می‌کند:
+اگر پرسنل زیرمجموعهٔ حساب کاربری ساخته می‌شد، هر کسب‌وکاری که می‌خواست یک
+همکارِ بدون‌حساب را ثبت کند، مجبور به «دعوت» می‌شد — و دعوت، یعنی یک جریان
+احراز هویت نیمه‌کاره. پس:
+
+```
+app/pages/owner/business/[businessId]/employees/**    فهرست · افزودن · جزئیات · ویرایش
+   ↓
+useBusinessEmployees(businessId)   کش per-businessId + نوشتن + sync + باطل‌کردن داشبورد
+useEmployeeActions(businessId)     toggle وضعیت / حذف با سیاست و دیالوگ (مشترک فهرست و جزئیات)
+useEmployeeForm({mode,…})          فرم مشترک ساخت/ویرایش + dirty + validate + submit
+useEmployeeAssignment(businessId, employeeId)  شیت اختصاص سرویس (dirty، save، معلق‌ها)
+useEmployeeServiceOptions(businessId)           سازندهٔ ردیف‌ها — یک قاعده برای سه سطح
+   ↓
+EmployeeManagementService          list/get/create/update/setStatus/assignServices/remove
+MockEmployeeManagementService      مالکیت، رابطه، دفاع دومِ اعتبارسنجی، سیاست حذف، گور نام
+   ↓
+app/services/mocks/employee-state.ts   تنها نقطهٔ خواندن/نوشتن (کوکی delta)
+```
+
+### مدل: دو جزء نام، یک رابطه، یک وضعیت
+
+- `Employee = { id, businessId, userId?, firstName, lastName, title?, phone?,
+  avatarUrl?, status, serviceIds, createdAt?, updatedAt? }`. هیچ فیلد
+  منابع‌انسانی (کدملی، قرارداد، سابقه، ایمیل) عمداً اضافه نشده — فاز «مدیریت
+  پرسنل» است، نه HR.
+- `displayName` ذخیره نمی‌شود؛ `employeeDisplayName()` از `firstName`/`lastName`
+  ساخته می‌شود. دو منبع برای یک نام = اختلاف تضمینی.
+- `userId` **اختیاری** است و هیچوقت معنی «حساب این پرسنل» را به UI القاء نمی‌کند؛
+  `phone` هم فقط یک راه تماس است (اختیاری، نرمال‌شده به رقم ASCII) و در
+  «اتصال حساب» نقشی ندارد.
+- `serviceIds` روی رکورد پرسنل است و **تنها** منبع رابطه. نمای سرویس
+  (`BookableService.employeeIds`) در `MockBusinessService.listServices` از
+  `assignedEmployeeIds(businessId, serviceId)` مشتق می‌شود. رابطهٔ دوطرفهٔ
+  ذخیره‌شده یعنی دو واقعیت که هر لحظه می‌توانند جدا شوند؛ یک‌طرفه با مشتق،
+  «اختصاص بدهم و گام انتخاب پرسنل همان لحظه عوض شود» را رایگان می‌کند.
+
+### وضعیت: چرخهٔ حیات، نه حذف
+
+`status: 'active' | 'inactive'` و همهٔ معنی‌اش در `app/config/employee-status.ts`
+(برچسب فارسی، رنگ/آیکون معنایی، توضیح پیامد، `bookable`، مقصد و متن سوییچ).
+هیچ کامپوننتی شرط `status === 'active'` را با برچسب دست‌ساز تکرار نمی‌کند؛
+`OwnerEmployeeStatusBadge` همان mapping را می‌زند. دو قانونِ رفتاری:
+
+- **غیرفعال ≠ حذف**: از انتخاب پرسنلِ رزرو بیرون می‌رود (فیلتر در لایهٔ سرویس،
+  نه در UI)، در فهرست مدیر و در تاریخچه می‌ماند، و `serviceIds` ش پاک نمی‌شود —
+  فعال‌کردن دوباره چیزی برای بازاختصاص نگذاشته باشد.
+- وضعیت ناشناخته از بک‌اند UI را نمی‌شکند: `employeeStatusMeta('…')` حالت خنثی
+  «نامشخص» با `toggle: null` می‌دهد، پس «سوییچ» روی چیزی که نمی‌شناسیم نمایش داده
+  نمی‌شود.
+
+### انزوای چندکسب‌وکاری و مالکیت
+
+فهرست/جزئیات/ویرایش همیشه از `businessId` زمینه خوانده می‌شوند و هر عمل نوشتن،
+`businessId` + `employeeId` می‌گیرد؛ «نیست» و «مال این کسب‌وکار نیست» هر دو یک
+`NOT_FOUND` می‌گیرند تا وجود یک رکورد به مدیر دیگری لو نرود. کش store به
+`businessId` کلید می‌خورد (`owner:employees:{data,…}`)، پس سوییچ A⇄B هیچ ردیفی
+از A در B نشان نمی‌دهد و در میانهٔ سوییچ اسکلت است نه دادهٔ قبلی.
+
+### حذف: سیاست، نه سلیقهٔ UI
+
+`app/config/employee-policy.ts` چهار پیچِ قابل‌تنظیم دارد (`blockWhenLiveBookings`،
+`allowWhenHistoryOnly`، `blockWhenAccountLinked`، `minAgeDaysBeforeRemove`) و
+نتیجه در خود داده (`ManagedEmployee.removePolicy = { canRemove, blocker, hint }`)
+می‌آید؛ UI فقط اجرا می‌کند. دیالوگ حذف در حالت بلوکه «غیرفعال‌کردن» را پیشنهاد
+می‌دهد — بن‌بست نداریم. `MockEmployeeManagementService.remove` سیاست را **دوباره**
+بررسی می‌کند، تا فهرست کهنه نتواند کسی را که همین حالا نوبت پیش‌رو گرفته حذف کند.
+«سرویسِ بدون پرسنل می‌ماند» هم فقط هشدار اطلاعاتی است (`orphanedServiceNames`)،
+نه بلوک: رزرو بدون پرسنل در مدل کسب‌وکار مجاز است.
+
+### تاریخچه در برابر تغییرات امروز
+
+`Booking.employeeId` همراه `employeeSnapshot: { name }` نوشته می‌شود؛ هر خواندن
+تاریخچه (`getEmployeeForHistory`، `OwnerService.toItem`) اول اسنپ‌شات، بعد رکورد
+زنده، و در آخر گورِ `employee-state` را می‌خواند. نتیجه: تغییر نام، غیرفعال‌شدن
+یا حذف پرسنل، هیچ نوبت ثبت‌شده‌ای را باطل یا بی‌نام نمی‌کند — و رزروهای قدیمی‌تر
+که اسنپ‌شات ندارند، از رکورد زنده/گور حل می‌شوند (برچسب صادقانهٔ «پرسنل
+حذف‌شده» وقتی هیچ‌کدام نیست).
+
+### draft رزرو در برابر پرسنل غیرفعال یا بی‌رابطه
+
+دو لایهٔ دفاع، همان الگوی فاز ۹: (۱) `useBookingFlow` فقط
+`status === 'active' && serviceIds.includes(serviceId)` را فهرست می‌کند و با
+تغییر سرویس، پرسنلِ بی‌ربط را از پیش‌نویس بیرون می‌کشد؛ (۲)
+`MockBookingService.validateDraft` در بررسی نهایی هر سه را دوباره می‌سنجد
+(`employee` با پیام‌های «دیگر برای رزرو تازه فعال نیست» / «این سرویس را انجام
+نمی‌دهد؛ یا پرسنل دیگری را انتخاب کنید یا بدون انتخاب پرسنل ادامه دهید»). صفحهٔ
+`/booking` خطای `field: 'employee'` را به همان گام برمی‌گرداند: انتخاب پاک،
+یادداشت بالای فهرست، و گام «پرسنل» (یا «تاریخ» اگر آن سرویس دیگر پرسنلی ندارد).
+پیش‌نویس کهنه پس از فعال‌سازی دوباره بی‌دلیل رد نمی‌شود — `validateDraft`
+بازخوانی می‌کند، نه قفلشدن.
+
+### اتصال حساب: آماده، ساخته‌نشده
+
+فاز ۱۰ فقط **می‌خواند**: `ManagedEmployee.linkedAccount = { state, accountActive }`
+اطلاعات خنثی است («این نفر حساب وقتینو دارد/ندارد») و به هیچ دعوت‌نامه، کد،
+«ارسال دوباره» یا وضعیت «در انتظار» ترجمه نمی‌شود. مسیر نوشتنِ آینده عمداً
+تعریف‌نشده مانده تا با بک‌اند هم‌قرارداد شود؛ شکل پیشنهادی، دو متد جدا روی همان
+قرارداد است:
+
+```
+linkEmployeeToUser(businessId, employeeId, userId)   // اتصال، با تأیید مالکیت هر دو سو
+unlinkEmployeeFromUser(businessId, employeeId)       // قطع اتصال؛ رکورد پرسنل می‌ماند
+```
+
+چرا *دو* متد و نه یک فیلد اختیاری در `EmployeeInput`؟ چون اتصال، یک تصمیم
+امنیتیِ جداست (باید هر دو طرف را بررسی کند و در آینده با رمز یک‌بارمصرف یا
+تأیید صاحب حساب همراه شود) و نباید در «ویرایش نام» پنهان شود. در عوض ساختار
+داده از امروز آماده است: رابطهٔ پرسنل↔کسب‌وکار per-business است، پس یک User
+می‌تواند هم‌زمان مشتری باشد، مدیر کسب‌وکار A، و پرسنل کسب‌وکارهای B و C — بدون
+هیچ قید یکتایی سراسری روی `userId`. فاز ۱۱ (دسترس‌پذیری) و «حالت کارمند» هم از
+همان `Employee.id` به‌عنوان کلید زمینه استفاده می‌کنند؛ هیچ مهاجرت داده‌ای
+لازم نیست.
+
+## ۱۲. آنچه عمداً ساخته نشده (مقید به فاز ۰)
 
 - صفحات واقعی مشتری/کسب‌وکار/کارمند، جریان رزرو، چت، اعلان‌ها.
 - پنل ادمین (خارج از اسکوپ کل پروژه).
@@ -402,8 +545,20 @@ toast/nav را بدون try/catch بنویسد؛ `message` همان پیام ف�
 - (فاز ۹) «موتور وابستگی» که محاسبه کند با حذف یک سرویس چه چیزی می‌سوزد —
   سیاست حذف عمداً چند پیچِ قابل‌تنظیم در `app/config/service-policy.ts` است تا
   پاسخ را بک‌اند بدهد، نه اینکه front-end گراف حل کند.
-- (فاز ۹) مدیریت پرسنل، تخصیص سرویس به پرسنل و دسترس‌پذیری؛ `employeeIds` روی
-  مدل سرویس دست‌نخورده ماند تا فاز کارمندان همان رابطه را پر کند.
+- (فاز ۱۰) **هر نوع اتصال حساب به پرسنل**: نه دعوت‌نامه، نه رمز یک‌بارمصرف، نه
+  `linkEmployeeToUser`/`unlink` — فقط خواندنِ `linkedAccount` به‌عنوان اطلاعات
+  خنثی. دلیل: اتصال، قرارداد بک‌اند می‌خواهد و ساختن «دکمهٔ دعوت»ی که کاری
+  نمی‌کند، همان «قابلیت شکستهٔ جعلی» است که ممنوع کرده‌ایم.
+- (فاز ۱۰) **دسترس‌پذیری و ساعت کاری پرسنل** (فاز ۱۱) و **حالت کارمند/Employee
+  Mode**: `/employee*` عمداً همان `AppPlaceholderPage`ها می‌ماند. فاز ۱۰ فقط
+  زمینه را آماده می‌کند: `Employee` با کلید per-business، وضعیت و رابطه روی یک
+  رکورد، و `useBusinessEmployees` که همان منبع را می‌خواند.
+- (فاز ۱۰) **هر نوشتن روی دادهٔ مشترک مشتری**: نمای مشتریِ پرسنل
+  (`BookableEmployee`) فقط‌خواندنی است و شمارهٔ تماس/شناسهٔ حساب را هرگز نمی‌برد؛
+  سناریوهای «ویرایش پرسنل از اپ مشتری» عمداً وجود ندارد.
+- (فاز ۹) دسترس‌پذیری: `employeeIds` روی مدل سرویس در فاز ۹ فقط *نمای مشتق* شد
+  (منبع رابطه به `Employee.serviceIds` منتقل شد) و تقویم/ظرفیت واقعی به فاز ۱۱
+  موکول است.
 - (فاز ۸) هر نوع **نوشتن** در فضای کاری: ثبت/ویرایش کسب‌وکار، CRUD سرویس و
   پرسنل، پیکربندی دسترس‌پذیری، مدیریت کامل نوبت‌ها (تأیید/لغو/جابه‌جایی)،
   مدیریت مشتریان، تحلیل و نمودار، پرداخت، چت، حالت کارمند، و هر نوع ادمین.

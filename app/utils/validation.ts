@@ -221,3 +221,111 @@ export function serviceInputError(input: ServiceInput): string | null {
   }
   return null
 }
+
+// ─────────────────────────── پرسنل کسب‌وکار (فاز ۱۰) ───────────────────────────
+
+export const EMPLOYEE_TITLE_MAX = 40
+/** عنوان شغلی هم مثل نام سرویس: رقم و پرانتز دارد («متخصص ۲ (عمومی)»). */
+const EMPLOYEE_TITLE_ALLOWED_RE = /^[\p{L}\p{M}\p{N}\s\u200c().,/+-]+$/u
+
+export interface EmployeeFormInput {
+  firstName: string
+  lastName: string
+  title: string
+  /** رشتهٔ خام ورودی (ارقام فارسی هم می‌آید) — نرمال‌سازی با normalizeDigits */
+  phone: string
+  avatarUrl: string | null
+  status: EmployeeStatus
+  serviceIds: EntityId[]
+}
+
+export type EmployeeFormErrors = Partial<
+  Record<'firstName' | 'lastName' | 'title' | 'phone' | 'status', string>
+>
+
+export function validateEmployeeTitle(value: string): string | null {
+  const trimmed = normalizeName(value)
+  if (trimmed.length === 0) return null
+  if ([...trimmed].length > EMPLOYEE_TITLE_MAX) {
+    return `عنوان شغلی نباید بیشتر از ${toFaDigits(EMPLOYEE_TITLE_MAX)} حرف باشد.`
+  }
+  if (!EMPLOYEE_TITLE_ALLOWED_RE.test(trimmed)) {
+    return 'عنوان شغلی فقط می‌تواند حرف، عدد یا نشانه‌های ( ) / - باشد.'
+  }
+  return null
+}
+
+/**
+ * شمارهٔ موبایل *اختیاری* است و هیچوقت معنی «حساب کاربری» نمی‌دهد: پرسنل می‌تواند
+ * شماره داشته باشد و حساب وقتینو نداشته باشد (و برعکس). ورودی آزاد است تا پیام
+ * «نقص عدد» و «شمارهٔ ایران نیست» جدا بمانند.
+ */
+export function validateEmployeePhone(value: string): string | null {
+  const digits = normalizeDigits(value ?? '').replace(/\D/g, '')
+  if (digits.length === 0) return null
+  if (isValidIranianMobile(digits)) return null
+  return 'شمارهٔ موبایل باید ۱۱ رقم و با ۰۹ شروع شود؛ مثل ۰۹۱۲۳۴۵۶۷۸۹.'
+}
+
+/** اعتبارسنجی کامل فرم پرسنل + ساخت ورودی نرمال‌شدهٔ ذخیره‌سازی. */
+export function validateEmployeeForm(input: EmployeeFormInput): {
+  valid: boolean
+  errors: EmployeeFormErrors
+  /** وقتی `valid` است، مقدار آمادهٔ ذخیره (متن‌ها trim، شمارهٔ ASCII، سرویس‌ها یکتا) */
+  value: EmployeeInput | null
+} {
+  const errors: EmployeeFormErrors = {}
+  const firstName = validateNamePart(input.firstName, 'نام')
+  if (firstName) errors.firstName = firstName
+  const lastName = validateNamePart(input.lastName, 'نام خانوادگی')
+  if (lastName) errors.lastName = lastName
+  const title = validateEmployeeTitle(input.title)
+  if (title) errors.title = title
+  const phone = validateEmployeePhone(input.phone)
+  if (phone) errors.phone = phone
+  if (input.status !== 'active' && input.status !== 'inactive') {
+    errors.status = 'وضعیت پرسنل را انتخاب کنید.'
+  }
+  const valid = Object.keys(errors).length === 0
+  if (!valid) return { valid: false, errors, value: null }
+
+  const digits = normalizeDigits(input.phone ?? '').replace(/\D/g, '')
+  const serviceIds = [...new Set(input.serviceIds)]
+  return {
+    valid: true,
+    errors: {},
+    value: {
+      firstName: normalizeName(input.firstName),
+      lastName: normalizeName(input.lastName),
+      title: normalizeName(input.title),
+      phone: digits || '',
+      avatarUrl: input.avatarUrl?.trim() ? input.avatarUrl.trim() : null,
+      status: input.status,
+      serviceIds
+    }
+  }
+}
+
+/**
+ * دفاع دوم: همان قاعده‌ها روی مقدار نرمال‌شده — لایهٔ سرویس (آینهٔ اعتبارسنجی
+ * سرور) قبل از نوشتن صدا می‌زند تا یک کلاینت بد، دادهٔ نامعتبر نسازد.
+ * «سرویس‌ها باید مال همین کسب‌وکار باشند» اینجا بررسی نمی‌شود؛ آن رابطه را فقط
+ * مخزن می‌داند و در `MockEmployeeManagementService` بررسی می‌شود.
+ */
+export function employeeInputError(input: EmployeeInput): string | null {
+  const firstName = validateNamePart(input.firstName, 'نام')
+  if (firstName) return firstName
+  const lastName = validateNamePart(input.lastName, 'نام خانوادگی')
+  if (lastName) return lastName
+  const title = validateEmployeeTitle(input.title ?? '')
+  if (title) return title
+  const phone = validateEmployeePhone(input.phone ?? '')
+  if (phone) return phone
+  if (input.status !== 'active' && input.status !== 'inactive') {
+    return 'وضعیت پرسنل نامعتبر است.'
+  }
+  if (!Array.isArray(input.serviceIds) || input.serviceIds.some(id => typeof id !== 'string' || id.length === 0)) {
+    return 'فهرست سرویس‌های اختصاص‌یافته نامعتبر است.'
+  }
+  return null
+}

@@ -22,23 +22,28 @@ export function useCustomerBookings() {
     // نام/مدت از «تاریخچهٔ خود رزرو» خوانده می‌شود (اسنپ‌شات، وگرنه سرویس زنده یا
     // گورِ سرویس) — نه از فهرست قابل‌رزرو؛ وگرنه غیرفعال‌کردن یک سرویس، رزروهای
     // قبلی مشتری را بی‌نام می‌کرد.
-    const [business, employees, categories, history] = await Promise.all([
+    const [business, categories, history, employeeHistory] = await Promise.all([
       services.businesses.getById(booking.businessId),
-      services.businesses.listEmployees(booking.businessId),
       services.businesses.listCategories(),
       booking.serviceSnapshot
         ? Promise.resolve(booking.serviceSnapshot)
-        : services.businesses.getServiceForHistory(booking.serviceId)
+        : services.businesses.getServiceForHistory(booking.serviceId),
+      // نام پرسنل هم «تاریخچه» است، نه فهرست قابل‌رزرو: غیرفعال یا حذف‌شدن او
+      // از سمت مدیر، نباید نوبت ثبت‌شدهٔ مشتری را بی‌نام کند (فاز ۱۰).
+      booking.employeeId
+        ? (booking.employeeSnapshot ?? services.businesses.getEmployeeForHistory(booking.employeeId))
+        : Promise.resolve(null)
     ])
 
-    const employee = booking.employeeId ? employees.find(e => e.id === booking.employeeId) : null
     const category = business ? categories.find(c => c.id === business.categoryId) : null
 
     return {
       ...booking,
       businessName: business?.name ?? 'کسب‌وکار نامشخص',
       serviceName: history?.name ?? 'سرویس حذف‌شده',
-      employeeName: employee?.name,
+      employeeName: booking.employeeId
+        ? (employeeHistory?.name ?? 'پرسنل حذف‌شده')
+        : undefined,
       businessCategoryName: category?.name,
       // مدت: اسنپ‌شات، وگرنه بازهٔ خود رزرو (هیچ‌وقت عدد ساختگی نه)
       serviceDuration: history?.durationMinutes

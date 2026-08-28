@@ -3,12 +3,10 @@ import type { OwnedBusiness, OwnerBookingItem, OwnerBusinessMetrics, OwnerDashbo
 import type { Business, BusinessCategory } from '~/types/business'
 import type { EntityId } from '~/types/common'
 import type { AuthService } from '~/services/auth/auth-service'
-import {
-  MOCK_BUSINESSES,
-  MOCK_CATEGORIES,
-  MOCK_EMPLOYEES
-} from '~/services/mocks/businesses'
+import { MOCK_BUSINESSES, MOCK_CATEGORIES } from '~/services/mocks/businesses'
 import { resolveBookingServiceSnapshot, resolveBusinessServices } from '~/services/mocks/service-state'
+import { resolveBusinessEmployees, resolveBookingEmployeeSnapshot, resolveEmployee } from '~/services/mocks/employee-state'
+import { employeeDisplayName } from '~/types/employee'
 import { allMockBookings } from '~/services/mocks/bookings'
 import { mockCustomerName } from '~/services/mocks/customers'
 import { ServiceError } from '~/utils/errors'
@@ -78,7 +76,8 @@ export class MockOwnerService implements OwnerService {
       pendingCount: upcoming.filter(b => b.status === 'pending').length,
       // همان منبع‌واحد‌حقیقت فاز ۹: شماری که بعد از ساخت/غیرفعال‌کردن سرویس درست می‌ماند
       serviceCount: resolveBusinessServices(businessId).filter(s => s.status === 'active').length,
-      employeeCount: MOCK_EMPLOYEES.filter(e => e.businessId === businessId && e.isActive).length
+      // همان منبع فاز ۱۰: با غیرفعال/حذف‌کردن پرسنل، شمارش داشبورد هم درست می‌ماند
+      employeeCount: resolveBusinessEmployees(businessId).filter(e => e.status === 'active').length
     }
   }
 
@@ -93,9 +92,8 @@ export class MockOwnerService implements OwnerService {
   private toItem(booking: Booking): OwnerBookingItem {
     // تاریخچه با اسنپ‌شات خودش خوانده می‌شود؛ تغییر نام یا حذف سرویس، رزرو قبلی را خراب نمی‌کند
     const snapshot = resolveBookingServiceSnapshot(booking)
-    const employee = booking.employeeId
-      ? MOCK_EMPLOYEES.find(e => e.id === booking.employeeId)
-      : undefined
+    // نام پرسنل هم مثل سرویس: اول اسنپ‌شاتِ خود رزرو، بعد رکورد زنده/گور
+    const employee = booking.employeeId ? resolveEmployee(booking.employeeId) : undefined
     return {
       id: booking.id,
       start: booking.start,
@@ -103,7 +101,12 @@ export class MockOwnerService implements OwnerService {
       status: booking.status,
       customerName: mockCustomerName(booking.customerId),
       serviceName: snapshot?.name ?? 'سرویس حذف‌شده',
-      employeeName: employee?.name ?? null,
+      // سه حالت: بدون پرسنل تخصیصی (null)، پرسنلِ قابل‌حل، یا رکوردی که دیگر
+      // هیچ‌جا نیست (حذف پیش از این فاز) — آن‌جا برچسب صادقانه، نه خطای فنی.
+      employeeName: !booking.employeeId
+        ? null
+        : (resolveBookingEmployeeSnapshot(booking)?.name
+            ?? (employee ? employeeDisplayName(employee) : 'پرسنل حذف‌شده')),
       price: booking.price,
       notes: booking.notes
     }

@@ -19,6 +19,7 @@ const {
   currentStep,
   warnings,
   staleServiceNotice,
+  staleEmployeeNotice,
   loadingBusiness,
   loadingSlots,
   loadingDates,
@@ -32,6 +33,7 @@ const {
   currentEmployee,
   employeeOptional,
   eligibleEmployees,
+  requiresEmployee,
   isDraftComplete,
   noSlotsAvailable,
   initDraft,
@@ -94,6 +96,25 @@ async function submitBooking() {
     if (!validation.valid) {
       const errorMsg = validation.errors[0]?.message ?? 'خطا در اعتبارسنجی رزرو.'
       toast.error(errorMsg)
+
+      // رابطهٔ سرویس/پرسنل در لایهٔ سرویس سنجیده می‌شود (دفاع دوم). اگر همان‌جا
+      // رد شدیم، کاربر را به همان گامِ تصمیم می‌بریم و توضیح را همان‌جا نشان
+      // می‌دهیم — نه فقط یک toast که محو می‌شود.
+      const firstError = validation.errors[0]
+      if (firstError?.field === 'service') {
+        staleServiceNotice.value = firstError.message
+        draft.value.employeeId = undefined
+        draft.value.timeSlot = null
+        currentStep.value = 'service'
+        return
+      }
+      if (firstError?.field === 'employee') {
+        staleEmployeeNotice.value = firstError.message
+        draft.value.employeeId = undefined
+        draft.value.timeSlot = null
+        currentStep.value = requiresEmployee.value ? 'employee' : 'date'
+        return
+      }
 
       // If slot unavailable, go back to time selection
       if (validation.errors[0]?.field === 'timeSlot') {
@@ -265,6 +286,14 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
         <!-- Step 2: Employee -->
         <div v-if="currentStep === 'employee'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب متخصص</h2>
+          <div
+            v-if="staleEmployeeNotice"
+            class="mb-4 flex items-start gap-2 rounded-xl border border-warning-border bg-warning-soft p-3"
+            role="status"
+          >
+            <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0 text-warning" />
+            <p class="t-body-sm text-foreground">{{ staleEmployeeNotice }}</p>
+          </div>
           <BookingEmployeeSelect
             :employees="eligibleEmployees"
             :selected-id="draft.employeeId"

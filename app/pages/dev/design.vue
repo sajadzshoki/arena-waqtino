@@ -134,11 +134,17 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
 const resetting = ref(false)
 const management = services.serviceManagement
 
-async function resetServices(): Promise<void> {
+const assignments = services.employeeManagement
+
+/**
+ * دو domain، دو delta مستقل — پس هر دو پاک می‌شوند تا «دموی کاملِ فاز ۹ و ۱۰»
+ * یکجا از اول شروع شود؛ هیچ‌کدام دیگری را پاک نمی‌کند.
+ */
+async function resetLocalData(): Promise<void> {
   resetting.value = true
   try {
-    await management.resetLocalChanges()
-    toast.success('دادهٔ سرویس‌ها به حالت پایه برگشت.')
+    await Promise.all([management.resetLocalChanges(), assignments.resetLocalChanges()])
+    toast.success('دادهٔ سرویس‌ها و پرسنل به حالت پایه برگشت.')
   }
   catch (e) {
     toast.error(toServiceError(e).message)
@@ -457,9 +463,10 @@ async function resetServices(): Promise<void> {
           <USwitch v-model="mockFlags.forceEmpty.value" color="primary" />
         </div>
         <p class="t-caption text-foreground-tertiary">
-          این دو کلید صفحه‌های کشف و رزرو را می‌گیرند (جست‌وجو، پروفایل
-          کسب‌وکار، فرآیند رزرو). فهرست سرویس‌های مدیر عمداً از همان دادهٔ پایه
-          می‌خواند — وگرنه با «پاسخ خالی» روشن، سناریوهای فاز ۹ ساخته نمی‌شدند.
+          «خطای شبکه» همه‌جا پیام خطا می‌سازد و «پاسخ خالی» فهرست‌ها را خالی
+          می‌کند — از جمله فهرست سرویس‌ها و پرسنل مدیر. برای دیدن «هنوز
+          سرویسی/پرسنلی ندارم» با دادهٔ واقعی‌تر، کسب‌وکار آینه (صفر سرویس، صفر
+          پرسنل) را انتخاب کنید.
         </p>
         <div class="flex items-start justify-between gap-3">
           <span class="min-w-0">
@@ -474,14 +481,15 @@ async function resetServices(): Promise<void> {
         <USeparator />
         <div class="flex items-start justify-between gap-3">
           <span class="min-w-0">
-            <span class="t-label block">بازنشانی تغییرات محلی سرویس‌ها</span>
+            <span class="t-label block">بازنشانی تغییرات محلی سرویس‌ها و پرسنل</span>
             <span class="t-caption block">
-              هر چه در فاز ۹ ساخته/ویرایش/غیرفعال/حذف شده در کوکی
-              «wq_business_services» می‌نشیند؛ این دکمه همان delta را پاک می‌کند
-              تا دادهٔ پایه برگردد و دمو از اول قابل تکرار باشد.
+              هر چه در فاز ۹ و ۱۰ ساخته/ویرایش/اختصاص/غیرفعال/حذف شده در کوکی‌های
+              «wq_business_services» و «wq_business_employees» می‌نشیند؛ این دکمه
+              همان deltaها را پاک می‌کند تا دادهٔ پایه برگردد و دمو از اول قابل
+              تکرار باشد.
             </span>
           </span>
-          <WqButton size="md" variant="tertiary" :loading="resetting" @click="resetServices">
+          <WqButton size="md" variant="tertiary" :loading="resetting" @click="resetLocalData">
             بازنشانی
           </WqButton>
         </div>

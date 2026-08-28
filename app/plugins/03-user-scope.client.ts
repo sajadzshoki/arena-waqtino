@@ -5,7 +5,8 @@
  *   ورود / بازگشایی برنامه  → گرم‌کردن state نشان‌شده‌ها و کسب‌وکارهای مدیر
  *   خروج / تغییر حساب      → پاک‌شدن state گذرای کاربر (نشان‌شده‌ها،
  *                             پروفایل، تاریخچهٔ مشاهده، پیش‌نویس رزرو،
- *                             زمینهٔ کسب‌وکار، کش داشبوردها و کش سرویس‌ها)
+ *                             زمینهٔ کسب‌وکار، کش داشبوردها، کش سرویس‌ها و
+ *                             کش پرسنل)
  *
  * چرا این‌جا؟ چون «فراموش‌کردن» دادهٔ حساب قبلی یک قاعدهٔ معماری است، نه
  * سلیقهٔ یک صفحه؛ با یک نقطه، هر ورود/خروج/سوییچ حسابی پوشش داده می‌شود.
@@ -21,6 +22,7 @@ export default defineNuxtPlugin(() => {
   const context = useBusinessContext()
   const { reset: resetDashboards } = useOwnerDashboardCache()
   const { reset: resetServices } = useBusinessServicesCache()
+  const { reset: resetEmployees } = useBusinessEmployeesCache()
   const { clearHistory } = useRecentlyViewed()
   const { clearDraft } = useBookingFlow()
 
@@ -33,6 +35,7 @@ export default defineNuxtPlugin(() => {
     context.reset()
     resetDashboards()
     resetServices()
+    resetEmployees()
     clearHistory()
     clearDraft()
   }

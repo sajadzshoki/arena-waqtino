@@ -32,10 +32,9 @@ onMounted(async () => {
     booking.value = bok
 
     // Load related data
-    const [biz, bizCategories, bizEmployees] = await Promise.all([
+    const [biz, bizCategories] = await Promise.all([
       services.businesses.getById(bok.businessId),
-      services.businesses.listCategories(),
-      bok.employeeId ? services.businesses.listEmployees(bok.businessId) : Promise.resolve([])
+      services.businesses.listCategories()
     ])
 
     businessName.value = biz?.name ?? ''
@@ -49,9 +48,12 @@ onMounted(async () => {
     const history = bok.serviceSnapshot ?? await services.businesses.getServiceForHistory(bok.serviceId)
     serviceName.value = history?.name ?? 'سرویس حذف‌شده'
 
+    // نام پرسنل هم از تاریخچهٔ خود رزرو (اسنپ‌شات، وگرنه رکورد تاریخچه/گور) —
+    // تغییر نام، غیرفعال‌کردن یا حذف او از کسب‌وکار نباید رسیدِ مشتری را خراب کند.
     if (bok.employeeId) {
-      const emp = bizEmployees.find(e => e.id === bok.employeeId)
-      employeeName.value = emp?.name ?? ''
+      const employeeHistory = bok.employeeSnapshot
+        ?? await services.businesses.getEmployeeForHistory(bok.employeeId)
+      employeeName.value = employeeHistory?.name ?? 'پرسنل حذف‌شده'
     }
   }
   catch (err) {

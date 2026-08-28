@@ -261,127 +261,188 @@ export const MOCK_BUSINESSES: Business[] = [
 ]
 
 export const MOCK_EMPLOYEES: Employee[] = [
+  // مدل فاز ۱۰: نام در دو جزء نگه داشته می‌شود (نام نمایشی مشتق‌شده است)، رابطهٔ
+  // سرویس‌ها *این‌جا* ذخیره می‌شود (`serviceIds`)، و `userId` اختیاری است —
+  // پرسنل می‌تواند حساب وقتینو نداشته باشد. `phone` هم هیچوقت معنی حساب نیست.
   {
     id: 'emp_sara_pars',
     businessId: 'biz_pars',
     userId: 'usr_dev_sara',
-    name: 'سارا محمدی',
+    firstName: 'سارا',
+    lastName: 'محمدی',
     title: 'هماهنگ‌کنندهٔ نوبت‌ها و پذیرش',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: [],
   },
   {
     id: 'emp_elham_pars',
     businessId: 'biz_pars',
     userId: 'usr_dev_elham',
-    name: 'الهه احمدی',
+    firstName: 'الهه',
+    lastName: 'احمدی',
     title: 'منشی و هماهنگ‌کنندهٔ نوبت‌ها',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: [],
   },
   {
     id: 'emp_dr_ranjbar',
     businessId: 'biz_pars',
-    name: 'دکتر کیان رنجبر',
+    firstName: 'دکتر کیان',
+    lastName: 'رنجبر',
     title: 'متخصص ایمپلنت',
+    phone: '09301110022',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_pars_implant'],
   },
   {
     id: 'emp_dr_mirzaei',
     businessId: 'biz_pars',
-    name: 'دکتر فرهاد میرزایی',
+    firstName: 'دکتر فرهاد',
+    lastName: 'میرزایی',
     title: 'متخصص ارتودنسی',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_pars_ortho'],
   },
   {
     id: 'emp_mina_narenj',
     businessId: 'biz_narenj',
-    name: 'مینا رحیمی',
+    firstName: 'مینا',
+    lastName: 'رحیمی',
     title: 'آرایشگر مو و رنگ',
+    phone: '09122223344',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_narenj_color', 'srv_narenj_keratin', 'srv_narenj_haircut'],
   },
   {
     id: 'emp_omid_narenj',
     businessId: 'biz_narenj',
-    name: 'امید کاظمی',
+    firstName: 'امید',
+    lastName: 'کاظمی',
     title: 'متخصص پوست',
+    phone: '09125556677',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_narenj_skin'],
   },
   {
     id: 'emp_nike_narenj',
     businessId: 'biz_narenj',
-    name: 'نیک آهنگ',
+    firstName: 'نیک',
+    lastName: 'آهنگ',
     title: 'میکاپ آرتیست عروس',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_narenj_bridal'],
   },
   {
     id: 'emp_reza_energy',
     businessId: 'biz_energy',
-    name: 'رضا کریمی',
+    userId: 'usr_dev_bahram',
+    firstName: 'رضا',
+    lastName: 'کریمی',
     title: 'مربی بدن‌سازی',
+    phone: '09351112233',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_energy_personal'],
   },
   {
     id: 'emp_ali_energy',
     businessId: 'biz_energy',
-    name: 'علی حسینی',
+    firstName: 'علی',
+    lastName: 'حسینی',
     title: 'مربی کراس‌فیت',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_energy_crossfit'],
   },
   {
     id: 'emp_maryam_aramesh',
     businessId: 'biz_aramesh',
-    name: 'مریم سلطانی',
+    firstName: 'مریم',
+    lastName: 'سلطانی',
     title: 'روانشناس بالینی',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_aramesh_individual'],
   },
   {
     id: 'emp_hassan_aramesh',
     businessId: 'biz_aramesh',
-    name: 'حسن نوری',
+    firstName: 'حسن',
+    lastName: 'نوری',
     title: 'مشاور خانواده',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_aramesh_couple', 'srv_aramesh_family'],
   },
   {
     id: 'emp_shima_ruyesh',
     businessId: 'biz_ruyesh',
-    name: 'شیما عباسی',
+    firstName: 'شیما',
+    lastName: 'عباسی',
     title: 'مدرس زبان انگلیسی (IELTS)',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_ruyesh_ielts'],
   },
   {
     id: 'emp_amir_noora',
     businessId: 'biz_noora',
-    name: 'امیر جعفری',
+    firstName: 'امیر',
+    lastName: 'جعفری',
     title: 'عکاس پرتره و مدلینگ',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_noora_portrait', 'srv_noora_family'],
   },
   {
     id: 'emp_reza_barber',
     businessId: 'biz_barbershop',
-    name: 'رضا صادقی',
+    firstName: 'رضا',
+    lastName: 'صادقی',
     title: 'آرایشگر ارشد',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_barber_cut', 'srv_barber_vip'],
   },
   {
     id: 'emp_mehdi_barber',
     businessId: 'biz_barbershop',
-    name: 'مهدی قاسمی',
+    firstName: 'مهدی',
+    lastName: 'قاسمی',
     title: 'متخصص اصلاح ریش',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_barber_beard'],
+  },
+  {
+    // سناریوهای فاز ۱۰: «پرسنل بدون سرویس» + «فقط تاریخچه» (حذف مجاز با توضیح)
+    id: 'emp_samin_narenj',
+    businessId: 'biz_narenj',
+    firstName: 'سامین',
+    lastName: 'نویدی',
+    title: 'هماهنگ‌کنندهٔ سالن',
+    avatarUrl: null,
+    status: 'active',
+    serviceIds: [],
+  },
+  {
+    // سناریوی «غیرفعال» + «غیرفعال را می‌شود فعال کرد و به انتخاب رزرو برگردد»
+    id: 'emp_yasmin_narenj',
+    businessId: 'biz_narenj',
+    firstName: 'یاسمین',
+    lastName: 'فروزش',
+    title: 'میکاپ آرتیست',
+    phone: '09387778899',
+    avatarUrl: null,
+    status: 'inactive',
+    serviceIds: ['srv_narenj_bridal'],
   }
 ]
 
@@ -394,7 +455,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'شامل مشاورهٔ رنگ، تست حساسیت و ماسک ترمیمی پایان کار',
     price: 3_200_000,
     durationMinutes: 180,
-    employeeIds: ['emp_mina_narenj'],
     status: 'active'
   },
   {
@@ -404,7 +464,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'کراتینه برزیلی با مواد درجه یک + پروتئین‌تراپی',
     price: 2_450_000,
     durationMinutes: 120,
-    employeeIds: ['emp_mina_narenj'],
     status: 'active'
   },
   {
@@ -414,7 +473,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'پاکسازی عمیق + ماسک مناسب نوع پوست',
     price: 890_000,
     durationMinutes: 60,
-    employeeIds: ['emp_omid_narenj'],
     status: 'active'
   },
   {
@@ -424,7 +482,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'میکاپ حرفه‌ای عروس + تست میکاپ + شینیون مو',
     price: 8_500_000,
     durationMinutes: 240,
-    employeeIds: ['emp_nike_narenj'],
     status: 'active'
   },
   {
@@ -434,7 +491,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'شامل شستشو، کوتاهی و حالت‌دهی',
     price: 450_000,
     durationMinutes: 45,
-    employeeIds: ['emp_mina_narenj'],
     status: 'active'
   },
 
@@ -455,7 +511,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'ارزیابی استخوان فک، بررسی عکس CBCT و ارائهٔ طرح درمان',
     price: 600_000,
     durationMinutes: 45,
-    employeeIds: ['emp_dr_ranjbar'],
     status: 'active'
   },
   {
@@ -483,7 +538,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'بررسی ناهنجاری فک و دندان + طرح درمان ارتودنسی',
     price: 500_000,
     durationMinutes: 30,
-    employeeIds: ['emp_dr_mirzaei'],
     status: 'active'
   },
 
@@ -504,7 +558,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'کلاس ۶۰ دقیقه‌ای کراس‌فیت با مربی رسمی',
     price: 180_000,
     durationMinutes: 60,
-    employeeIds: ['emp_ali_energy'],
     status: 'active'
   },
   {
@@ -514,7 +567,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه تمرین خصوصی با مربی اختصاصی',
     price: 500_000,
     durationMinutes: 60,
-    employeeIds: ['emp_reza_energy'],
     status: 'active'
   },
 
@@ -535,7 +587,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'جلسهٔ اول دورهٔ آمادگی آزمون آیلتس (جلسهٔ آزمایشی)',
     price: 450_000,
     durationMinutes: 90,
-    employeeIds: ['emp_shima_ruyesh'],
     status: 'active'
   },
   {
@@ -556,7 +607,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک ساعت عکاسی پرتره در استودیو + ۱۰ عکس ویرایش‌شده',
     price: 2_200_000,
     durationMinutes: 60,
-    employeeIds: ['emp_amir_noora'],
     status: 'active'
   },
   {
@@ -566,7 +616,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'عکاسی خانوادگی در فضای باز + ۱۵ عکس ویرایش‌شده',
     price: 3_500_000,
     durationMinutes: 90,
-    employeeIds: ['emp_amir_noora'],
     status: 'active'
   },
 
@@ -578,7 +627,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه ۵۰ دقیقه‌ای مشاورهٔ فردی',
     price: 700_000,
     durationMinutes: 50,
-    employeeIds: ['emp_maryam_aramesh'],
     status: 'active'
   },
   {
@@ -588,7 +636,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه ۷۰ دقیقه‌ای مشاورهٔ زوجین',
     price: 1_100_000,
     durationMinutes: 70,
-    employeeIds: ['emp_hassan_aramesh'],
     status: 'active'
   },
   {
@@ -598,7 +645,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه ۶۰ دقیقه‌ای مشاورهٔ خانوادگی',
     price: 900_000,
     durationMinutes: 60,
-    employeeIds: ['emp_hassan_aramesh'],
     status: 'active'
   },
 
@@ -610,7 +656,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'شستشو + کوتاهی مو + حالت‌دهی',
     price: 250_000,
     durationMinutes: 30,
-    employeeIds: ['emp_reza_barber'],
     status: 'active'
   },
   {
@@ -620,7 +665,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'طراحی و اصلاح ریش با تیغ و ماشین',
     price: 150_000,
     durationMinutes: 20,
-    employeeIds: ['emp_mehdi_barber'],
     status: 'active'
   },
   {
@@ -630,7 +674,6 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'اصلاح مو و ریش + ماسک صورت + شستشوی صورت',
     price: 550_000,
     durationMinutes: 75,
-    employeeIds: ['emp_reza_barber'],
     status: 'active'
   },
 

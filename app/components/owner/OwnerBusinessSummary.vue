@@ -22,6 +22,7 @@ const rows = computed(() => {
       props.owned.metrics.employeeCount > 0
         ? `${toFaDigits(props.owned.metrics.employeeCount)} پرسنل فعال`
         : 'هنوز پرسنلی اضافه نشده',
+    employeesHint: 'وضعیت هر نفر و سرویس‌هایی که انجام می‌دهد از همین‌جا مدیریت می‌شود',
     address: `${b.address.district}، ${b.address.city}`,
     since: formatFaDate(b.createdAt),
     statusHint: businessStatusMeta(b.status).hint
@@ -43,10 +44,12 @@ const rows = computed(() => {
       :subtitle="rows.servicesHint"
       :to="`/owner/business/${owned.business.id}/services`"
     />
-    <SettingsInfoRow
+    <SettingsRow
       icon="i-lucide-users"
       title="پرسنل"
       :value="rows.employees"
+      :subtitle="rows.employeesHint"
+      :to="`/owner/business/${owned.business.id}/employees`"
     />
     <SettingsInfoRow
       icon="i-lucide-map-pin"

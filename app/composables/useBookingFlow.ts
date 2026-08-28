@@ -1,7 +1,7 @@
 import type { BookingFlowDraft, BookingStep, DateAvailability } from '~/types/booking-flow'
 import type { EntityId } from '~/types/common'
 import type { BookableService } from '~/types/service'
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
 import type { TimeSlot } from '~/types/availability'
 import type { Business, BusinessCategory } from '~/types/business'
 import { toIsoDate, generateUpcomingDates, isToday, isTomorrow } from '~/utils/datetime'
@@ -43,11 +43,19 @@ export function useBookingFlow() {
    */
   const staleServiceNotice = useState<string | null>('booking:stale-service', () => null)
 
+  /**
+   * حالت دومِ «Draft کهنه» (فاز ۱۰): پرسنلی که انتخاب شده بود دیگر برای این
+   * سرویس قابل رزرو نیست — چون مدیرش غیرفعالش کرده، از این کسب‌وکار حذفش کرده،
+   * یا آن سرویس را از اختصاص‌هایش برداشته است. مثل سرویس: انتخاب پاک می‌شود و
+   * توضیح فارسی همان‌جا نشان داده می‌شود که کاربر تصمیم می‌گیرد.
+   */
+  const staleEmployeeNotice = useState<string | null>('booking:stale-employee', () => null)
+
   // Cached data
   const business = ref<Business | null>(null)
   const category = ref<BusinessCategory | null>(null)
   const businessServices = ref<BookableService[]>([])
-  const employees = ref<Employee[]>([])
+  const employees = ref<BookableEmployee[]>([])
   const availableSlots = ref<TimeSlot[]>([])
   const dateAvailability = ref<DateAvailability[]>([])
 
@@ -93,7 +101,9 @@ export function useBookingFlow() {
       // `listServices` خودش فقط سرویس‌های active را می‌دهد (تصمیم status در لایهٔ
       // سرویس است)؛ اینجا فقط بررسی می‌کنیم انتخاب قبلی هنوز قابل رزرو باشد.
       businessServices.value = svcs
-      employees.value = emps.filter(e => e.isActive)
+      // `listEmployees` خودش فقط پرسنل active را می‌دهد (تصمیم وضعیت در لایهٔ
+      // سرویس است، فاز ۱۰)؛ اینجا فقط رابطه بررسی می‌شود.
+      employees.value = emps
 
       if (draft.value.serviceId && !svcs.some(s => s.id === draft.value.serviceId)) {
         staleServiceNotice.value
@@ -106,6 +116,27 @@ export function useBookingFlow() {
       }
       else {
         staleServiceNotice.value = null
+      }
+
+      // پرسنل انتخابی باید فعال باشد *و* سرویس انتخابی را انجام دهد. اگر سرویسی
+      // انتخاب نشده، مرحلهٔ پرسنل معنی ندارد و انتخاب قبلی بی‌ضرر می‌ماند.
+      if (draft.value.employeeId && draft.value.serviceId) {
+        const picked = employees.value.find(e => e.id === draft.value.employeeId)
+        const stillValid = !!picked && picked.status === 'active'
+          && picked.serviceIds.includes(draft.value.serviceId)
+        if (!stillValid) {
+          staleEmployeeNotice.value
+            = 'پرسنلی که انتخاب کرده بودید دیگر این سرویس را برای رزرو تازه انجام نمی‌دهد؛ ممکن است غیرفعال شده باشد یا اختصاصش تغییر کرده باشد. یک پرسنل دیگر را انتخاب کنید.'
+          draft.value.employeeId = undefined
+          draft.value.timeSlot = null
+          currentStep.value = 'employee'
+        }
+        else {
+          staleEmployeeNotice.value = null
+        }
+      }
+      else {
+        staleEmployeeNotice.value = null
       }
     }
     catch {
@@ -254,13 +285,14 @@ export function useBookingFlow() {
     draft.value.serviceId = serviceId
     staleServiceNotice.value = null
 
-    // If employee was selected, check if still valid for new service
+    // پرسنل انتخابی باید سرویس *تازه* را هم انجام بدهد؛ وگرنه انتخابش بی‌معنی
+    // است (رابطه از رکورد پرسنل خوانده می‌شود، نه از فهرست کهنهٔ سرویس).
     if (draft.value.employeeId) {
-      const service = currentService.value
-      if (service && service.employeeIds && service.employeeIds.length > 0) {
-        if (!service.employeeIds.includes(draft.value.employeeId)) {
-          draft.value.employeeId = undefined
-        }
+      const picked = employees.value.find(e => e.id === draft.value.employeeId)
+      const stillOk = !!picked && picked.serviceIds.includes(serviceId)
+      if (!stillOk) {
+        draft.value.employeeId = undefined
+        staleEmployeeNotice.value = null
       }
     }
 
@@ -271,6 +303,7 @@ export function useBookingFlow() {
   /** Set employee */
   function setEmployee(employeeId: EntityId | null) {
     draft.value.employeeId = employeeId
+    staleEmployeeNotice.value = null
     // Invalidate downstream
     draft.value.timeSlot = null
   }
@@ -301,6 +334,10 @@ export function useBookingFlow() {
     currentStep.value = 'service'
     warnings.value = []
     error.value = null
+    // یادداشت‌های «draft کهنه» هم با پیش‌نویس می‌روند (وگرنه رزرو بعدی با
+    // هشدار بی‌ربطِ رزرو قبلی شروع می‌شود).
+    staleServiceNotice.value = null
+    staleEmployeeNotice.value = null
   }
 
   // Computed values
@@ -315,30 +352,30 @@ export function useBookingFlow() {
     return employees.value.find(e => e.id === draft.value.employeeId) ?? null
   })
 
-  /** آیا employee selection لازم است؟ */
-  const requiresEmployee = computed(() => {
-    if (!currentService.value) return false
-    const service = currentService.value
-    if (service.employeeIds && service.employeeIds.length > 0) return true
-    return employees.value.length > 0
+  /**
+   * پرسنلِ قابل‌رزرو برای سرویس انتخابی — قاعدهٔ واحد، فیلترشده در لایهٔ سرویس
+   * (فقط active) و این‌جا فقط با رابطه: «همین سرویس را انجام می‌دهد؟».
+   * هیچ «همهٔ پرسنل، حتی بی‌ربط» دیگر فهرست نمی‌شود (فاز ۱۰).
+   */
+  const serviceEmployees = computed(() => {
+    const serviceId = draft.value.serviceId
+    if (!serviceId) return []
+    return employees.value.filter(e => e.status === 'active' && e.serviceIds.includes(serviceId))
   })
 
-  /** آیا employee selection optional است؟ */
-  const employeeOptional = computed(() => {
-    if (!currentService.value) return false
-    const service = currentService.value
-    return (!service.employeeIds || service.employeeIds.length === 0) && employees.value.length > 0
-  })
+  /** لازم است؟ وقتی *کسی* این سرویس را انجام می‌دهد، انتخابش هم لازم است. */
+  const requiresEmployee = computed(() => serviceEmployees.value.length > 0)
+
+  /**
+   * اختیاری؟ وقتی کسب‌وکار پرسنل فعال دارد ولی هیچ‌کدام این سرویس را انجام
+   * نمی‌دهد، کاربر نباید مجبور به انتخاب شود (مرحله هم نمایش داده نمی‌شود).
+   */
+  const employeeOptional = computed(
+    () => !requiresEmployee.value && employees.value.length > 0
+  )
 
   /** کارمندان eligible برای service انتخاب شده */
-  const eligibleEmployees = computed(() => {
-    if (!currentService.value) return []
-    const service = currentService.value
-    if (service.employeeIds && service.employeeIds.length > 0) {
-      return employees.value.filter(e => service.employeeIds!.includes(e.id))
-    }
-    return employees.value
-  })
+  const eligibleEmployees = computed(() => serviceEmployees.value)
 
   /** Is draft complete for confirmation? */
   const isDraftComplete = computed(() => {
@@ -360,6 +397,7 @@ export function useBookingFlow() {
     currentStep: currentStep,
     warnings: warnings,
     staleServiceNotice,
+    staleEmployeeNotice,
     loadingBusiness: loadingBusiness,
     loadingSlots: loadingSlots,
     loadingDates: loadingDates,
@@ -379,6 +417,7 @@ export function useBookingFlow() {
     requiresEmployee,
     employeeOptional,
     eligibleEmployees,
+    serviceEmployees,
     isDraftComplete,
     noSlotsAvailable,
 

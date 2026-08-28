@@ -2,10 +2,11 @@
 /**
  * انتخاب کارمند — مرحلهٔ دوم رزرو (در صورت نیاز).
  */
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
 
 defineProps<{
-  employees: Employee[]
+  /** نمای مشتری پرسنل (فقط active، از لایهٔ سرویس) — نام نمایشی از قبل ساخته شده. */
+  employees: BookableEmployee[]
   selectedId: string | null | undefined // undefined = not yet selected, null = "no preference"
   optional?: boolean
   loading?: boolean
@@ -69,13 +70,13 @@ defineEmits<{
         @click="$emit('select', emp.id)"
       >
         <WqAvatar
-          :name="emp.name"
+          :name="emp.displayName"
           :src="emp.avatarUrl"
           size="md"
         />
         <div class="min-w-0 flex-1">
           <p class="t-body-sm font-semibold" :class="selectedId === emp.id ? 'text-primary' : 'text-foreground'">
-            {{ emp.name }}
+            {{ emp.displayName }}
           </p>
           <p v-if="emp.title" class="t-caption text-foreground-secondary">
             {{ emp.title }}

@@ -25,7 +25,10 @@ const counts = computed(() => {
   return {
     services: `${toFaDigits(m.serviceCount)} سرویس قابل رزرو`,
     servicesHint: `${toFaDigits(m.serviceCount)} سرویس قابل رزرو · وضعیت و قیمت از همین‌جا`,
-    employees: m.employeeCount > 0 ? `${toFaDigits(m.employeeCount)} پرسنل` : 'بدون پرسنل',
+    employees: m.employeeCount > 0 ? `${toFaDigits(m.employeeCount)} پرسنل فعال` : 'بدون پرسنل فعال',
+    employeesHint: m.employeeCount > 0
+      ? `${toFaDigits(m.employeeCount)} پرسنل فعال · اختصاص سرویس و وضعیت از همین‌جا`
+      : 'بدون پرسنل، نوبت‌ها به خود کسب‌وکار می‌چسبند',
     upcoming: `${toFaDigits(m.upcomingCount)} نوبت پیش‌رو`,
     pending: m.pendingCount > 0 ? `${toFaDigits(m.pendingCount)} در انتظار تأیید` : 'مورد بازی نیست'
   }
@@ -82,6 +85,13 @@ const counts = computed(() => {
         />
         <SettingsRow
           v-if="businessId"
+          icon="i-lucide-users"
+          title="پرسنل و سرویس‌هایشان"
+          :subtitle="counts ? counts.employeesHint : 'افزودن پرسنل و مشخص کردن اینکه چه سرویسی را انجام می‌دهند'"
+          :to="`/owner/business/${businessId}/employees`"
+        />
+        <SettingsRow
+          v-if="businessId"
           icon="i-lucide-list"
           title="کسب‌وکارهای من"
           subtitle="تغییر کسب‌وکاری که مدیریت می‌کنید"
@@ -94,13 +104,6 @@ const counts = computed(() => {
         title="در فازهای بعدی"
         description="این بخش‌ها هنوز ساخته نشده‌اند؛ برای همین باز نمی‌شوند."
       >
-        <SettingsInfoRow
-          icon="i-lucide-users"
-          title="پرسنل"
-          :value="counts.employees"
-          subtitle="افزودن پرسنل و تخصیص نوبت"
-          locked
-        />
         <SettingsInfoRow
           icon="i-lucide-calendar-clock"
           title="ساعات کاری و دسترس‌پذیری"

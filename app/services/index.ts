@@ -22,6 +22,8 @@ import type { OwnerService } from './owner/owner-service'
 import { MockOwnerService } from './owner/mock-owner-service'
 import type { ServiceManagementService } from './owner/service-management-service'
 import { MockServiceManagementService } from './owner/mock-service-management-service'
+import type { EmployeeManagementService } from './owner/employee-management-service'
+import { MockEmployeeManagementService } from './owner/mock-employee-management-service'
 
 /**
  * کارخانهٔ سرویس‌ها — تنها نقطهٔ تصمیم «mock یا API واقعی».
@@ -47,6 +49,8 @@ export interface AppServices {
   owner: OwnerService
   /** چرخهٔ حیات سرویس‌های یک کسب‌وکار (فاز ۹): فهرست/ساخت/ویرایش/وضعیت/حذف */
   serviceManagement: ServiceManagementService
+  /** چرخهٔ حیات پرسنل یک کسب‌وکار (فاز ۱۰): فهرست/ساخت/ویرایش/اختصاص سرویس/وضعیت/حذف */
+  employeeManagement: EmployeeManagementService
   reviews: ReviewService
   chat: ChatService
   availability: AvailabilityService
@@ -79,6 +83,7 @@ export function createServices(): AppServices {
     avatars,
     owner: new MockOwnerService(auth),
     serviceManagement: new MockServiceManagementService(auth),
+    employeeManagement: new MockEmployeeManagementService(auth),
     reviews: new MockReviewService(),
     chat: new MockChatService(),
     availability: new MockAvailabilityService()

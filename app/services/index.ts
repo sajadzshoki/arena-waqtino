@@ -16,6 +16,8 @@ import type { ChatService } from './chat/chat-service'
 import { MockChatService } from './chat/mock-chat-service'
 import type { AvailabilityService } from './availability/availability-service'
 import { MockAvailabilityService } from './availability/mock-availability-service'
+import type { AvatarService } from './avatars/avatar-service'
+import { MockAvatarService } from './avatars/mock-avatar-service'
 
 /**
  * کارخانهٔ سرویس‌ها — تنها نقطهٔ تصمیم «mock یا API واقعی».
@@ -33,7 +35,10 @@ export interface AppServices {
   businesses: BusinessService
   bookings: BookingService
   notifications: NotificationService
+  /** کسب‌وکارهای نشان‌شده — منبع‌واحد‌حقیقت صفحهٔ «نشان‌شده‌ها» و همهٔ دکمه‌های Save */
   favorites: FavoriteService
+  /** استراتژی آواتار (mock: پیش‌نمایش محلی + آواتارهای آماده) */
+  avatars: AvatarService
   reviews: ReviewService
   chat: ChatService
   availability: AvailabilityService
@@ -53,13 +58,17 @@ export function createServices(): AppServices {
   }
 
   const auth = new MockAuthService(config.public.mockOtpCode)
+  const avatars = new MockAvatarService()
   return {
     auth,
-    users: new MockUserService(auth),
+    // سرویس‌های کاربر-محور نشست را می‌شناسند تا «دادهٔ کاربر جاری» خدمت دهند
+    // و خطای نشست نامعتبر (۴۰۱) از همان یک نقطه بیرون بیاید.
+    users: new MockUserService(auth, avatars),
     businesses: new MockBusinessService(),
     bookings: new MockBookingService(),
     notifications: new MockNotificationService(),
-    favorites: new MockFavoriteService(),
+    favorites: new MockFavoriteService(auth),
+    avatars,
     reviews: new MockReviewService(),
     chat: new MockChatService(),
     availability: new MockAvailabilityService()

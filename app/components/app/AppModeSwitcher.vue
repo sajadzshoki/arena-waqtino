@@ -4,12 +4,18 @@
  * فقط حالت‌های قابل‌دسترس کاربر نمایش داده می‌شوند؛ بعد از سوییچ،
  * کاربر به مسیر فرود همان حالت هدایت می‌شود (MODE_LANDING).
  */
-const { isAuthenticated, logout, pending: authPending } = useAuth()
+const { isAuthenticated } = useAuth()
 const { currentMode, availableModes, setMode, modeContextLabel } = useUserMode()
 
 const open = useState<boolean>('ui:mode-switcher', () => false)
-const logoutConfirm = ref(false)
 const toast = useAppToast()
+// خروج از حساب — همان جریان مرکزی که در پروفایل/تنظیمات استفاده می‌شود
+const {
+  confirmOpen: logoutConfirm,
+  pending: authPending,
+  request: askLogout,
+  confirmLogout
+} = useLogout()
 
 const options = computed(() =>
   availableModes.value.map(mode => ({
@@ -27,11 +33,8 @@ async function choose(mode: UserMode) {
 }
 
 async function onLogoutConfirmed() {
-  logoutConfirm.value = false
   open.value = false
-  await logout()
-  toast.neutral('از حساب خارج شدید.', 'i-lucide-log-out')
-  await navigateTo('/login', { replace: true })
+  await confirmLogout()
 }
 </script>
 
@@ -54,7 +57,7 @@ async function onLogoutConfirmed() {
     </div>
 
     <template v-if="isAuthenticated" #footer>
-      <WqButton variant="destructive" block icon="i-lucide-log-out" @click="logoutConfirm = true">
+      <WqButton variant="destructive" block icon="i-lucide-log-out" @click="askLogout">
         خروج از حساب
       </WqButton>
     </template>

@@ -427,7 +427,7 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
       v-if="mockFlags.enabled.value"
       class="mt-8"
       title="شبیه‌سازی پاسخ mock"
-      subtitle="loading / success / empty / error بدون بک‌اند واقعی"
+      subtitle="loading / success / empty / error / ۴۰۱ بدون بک‌اند واقعی"
     >
       <div class="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
         <div class="flex items-center justify-between">
@@ -437,6 +437,16 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
         <div class="flex items-center justify-between">
           <span class="t-label">شبیه‌سازی پاسخ خالی</span>
           <USwitch v-model="mockFlags.forceEmpty.value" color="primary" />
+        </div>
+        <div class="flex items-start justify-between gap-3">
+          <span class="min-w-0">
+            <span class="t-label block">شبیه‌سازی نشست نامعتبر (۴۰۱)</span>
+            <span class="t-caption block">
+              هر کارِ کاربر-محور (نشان‌کردن، پروفایل، ذخیرهٔ پروفایل) خطای نشست
+              می‌گیرد → پاک‌سازی مرکزی نشست و هدایت به /login.
+            </span>
+          </span>
+          <USwitch v-model="mockFlags.forceUnauthorized.value" color="primary" />
         </div>
         <USeparator />
         <div class="min-h-16">

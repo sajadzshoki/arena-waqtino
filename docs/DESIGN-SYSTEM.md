@@ -46,8 +46,18 @@
 
 ## ۴. تم‌ها
 
-- سوییچ از هدر (`AppThemeToggle`): سیستم → روشن → تیره؛ ترجیح در کوکی `wq-color-mode`.
-- دارک‌مود **دست‌ساز** است (بلوک `.dark` در tokens.css) — نه معکوس‌سازی.
+- یک مدیر تم، دو نقطهٔ ورود: `AppThemeToggle` (هدر، چرخش سیستم→روشن→تیره) و
+  گروه «ظاهر» در `/settings` (رادیوی سه‌گزینه‌ای). هر دو از
+  **`useThemePreference()`** می‌خوانند/می‌نویسند — state تم خصوصی در صفحه‌ها
+  نداریم.
+- ترجیح در `localStorage` با کلید `wq-color-mode` (پیکربندی
+  `@nuxtjs/color-mode` در `nuxt.config.ts`)؛ همان ماژول اسکریپت پیش‌از‌رندر
+  می‌کارد، پس **FOUC/فلاش تم** نداریم و با `System` به ترجیح سیستم گوش می‌دهد.
+- دارک‌مود **دست‌ساز** است (بلوک `.dark` در tokens.css) — نه معکوس‌سازی؛ به همین
+  دلیل رنگ برند، `primary-soft`، تمام حالت‌های تعامل (hover/active/focus/disabled)
+  و خطا/موفقیت در هر دو تم جدا تنظیم شده‌اند. رنگ هگز تازه در کامپوننت = نقض.
+- انتخاب تم و هر وضعیت معنایی دیگر **فقط با رنگ** اعلام نمی‌شود: گزینهٔ انتخاب‌شده
+  آیکون + برچسب + `aria-checked` دارد (و نه صرفاً کادر رنگی).
 - هر تغییر بصری را همیشه در هر دو تم بررسی کنید: `npm run dev` → `/dev/design`.
 
 ## ۵. تایپوگرافی فارسی (t-\*)
@@ -107,13 +117,48 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 | منوی نقطه‌ای روی آیتم | `UDropdownMenu` (مستقیم) |
 
 ### نمایش داده
-`WqStatusBadge` (status رزرو یا دستی) · `WqAvatar` · `WqRating` · `WqPrice`
-(`0` → «رایگان»، strike برای حذف) · `WqDuration` · `WqDateTime` (date/datetime/time/full) ·
-`WqMetaRow` · `WqSectionHeader` · `WqListRow`.
+`WqStatusBadge` (status رزرو یا دستی) · `WqAvatar` (src/initials/icon + `@error`
+برای fallback؛ در حالت خرابی حروف اول نام را نشان می‌دهد، نه تصویر شکسته) ·
+`WqRating` · `WqPrice` (`0` → «رایگان»، strike برای حذف) · `WqDuration` ·
+`WqDateTime` (date/datetime/time/full) · `WqMetaRow` · `WqSectionHeader` · `WqListRow`.
+
+### تنظیمات و حساب (از فاز ۷)
+```vue
+<SettingsSection title="ظاهر" description="…">           <!-- کارت گروه + aria-labelledby -->
+  <SettingsRow icon="i-lucide-user" label="ویرایش پروفایل" to="/profile/edit" />
+  <SettingsInfoRow icon="i-lucide-phone" label="شمارهٔ موبایل" :value="phone" locked />
+  <template #footer>…</template>
+</SettingsSection>
+```
+- `SettingsRow` = ردیف **قابل‌عمل** (روی `WqListRow`): `to` → لینک، `action`/`@select`
+  → دکمه، `value`/`#value` مقدار فعلی، `#trailing` چیپ/سوئیچ، `tone="danger"` برای
+  عمل مخرب. ردیف فقط‌نمایشی **هرگز** دکمهٔ مرده نیست: `SettingsInfoRow`
+  (`<dt>/<dd>`؛ `locked` → آیکون قفل به‌جای فلش).
+- `SettingsSection` با `tone="danger"` برای «حساب کاربری/خروج» — جدا از گروه‌های معمولی.
+- ردیف‌ها فشرده نمی‌شوند؛ ارتفاع لمسی ≥ ۴۸px با همان `WqListRow` حفظ می‌شود.
+- `ProfileIdentity` (کارت هویت: آواتار بزرگ + نام یا «نام شما ثبت نشده» + تلفن
+  `dir="ltr"` + راهنمای تکمیل پروفایل) و `ProfileAvatarEditor` (پیش‌نمایش، انتخاب از
+  آواتارهای آماده در شیت `role="radiogroup"`، جایگزینی از فایل، حذف، و پیام صادقانه
+  وقتی پیش‌نمایش فقط برای همین نشست است) مخصوص پروفایل‌اند؛ صفحهٔ پروفایل
+  داشبورد کسب‌وکار نیست و هیچ آنالیتیکی ندارد.
+- «خروج از حساب» در سه نقطه (پروفایل، تنظیمات، سوییچر حالت) همان
+  `useLogout()` + `WqConfirm` است — `confirm()` مرورگر ممنوع.
+
+### نشان‌کردن کسب‌وکار (از فاز ۷)
+`BusinessSaveToggle` تنها دکمهٔ «نشان‌کردن» کل اپ است (Home/Search/Category/Details/Saved
+از آن استفاده می‌کنند؛ `mode="remove"` برای ردیف صفحهٔ نشان‌شده‌ها). وضعیت با
+**آیکونِ پر در برابر خطی (filled/outline) + `aria-pressed` + برچسب** اعلام می‌شود،
+نه فقط با رنگ. همه از
+`useSavedBusinesses()` می‌خوانند؛ حذف/اضافه‌شدن همان لحظه در همهٔ صفحه‌ها اعمال می‌شود.
+`BusinessCardCompact` (+ `BusinessCardCompactSkeleton count`) کارت صفحهٔ نشان‌شده‌هاست.
 
 ### حالت‌ها
 `AppLoadingState` (اسپینر یا `rows` برای اسکلت) · `AppEmptyState` (با slot اکشن) ·
 `AppErrorState` (`retryable` + `@retry`) · `AppOfflineState`.
+
+قانون ترجیح: وقتی اسکلت محلی ممکن است، **اسپینر تمام‌صفحه نمی‌گذاریم** —
+`BusinessCardCompactSkeleton` جای فهرست را می‌گیرد تا چیدمان جهش نکند. حالت خالی
+عمداً خالی است (CTA مثل «مشاهده کسب‌وکارها»)، نه فهرست صفر‌آیتمِ بی‌توضیح.
 
 ### پوستهٔ صفحه
 `AppPageHeader` (صفحات اصلی) · `AppBackHeader` (جزئیات/فرم، sticky + بازگشت) ·

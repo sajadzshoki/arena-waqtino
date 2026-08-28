@@ -23,3 +23,9 @@ export interface GeoPoint {
 
 /** رشتهٔ زمانی ISO-8601 — ساعت محلی کسب‌وکار در لایهٔ سرویس اعمال می‌شود. */
 export type ISODateTime = string
+
+/**
+ * ماشین‌حالت کوچک بارگذاری (فهرست‌ها، پروفایل، …) — در کل اپ یکسان تا
+ * صفحه‌ها به‌جای اختراع refهای محلی، یک زبان مشترک داشته باشند.
+ */
+export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'

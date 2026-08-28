@@ -5,6 +5,15 @@ import type { AppUser, AuthSession, UserCapability } from '~/types/user'
 /**
  * احراز هویت — وضعیت مرکزی نشست کاربر.
  * UI هرگز مستقیماً با سرویس/کوکی صحبت نمی‌کند؛ فقط از همین composable.
+ *
+ * فاز ۷ به این فهرست اضافه شد:
+ *   - `applyUserUpdate` / `refreshSession` → همگام‌سازی state مرکزی پس از
+ *     ویرایش پروفایل (هدر و پروفایل بدون reload به‌روز می‌شوند).
+ *   - `expireSession`                      → بازوی اجرایی «نشست نامعتبر» که
+ *     `useAuthRecovery` از روی پاسخ ۴۰۱ صدا می‌زند.
+ *   - `logout` / `expireSession`            → نشست پاک می‌شود؛ state کاربر-محور
+ *     در پلاگین `03-user-state.client.ts` با تغییر/حذف کاربر reset می‌شود
+ *     (همهٔ فیچرها یک‌جا، بدون پخش‌کردن منطق logout در صفحات).
  */
 export function useAuth() {
   const services = useServices()
@@ -25,6 +34,11 @@ export function useAuth() {
   async function restore(): Promise<void> {
     if (restored.value) return
     restored.value = true
+    session.value = await services.auth.getCurrentSession()
+  }
+
+  /** دوباره از لایهٔ سرویس خواندن — بعد از هر نوشتنی که نشست را تغییر می‌دهد. */
+  async function refreshSession(): Promise<void> {
     session.value = await services.auth.getCurrentSession()
   }
 
@@ -70,6 +84,7 @@ export function useAuth() {
     await verifyOtp(phone, request.devCode ?? config.public.mockOtpCode)
   }
 
+  /** خروج کامل: نشست در بک‌اند/کوکی + state درون‌اپ + دادهٔ گذرای کاربر. */
   async function logout(): Promise<void> {
     pending.value = true
     try {
@@ -82,6 +97,29 @@ export function useAuth() {
     }
   }
 
+  /**
+   * نشست از سمت کارخواه باطل می‌شود (پاسخ ۴۰۱ / نشست نامعتبر) — بدون
+   * درخواست logout به بک‌اند؛ دقیقاً همان کاری که باید با نشست مرده کرد.
+   */
+  async function expireSession(): Promise<void> {
+    if (!session.value) return
+    pending.value = true
+    try {
+      await services.auth.clearLocalSession()
+      session.value = null
+      otpRequest.value = null
+    }
+    finally {
+      pending.value = false
+    }
+  }
+
+  /** به‌روزرسانی snapshot کاربر در state مرکزی (بعد از ذخیرهٔ پروفایل). */
+  function applyUserUpdate(updated: AppUser): void {
+    if (!session.value) return
+    session.value = { ...session.value, user: updated }
+  }
+
   return {
     session: readonly(session),
     user,
@@ -90,9 +128,12 @@ export function useAuth() {
     pending: readonly(pending),
     otpRequest: readonly(otpRequest),
     restore,
+    refreshSession,
     requestOtp,
     verifyOtp,
     devSignIn,
-    logout
+    logout,
+    expireSession,
+    applyUserUpdate
   }
 }

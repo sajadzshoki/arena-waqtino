@@ -97,6 +97,7 @@ function getCategoryForBiz(categoryId: string) {
             :key="biz.id"
             :business="biz"
             :category="getCategoryForBiz(biz.categoryId)"
+            show-save-action
           />
         </div>
       </template>
@@ -166,6 +167,7 @@ function getCategoryForBiz(categoryId: string) {
           :key="biz.id"
           :business="biz"
           :category="getCategoryForBiz(biz.categoryId)"
+          show-save-action
         />
       </div>
     </DiscoverySection>

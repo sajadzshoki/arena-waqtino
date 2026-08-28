@@ -23,7 +23,6 @@ const {
 } = useBusinessDetails(businessId)
 
 const { trackView } = useRecentlyViewed()
-const { isFavorite, toggle, initialized } = useFavorites()
 
 // بارگذاری داده‌ها
 await load()
@@ -37,15 +36,6 @@ onMounted(() => {
 useHead({
   title: computed(() => business.value?.name ?? 'کسب‌وکار')
 })
-
-// Favorite toggle
-async function toggleFavorite() {
-  if (!initialized.value || !business.value) return
-  const result = await toggle(business.value.id)
-  toast.success(result ? 'به علاقه‌مندی‌ها اضافه شد.' : 'از علاقه‌مندی‌ها حذف شد.')
-}
-
-const isFav = computed(() => business.value ? isFavorite(business.value.id) : false)
 
 // Booking handoff — navigate to booking flow
 function bookService(serviceId: string) {
@@ -144,19 +134,13 @@ async function share() {
               {{ category.name }}
             </p>
           </div>
-          <div class="flex shrink-0 gap-2">
-            <button
-              type="button"
-              class="pressable flex size-10 items-center justify-center rounded-full border border-line bg-surface"
-              :aria-label="isFav ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'"
-              @click="toggleFavorite"
-            >
-              <UIcon
-                name="i-lucide-heart"
-                class="size-5"
-                :class="isFav ? 'fill-error text-error' : 'text-foreground-secondary'"
-              />
-            </button>
+          <div class="flex shrink-0 items-center gap-2">
+            <!-- نشان‌کردن — همان کامپوننت/state مشترک با صفحهٔ نشان‌شده‌ها -->
+            <BusinessSaveToggle
+              :business-id="business.id"
+              :business="business"
+              with-label
+            />
             <WqIconButton
               icon="i-lucide-share-2"
               label="اشتراک‌گذاری"

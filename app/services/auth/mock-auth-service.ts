@@ -1,6 +1,6 @@
 import { ServiceError } from '~/utils/errors'
 import { devUserForPhone } from '~/services/mocks/users'
-import type { AuthSession } from '~/types/user'
+import type { AppUser, AuthSession } from '~/types/user'
 import type { AuthService, OtpRequestResult, VerifyOtpInput } from './auth-service'
 
 /**
@@ -92,6 +92,21 @@ export class MockAuthService implements AuthService {
 
   async logout(): Promise<void> {
     await delay(150)
+    this.clear()
+  }
+
+  async clearLocalSession(): Promise<void> {
+    this.clear()
+  }
+
+  async replaceSessionUser(user: AppUser): Promise<void> {
+    const session = this.cookie.value
+    if (!session) return
+    this.cookie.value = { ...session, user }
+  }
+
+  /** تنها نقطهٔ پاک‌سازی نشست (logout واقعی و انقضای نشست هر دو به اینجا می‌رسند). */
+  private clear(): void {
     this.cookie.value = null
     this.pendingOtp = null
   }

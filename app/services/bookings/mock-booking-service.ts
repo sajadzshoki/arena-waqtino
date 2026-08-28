@@ -6,7 +6,7 @@ import type { CreateBookingRequest, CreateBookingResponse, CreateBookingErrorRes
 import { MOCK_BOOKINGS } from '~/services/mocks/bookings'
 import { MOCK_BOOKED_SLOTS } from '~/services/mocks/extras'
 import { MOCK_SERVICES } from '~/services/mocks/businesses'
-import type { BookingScope, BookingService } from './booking-service'
+import type { BookingScope, BookingService, CancelBookingRequest, CancelBookingResponse, CancelBookingErrorResponse, RescheduleBookingRequest, RescheduleBookingResponse, RescheduleBookingErrorResponse } from './booking-service'
 
 export class MockBookingService implements BookingService {
   private get userId(): string | null {
@@ -189,11 +189,155 @@ export class MockBookingService implements BookingService {
     return { success: true, bookingId }
   }
 
+  async cancel(request: CancelBookingRequest): Promise<CancelBookingResponse | CancelBookingErrorResponse> {
+    await delay(500)
+
+    const booking = MOCK_BOOKINGS.find(b => b.id === request.bookingId)
+    if (!booking) {
+      return {
+        success: false,
+        error: {
+          code: 'BOOKING_NOT_FOUND',
+          message: 'این رزرو یافت نشد.'
+        }
+      }
+    }
+
+    // Check if already cancelled
+    if (booking.status === 'cancelled') {
+      return {
+        success: false,
+        error: {
+          code: 'ALREADY_CANCELLED',
+          message: 'این رزرو قبلاً لغو شده است.'
+        }
+      }
+    }
+
+    // Check if past booking
+    if (new Date(booking.start).getTime() < Date.now()) {
+      return {
+        success: false,
+        error: {
+          code: 'PAST_BOOKING',
+          message: 'امکان لغو رزروهای گذشته وجود ندارد.'
+        }
+      }
+    }
+
+    // Check cancellation policy (e.g., can't cancel within 2 hours)
+    const hoursUntilBooking = (new Date(booking.start).getTime() - Date.now()) / (1000 * 60 * 60)
+    if (hoursUntilBooking < 2) {
+      return {
+        success: false,
+        error: {
+          code: 'POLICY_VIOLATION',
+          message: 'امکان لغو رزرو کمتر از ۲ ساعت قبل از زمان appointment وجود ندارد. لطفاً با کسب‌وکار تماس بگیرید.'
+        }
+      }
+    }
+
+    // Cancel the booking
+    booking.status = 'cancelled'
+    booking.cancelledBy = 'customer'
+    booking.cancelReason = request.reason
+
+    // Free up the slot
+    const slotKey = this.bookingSlotKey(booking)
+    MOCK_BOOKED_SLOTS.delete(slotKey)
+
+    return {
+      success: true,
+      message: 'رزرو با موفقیت لغو شد.'
+    }
+  }
+
+  async reschedule(request: RescheduleBookingRequest): Promise<RescheduleBookingResponse | RescheduleBookingErrorResponse> {
+    await delay(600)
+
+    const booking = MOCK_BOOKINGS.find(b => b.id === request.bookingId)
+    if (!booking) {
+      return {
+        success: false,
+        error: {
+          code: 'BOOKING_NOT_FOUND',
+          message: 'این رزرو یافت نشد.'
+        }
+      }
+    }
+
+    // Check if reschedulable
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_RESCHEDULABLE',
+          message: 'امکان تغییر زمان این رزرو وجود ندارد.'
+        }
+      }
+    }
+
+    // Check if new time is in the past
+    const newStartTime = new Date(request.newStart).getTime()
+    if (newStartTime < Date.now()) {
+      return {
+        success: false,
+        error: {
+          code: 'TIME_IN_PAST',
+          message: 'زمان انتخاب‌شده در گذشته است.'
+        }
+      }
+    }
+
+    // Check if new slot is available
+    const newSlotKey = `${booking.businessId}:${this.dateStrFromDate(new Date(request.newStart))}:${this.timeStrFromDate(new Date(request.newStart))}`
+    if (MOCK_BOOKED_SLOTS.has(newSlotKey)) {
+      return {
+        success: false,
+        error: {
+          code: 'SLOT_UNAVAILABLE',
+          message: 'این زمان دیگر در دسترس نیست. لطفاً زمان دیگری انتخاب کنید.'
+        }
+      }
+    }
+
+    // Free up the old slot
+    const oldSlotKey = this.bookingSlotKey(booking)
+    MOCK_BOOKED_SLOTS.delete(oldSlotKey)
+
+    // Update the booking
+    booking.start = request.newStart
+    booking.end = request.newEnd
+
+    // Mark new slot as booked
+    MOCK_BOOKED_SLOTS.add(newSlotKey)
+
+    return {
+      success: true,
+      booking: { ...booking }
+    }
+  }
+
   private slotKey(request: CreateBookingRequest): string {
     const start = new Date(request.start)
     const dateStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`
     const timeStr = `${String(start.getHours()).padStart(2, '0')}${String(start.getMinutes()).padStart(2, '0')}`
     return `${request.businessId}:${dateStr}:${timeStr}`
+  }
+
+  private bookingSlotKey(booking: Booking): string {
+    const start = new Date(booking.start)
+    const dateStr = this.dateStrFromDate(start)
+    const timeStr = this.timeStrFromDate(start)
+    return `${booking.businessId}:${dateStr}:${timeStr}`
+  }
+
+  private dateStrFromDate(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  }
+
+  private timeStrFromDate(date: Date): string {
+    return `${String(date.getHours()).padStart(2, '0')}${String(date.getMinutes()).padStart(2, '0')}`
   }
 
   private mapErrorCode(code: string): CreateBookingErrorResponse['error']['code'] {

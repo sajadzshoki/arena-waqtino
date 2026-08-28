@@ -11,6 +11,12 @@ const faTime = new Intl.DateTimeFormat('fa-IR', {
   minute: '2-digit'
 })
 
+const faDateTime = new Intl.DateTimeFormat('fa-IR', {
+  dateStyle: 'medium',
+  hour: '2-digit',
+  minute: '2-digit'
+})
+
 const faWeekday = new Intl.DateTimeFormat('fa-IR', {
   weekday: 'long'
 })
@@ -33,6 +39,11 @@ export function formatFaDate(date: Date | string | number): string {
 /** مثال: «۱۴:۳۰» */
 export function formatFaTime(date: Date | string | number): string {
   return faTime.format(new Date(date))
+}
+
+/** مثال: «۵ شهریور ۱۴۰۵، ۱۴:۳۰» */
+export function formatFaDateTime(date: Date | string | number): string {
+  return faDateTime.format(new Date(date))
 }
 
 /** مثال: «پنجشنبه» */
@@ -70,6 +81,19 @@ export function isTomorrow(date: Date): boolean {
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   return isSameDay(date, tomorrow)
+}
+
+/** آیا تاریخ در این هفته است؟ */
+export function isThisWeek(date: Date): boolean {
+  const now = new Date()
+  const startOfWeek = new Date(now)
+  startOfWeek.setDate(now.getDate() - now.getDay())
+  startOfWeek.setHours(0, 0, 0, 0)
+  
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(startOfWeek.getDate() + 7)
+  
+  return date >= startOfWeek && date < endOfWeek
 }
 
 /** تولید لیست تاریخ‌های آینده (شامل امروز) */

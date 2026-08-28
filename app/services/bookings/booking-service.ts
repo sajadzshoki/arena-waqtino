@@ -5,8 +5,46 @@ import type { CreateBookingRequest, CreateBookingResponse, CreateBookingErrorRes
 /**
  * قرارداد سرویس رزرو.
  * فاز ۵: ساخت/ویرایش/اعتبارسنجی رزرو اضافه شد.
+ * فاز ۶: لغو و تغییر زمان رزرو اضافه شد.
  */
 export type BookingScope = 'upcoming' | 'past'
+
+export interface CancelBookingRequest {
+  bookingId: EntityId
+  reason?: string
+}
+
+export interface CancelBookingResponse {
+  success: true
+  message: string
+}
+
+export interface CancelBookingErrorResponse {
+  success: false
+  error: {
+    code: 'BOOKING_NOT_FOUND' | 'ALREADY_CANCELLED' | 'PAST_BOOKING' | 'POLICY_VIOLATION' | 'SERVER_ERROR'
+    message: string
+  }
+}
+
+export interface RescheduleBookingRequest {
+  bookingId: EntityId
+  newStart: string
+  newEnd: string
+}
+
+export interface RescheduleBookingResponse {
+  success: true
+  booking: Booking
+}
+
+export interface RescheduleBookingErrorResponse {
+  success: false
+  error: {
+    code: 'BOOKING_NOT_FOUND' | 'NOT_RESCHEDULABLE' | 'SLOT_UNAVAILABLE' | 'TIME_IN_PAST' | 'SERVER_ERROR'
+    message: string
+  }
+}
 
 export interface BookingService {
   /** نوبت‌های کاربر جاری؛ upcoming → نزدیک‌ترین اول، past → جدیدترین اول */
@@ -18,4 +56,10 @@ export interface BookingService {
 
   /** اعتبارسنجی draft قبل از تأیید نهایی */
   validateDraft(request: CreateBookingRequest): Promise<BookingValidationResult>
+
+  /** لغو رزرو */
+  cancel(request: CancelBookingRequest): Promise<CancelBookingResponse | CancelBookingErrorResponse>
+
+  /** تغییر زمان رزرو */
+  reschedule(request: RescheduleBookingRequest): Promise<RescheduleBookingResponse | RescheduleBookingErrorResponse>
 }

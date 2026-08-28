@@ -23,3 +23,15 @@ export interface Booking {
   cancelReason?: string
   createdAt: ISODateTime
 }
+
+/**
+ * Booking with resolved names for display purposes
+ * This is what the UI uses after enriching the base Booking data
+ */
+export interface BookingWithDetails extends Booking {
+  businessName: string
+  serviceName: string
+  employeeName?: string
+  businessCategoryName?: string
+  serviceDuration: number // in minutes
+}

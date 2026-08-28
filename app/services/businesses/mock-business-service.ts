@@ -1,9 +1,9 @@
-import type { Business, BusinessCategory } from '~/types/business'
+import type { Business, BusinessCategory, BusinessWithDistance } from '~/types/business'
 import type { EntityId, Paginated } from '~/types/common'
 import type { Employee } from '~/types/employee'
 import type { BookableService } from '~/types/service'
 import { ServiceError } from '~/utils/errors'
-import { MOCK_BUSINESSES, MOCK_CATEGORIES, MOCK_EMPLOYEES, MOCK_SERVICES } from '~/services/mocks/businesses'
+import { MOCK_BUSINESSES, MOCK_CATEGORIES, MOCK_DISTANCES, MOCK_EMPLOYEES, MOCK_SERVICES } from '~/services/mocks/businesses'
 import type { BusinessListQuery, BusinessService } from './business-service'
 
 export class MockBusinessService implements BusinessService {
@@ -24,8 +24,17 @@ export class MockBusinessService implements BusinessService {
       items = items.filter(b => b.categoryId === query.categoryId)
     }
     if (search) {
+      const lowerSearch = search.toLowerCase()
+      // جستجو در نام/توضیح کسب‌وکار + نام خدمات
+      const serviceBizIds = MOCK_SERVICES
+        .filter(s => s.name.toLowerCase().includes(lowerSearch))
+        .map(s => s.businessId)
+
       items = items.filter(
-        b => b.name.includes(search) || b.description.includes(search)
+        b =>
+          b.name.includes(search) ||
+          b.description.includes(search) ||
+          serviceBizIds.includes(b.id)
       )
     }
 
@@ -45,7 +54,45 @@ export class MockBusinessService implements BusinessService {
 
   async listCategories(): Promise<BusinessCategory[]> {
     await delay(150)
+    const flags = useMockFlags()
+    if (flags.forceError.value) throw ServiceError.network()
     return MOCK_CATEGORIES
+  }
+
+  async listFeatured(): Promise<Business[]> {
+    await delay(300)
+    const flags = useMockFlags()
+    if (flags.forceError.value) throw ServiceError.network()
+    // کسب‌وکارهای تاییدشده با امتیاز بالا
+    return MOCK_BUSINESSES
+      .filter(b => b.status === 'active' && b.isVerified)
+      .sort((a, b) => b.rating.average - a.rating.average)
+      .slice(0, 5)
+  }
+
+  async listPopular(): Promise<Business[]> {
+    await delay(250)
+    const flags = useMockFlags()
+    if (flags.forceError.value) throw ServiceError.network()
+    // محبوب‌ترین‌ها بر اساس تعداد نظر × میانگین امتیاز
+    return MOCK_BUSINESSES
+      .filter(b => b.status === 'active')
+      .sort((a, b) => (b.rating.average * b.rating.count) - (a.rating.average * a.rating.count))
+      .slice(0, 5)
+  }
+
+  async listNearby(): Promise<BusinessWithDistance[]> {
+    await delay(350)
+    const flags = useMockFlags()
+    if (flags.forceError.value) throw ServiceError.network()
+    return MOCK_BUSINESSES
+      .filter(b => b.status === 'active' && MOCK_DISTANCES[b.id] !== undefined)
+      .map(b => ({
+        ...b,
+        distanceKm: MOCK_DISTANCES[b.id] ?? 0
+      }))
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 5)
   }
 
   async listServices(businessId: EntityId): Promise<BookableService[]> {

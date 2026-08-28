@@ -1,67 +1,173 @@
 <script setup lang="ts">
 /**
- * خانه — فرود حالت مشتری (بازدید مهمان آزاد است).
- * تجربهٔ کامل کشف کسب‌وکار در فازهای بعد ساخته می‌شود.
+ * خانهٔ مشتری — تجربهٔ اصلی کشف و شروع رزرو.
+ *
+ * سلسله‌مراتب اطلاعات:
+ *   ۱. خوش‌آمدگویی شخصی + اعلان
+ *   ۲. نقطهٔ ورود جستجو
+ *   ۳. دسته‌بندی‌ها (اسکرول افقی)
+ *   ۴. پیشنهاد برای شما (کارت‌های ویژه افقی)
+ *   ۵. محبوب‌ترین‌ها (لیست فشرده)
+ *   ۶. نزدیک شما (لیست فشرده + فاصله)
+ *   ۷. اخیراً دیده‌اید (فقط وقتی تاریخچه وجود دارد)
  */
-definePageMeta({ access: 'public' })
+definePageMeta({ access: 'public', header: false })
 useHead({ title: 'خانه' })
 
-const config = useRuntimeConfig()
-const { user, isAuthenticated } = useAuth()
-const { currentModeMeta } = useUserMode()
+const {
+  categories,
+  featured,
+  popular,
+  nearby,
+  loadAll,
+  retrySection
+} = useCustomerDiscovery()
 
-const isMock = computed(() => config.public.apiMode === 'mock')
-const isDev = import.meta.dev
-const today = formatFaDateFull(new Date())
+const { items: recentlyViewed, loading: recentLoading, hasHistory, refresh: refreshRecent } = useRecentlyViewed()
+
+// بارگذاری اولیه
+await loadAll()
+await refreshRecent()
+
+// بازیابی هنگام بازگشت به صفحه
+const route = useRoute()
+watch(() => route.path, async (newPath) => {
+  if (newPath === '/') {
+    await refreshRecent()
+  }
+})
+
+// پیدا کردن دسته برای هر کسب‌وکار
+const categoryMap = computed(() => {
+  const map = new Map(categories.data.value.map(c => [c.id, c]))
+  return map
+})
+
+function getCategoryForBiz(categoryId: string) {
+  return categoryMap.value.get(categoryId) ?? null
+}
+
+
 </script>
 
 <template>
-  <div>
-    <AppPageHeader
-      :title="user ? `سلام، ${user.firstName}` : 'به وقتینو خوش آمدید'"
-      :subtitle="`${today} · حالت فعال: ${currentModeMeta.label}`"
-    />
+  <div class="pb-4">
+    <!-- ۱. هدر خوش‌آمدگویی -->
+    <CustomerHomeHeader />
 
-    <!-- نشست کاربر -->
-    <section class="rounded-xl border border-line bg-surface p-4">
-      <div v-if="isAuthenticated && user" class="flex items-center gap-3">
-        <WqAvatar :name="`${user.firstName} ${user.lastName}`" size="lg" />
-        <div class="min-w-0 flex-1">
-          <p class="t-h3 truncate text-foreground">{{ user.firstName }} {{ user.lastName }}</p>
-          <p class="t-caption t-num" dir="ltr">{{ formatPhoneFa(user.phone) }}</p>
-        </div>
-        <WqStatusBadge label="فعال" color="success" icon="i-lucide-circle-check" />
-      </div>
+    <!-- ۲. نقطهٔ ورود جستجو -->
+    <div class="mt-5">
+      <CustomerSearchEntry />
+    </div>
 
-      <div v-else class="flex flex-col gap-3">
-        <p class="t-body-sm text-foreground-secondary">
-          برای رزرو نوبت، ذخیرهٔ کسب‌وکارها و پیگیری نوبت‌ها وارد حساب خود شوید.
-        </p>
-        <WqButton icon="i-lucide-key-round" block @click="navigateTo('/login')">
-          ورود یا ثبت‌نام
+    <!-- ۳. دسته‌بندی‌ها -->
+    <section class="mt-7">
+      <h2 class="t-section mb-3 text-foreground-strong">دسته‌بندی‌ها</h2>
+      <CategoryGrid
+        :categories="categories.data.value"
+        :loading="categories.loading.value"
+      />
+      <!-- خطای دسته‌بندی‌ها -->
+      <div v-if="categories.error.value && !categories.loading.value" class="mt-2 text-center">
+        <WqButton variant="tertiary" size="sm" icon="i-lucide-rotate-ccw" @click="retrySection('categories')">
+          تلاش مجدد
         </WqButton>
-        <UAlert
-          v-if="isMock"
-          color="neutral"
-          variant="subtle"
-          icon="i-lucide-flask-conical"
-          title="حالت توسعه فعال است — ورود با OTP ساختگی انجام می‌شود."
-        />
       </div>
     </section>
 
-    <!-- ورود به شوکیس سیستم طراحی — فقط محیط توسعه -->
-    <section v-if="isMock && isDev" class="mt-6">
-      <WqSectionHeader title="ابزارهای توسعه" subtitle="فقط در حالت توسعه نمایش داده می‌شود">
-        <div class="rounded-xl border border-line bg-surface px-4">
-          <WqListRow
-            title="نمایش سیستم طراحی"
-            subtitle="توکن‌ها، کامپوننت‌ها، تم‌ها و الگوها"
-            icon="i-lucide-palette"
-            to="/dev/design"
+    <!-- ۴. پیشنهاد برای شما -->
+    <DiscoverySection
+      title="پیشنهاد برای شما"
+      :loading="featured.loading.value"
+      :error="featured.error.value"
+      :empty="!featured.loading.value && !featured.error.value && featured.data.value.length === 0"
+      action-label="مشاهده همه"
+      action-to="/search"
+      @retry="retrySection('featured')"
+    >
+      <template v-if="featured.loading.value">
+        <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+          <BusinessCardFeaturedSkeleton :count="3" />
+        </div>
+      </template>
+      <template v-else>
+        <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+          <BusinessCardFeatured
+            v-for="biz in featured.data.value"
+            :key="biz.id"
+            :business="biz"
+            :category="getCategoryForBiz(biz.categoryId)"
           />
         </div>
-      </WqSectionHeader>
-    </section>
+      </template>
+    </DiscoverySection>
+
+    <!-- ۵. محبوب‌ترین‌ها -->
+    <DiscoverySection
+      title="محبوب‌ترین‌ها"
+      :loading="popular.loading.value"
+      :error="popular.error.value"
+      :empty="!popular.loading.value && !popular.error.value && popular.data.value.length === 0"
+      action-label="مشاهده همه"
+      action-to="/search"
+      @retry="retrySection('popular')"
+    >
+      <template v-if="popular.loading.value">
+        <BusinessCardCompactSkeleton :count="3" />
+      </template>
+      <template v-else>
+        <div class="flex flex-col gap-3">
+          <BusinessCardCompact
+            v-for="biz in popular.data.value"
+            :key="biz.id"
+            :business="biz"
+            :category="getCategoryForBiz(biz.categoryId)"
+          />
+        </div>
+      </template>
+    </DiscoverySection>
+
+    <!-- ۶. نزدیک شما -->
+    <DiscoverySection
+      title="نزدیک شما"
+      :loading="nearby.loading.value"
+      :error="nearby.error.value"
+      :empty="!nearby.loading.value && !nearby.error.value && nearby.data.value.length === 0"
+      action-label="مشاهده همه"
+      action-to="/search"
+      @retry="retrySection('nearby')"
+    >
+      <template v-if="nearby.loading.value">
+        <BusinessCardCompactSkeleton :count="3" />
+      </template>
+      <template v-else>
+        <div class="flex flex-col gap-3">
+          <BusinessCardCompact
+            v-for="biz in nearby.data.value"
+            :key="biz.id"
+            :business="biz"
+            :category="getCategoryForBiz(biz.categoryId)"
+            :show-distance="true"
+            :distance-km="biz.distanceKm"
+          />
+        </div>
+      </template>
+    </DiscoverySection>
+
+    <!-- ۷. اخیراً دیده‌اید — فقط وقتی تاریخچه وجود دارد -->
+    <DiscoverySection
+      v-if="hasHistory || recentLoading"
+      title="اخیراً دیده‌اید"
+      :loading="recentLoading"
+    >
+      <div class="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+        <BusinessCardFeatured
+          v-for="biz in recentlyViewed"
+          :key="biz.id"
+          :business="biz"
+          :category="getCategoryForBiz(biz.categoryId)"
+        />
+      </div>
+    </DiscoverySection>
   </div>
 </template>

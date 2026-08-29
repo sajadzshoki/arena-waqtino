@@ -24,7 +24,7 @@ const copy = computed(() =>
         fallback: 'فقط کسب‌وکارهایی که مدیر آن‌ها هستید قابل مدیریت‌اند.'
       }
     : {
-        icon: 'i-lucide-store-search',
+        icon: 'i-lucide-search-x',
         title: 'چنین کسب‌وکاری پیدا نشد',
         fallback: 'ممکن است حذف شده یا نشانی اشتباه باشد.'
       }

@@ -37,8 +37,8 @@ export interface Booking {
 }
 
 /**
- * Booking with resolved names for display purposes
- * This is what the UI uses after enriching the base Booking data
+ * نوبت با نام‌های حل‌شده برای نمایش
+ * همان چیزی که UI بعد از غنی‌کردن دادهٔ پایهٔ نوبت می‌خواند
  */
 /** چیزی که رزرو «بود»، نه لزوماً چیزی که سرویس «هست». */
 export interface BookingServiceSnapshot {

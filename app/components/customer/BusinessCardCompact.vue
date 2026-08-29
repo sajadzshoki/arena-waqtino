@@ -52,7 +52,7 @@ function onTap() {
   trackView(props.business.id)
 }
 
-// Reset error state when business changes
+// با عوض‌شدن کسب‌وکار، خطای نمایش قبلی پاک می‌شود
 watch(() => props.business.id, () => {
   imgError.value = false
 })
@@ -78,7 +78,7 @@ const formattedDistance = computed(() => {
     >
       <!-- تصویر کوچک -->
       <div class="relative size-20 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
-        <!-- Fallback -->
+        <!-- جایگزین -->
         <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-soft to-surface-muted">
           <UIcon :name="categoryIcon" class="size-7 text-primary/40" />
         </div>

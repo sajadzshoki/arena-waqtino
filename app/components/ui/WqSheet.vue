@@ -13,6 +13,10 @@ withDefaults(
 )
 
 const open = defineModel<boolean>('open', { default: false })
+
+// دکمهٔ بازگشت Android/webview: وقتی شیت باز است، «بازگشت» یعنی «بستن همین شیت»
+// (§۱۰). استراتژی در `services/native/system-back` است؛ صفحه‌ها چیزی نمی‌دانند.
+useSystemBackHandler(open)
 </script>
 
 <template>

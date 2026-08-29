@@ -5,16 +5,21 @@
 /** گزینه‌های مرتب‌سازی نتایج */
 export type SearchSort = 'relevance' | 'rating' | 'popular' | 'nearest'
 
-/** فیلترهای جستجوی کسب‌وکار */
+/**
+ * فیلترهای جستجوی کسب‌وکار — فقط چیزهایی که **همین حالا واقعاً کار می‌کنند**.
+ *
+ * «روز آزاد» (availableDay) و «سقف قیمت» (maxPrice) اینجا نیستند، هرچند یک دوره
+ * در UI بودند: هیچ‌کدام روی نتایج اعمال نمی‌شد و کنترلِ بی‌اثر بدتر از نبودنِ
+ * کنترل است. هر دو باید **سمت سرویس** پیاده شوند (فیلتر روی دسترس‌پذیری و قیمت
+ * حداقلِ خدمات، نه روی دادهٔ صفحه‌بندی‌شدهٔ کلاینت) — انتظار در
+ * `docs/API-CONTRACT.md` ثبت شده؛ وقتی بک‌اند آماده شد، همین‌جا یک فیلد و یک
+ * چیپ اضافه می‌شود، نه بیشتر.
+ */
 export interface SearchFilters {
-  /** حداقل امتیاز (مثلاً 4 یا 4.5) */
+  /** حداقل امتیاز (مثلاً ۴ یا ۴٫۵) */
   minRating: number | null
-  /** نزدیک من — mock فاصله */
+  /** نزدیک من — بر پایهٔ فاصلهٔ محاسبه‌شده در سرویس */
   nearbyOnly: boolean
-  /** فیلتر زمانی ساده — آماده برای بک‌اند */
-  availableDay: 'today' | 'tomorrow' | null
-  /** بازهٔ قیمت (تومان) */
-  maxPrice: number | null
 }
 
 /** وضعیت کامل جستجو — بخش‌های URL-synced با transient. */
@@ -32,9 +37,7 @@ export interface SearchState {
 /** فیلترهای پیش‌فرض (خالی) */
 export const DEFAULT_FILTERS: SearchFilters = {
   minRating: null,
-  nearbyOnly: false,
-  availableDay: null,
-  maxPrice: null
+  nearbyOnly: false
 }
 
 /** وضعیت اولیهٔ جستجو */

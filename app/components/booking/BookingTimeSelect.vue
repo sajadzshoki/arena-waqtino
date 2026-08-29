@@ -87,7 +87,7 @@ function isSlotSelected(slot: TimeSlot, selected: TimeSlot | null): boolean {
 
 <template>
   <div>
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="grid grid-cols-3 gap-2" aria-hidden="true">
       <USkeleton v-for="n in 9" :key="n" class="h-12 rounded-xl" />
     </div>
@@ -113,7 +113,7 @@ function isSlotSelected(slot: TimeSlot, selected: TimeSlot | null): boolean {
       </p>
     </div>
 
-    <!-- Slot grid -->
+    <!-- شبکهٔ ساعت‌ها -->
     <div v-else class="grid grid-cols-3 gap-2">
       <button
         v-for="slot in slots"

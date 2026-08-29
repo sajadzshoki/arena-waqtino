@@ -32,7 +32,7 @@ function formatDate(date: string): string {
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Warnings -->
+    <!-- هشدارها -->
     <div
       v-if="warnings && warnings.length > 0"
       class="flex flex-col gap-2 rounded-xl border border-warning-border bg-warning-soft p-4"
@@ -43,7 +43,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Business -->
+    <!-- کسب‌وکار -->
     <div v-if="business" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -56,7 +56,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Service -->
+    <!-- خدمت -->
     <div v-if="service" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -77,7 +77,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Employee -->
+    <!-- پرسنل -->
     <div v-if="employee !== undefined" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -107,7 +107,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Date & Time -->
+    <!-- تاریخ و ساعت -->
     <div v-if="draft.date && draft.timeSlot" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -130,7 +130,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Price -->
+    <!-- هزینه -->
     <div v-if="service" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-center justify-between">
         <p class="t-body-sm font-medium text-foreground">هزینه</p>

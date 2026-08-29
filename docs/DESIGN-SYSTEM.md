@@ -22,6 +22,13 @@
 (hover/active/soft/border)، هر دو تم، و همهٔ کامپوننت‌های Nuxt UI و Waqtino به‌روز
 می‌شوند. `--wq-primary-soft/-border` با `color-mix` از رنگ پایه مشتق می‌شوند.
 
+**چرا مقیاس شماره‌دار (`primary-500`, `primary-100`, …) نداریم؟** چون در این
+پروژه هر «سایهٔ» رنگ یک *مقصود* دارد، نه یک عدد: `soft` پس‌زمینهٔ ملایم،
+`border` خطِ همان حالت، `hover`/`active` تعامل. اگر کسی `primary-100` بنویسد،
+روزِ تم تیره باید حدس بزند معادلش چه بود؛ با نام معنایی، `color-mix()` هر دو تم
+را خودش می‌سازد و مقیاس عددی فقط وسوسهٔ دورزدن توکن است. پس: **عدد در
+`tokens.css`، مقصود در کامپوننت.**
+
 ```text
 --color-brand-* (tokens.css)
   → --wq-primary + hover/active/soft/foreground (:root / .dark)
@@ -43,6 +50,14 @@
 
 `bg-default`/`text-muted`/`border-default` ِ Nuxt UI هم به همان توکن‌ها نگاشت شده‌اند،
 اما در کد جدید از نام‌های وقتی‌نو (جدول بالا) استفاده کنید.
+
+**آلفا (`/10`, `/15`, `/40`) خارج از این جدول ممنوع است**، چون رنگِ «روی شیشه»
+تخمینی در تم تیره از دست می‌رود. تنها مصرف مجاز، جایی است که *خودِ توکن* با
+`color-mix` ساخته می‌شود (لایهٔ نازک روی `bg-primary` برای حالت انتخاب). در فاز ۱۲
+دو مورد باقی‌مانده از این قاعده برداشته شد: `bg-primary/15` در `WqSelectCard`
+(→ `bg-primary-soft`) و `bg-primary/40` در `BookingStepIndicator` (→
+`bg-primary-border`). اگر واقعاً به لایهٔ نیمه‌شفاف نیاز بود، توی `tokens.css` یک
+`--wq-*-veil` تعریف می‌کنیم، نه عدد وسط کلاس.
 
 ## ۴. تم‌ها
 
@@ -270,7 +285,24 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 
 ### حالت‌ها
 `AppLoadingState` (اسپینر یا `rows` برای اسکلت) · `AppEmptyState` (با slot اکشن) ·
-`AppErrorState` (`retryable` + `@retry`) · `AppOfflineState`.
+`AppErrorState` (`retryable` + `@retry`) · `AppOfflineState` ·
+`AppOfflineBanner` · `app/error.vue`.
+
+**`AppOfflineBanner` و `AppOfflineState` یکی نیستند** (اشتباه رایجِ فازهای قبل):
+بنر، *لایهٔ سراسری* بالای محتوای layout است و فقط می‌گوید «اتصال قطع است،
+دادهٔ روی صفحه ممکن است کهنه باشد» — صفحه را نمی‌خورد، چون دیدنِ دادهٔ موجود
+مانع ندارد. `AppOfflineState` جای کل محتوا را می‌گیرد وقتی **خواندن** لازم است
+(فهرست نوبت‌ها، روزهای آزاد) و «تلاش مجدد» همان‌جا لازم است. پس: بنر همیشه
+از `useNetworkStatus` در layout می‌آید و صفحه‌ها `if (!online)` نمی‌نویسند؛
+حالتِ جای‌گرفتنِ محتوا، پیام سرویس را با «چرا» جایگزین می‌کند.
+`app/error.vue` هم سومین است و مرزش روشن است: خطای **صفحه‌نشستن** (۴۰۴/۵۰۰)،
+نه خطای داده؛ ۴۰۴ را «پیدا نشد» می‌گوید و ۵۰۰ را «مشکلی پیش آمد»، و stack فقط
+در dev دیده می‌شود.
+
+**هیچ وضعیتی با رنگ تنها بیان نمی‌شود**: `WqStatusBadge` و `WqSelectCard`
+آیکون + متن + `aria-pressed`/`aria-checked` دارند؛ بنر/شیت‌ها `role="status"` یا
+`role="alert"` + `aria-live`. اگر متنِ وضعیت را بپوشانید، باید هنوز قابل‌فهم
+باشد (§۴۸).
 
 قانون ترجیح: وقتی اسکلت محلی ممکن است، **اسپینر تمام‌صفحه نمی‌گذاریم** —
 `BusinessCardCompactSkeleton` جای فهرست را می‌گیرد تا چیدمان جهش نکند. حالت خالی
@@ -315,7 +347,18 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 فرم ساخت/ویرایش (فاز ۹):
    AppBackHeader → پیش‌زمینهٔ کوتاه → OwnerServiceForm
    → AppStickyAction (submit, loading, disabled) → WqConfirm (خروج بی‌ذخیره)
+
+۵. تاریخچه + جزئیات + اکشن روی همان صفحه (فاز ۱۲):
+   AppBackHeader → کارت زمان/وضعیت → مشخصات (WqMetaRow) → یادداشت‌ها
+   → ردیف اکشن‌ها (جابه‌جایی = لینک به صفحهٔ واقعی، لغو = شیت روی همان صفحه)
+   → BookingCancelSheet (دلیل + توضیح + خطای درجا)
+   صفحهٔ فهرست: چیپ‌های پیش‌رو/گذشته با شمارش → BookingCard → حالت خالیِ هر فیلتر
 ```
+
+- «اکشن خطرناک» به صفحهٔ جدا نمی‌رود: تأیید لغو روی همان جزئیات است تا
+  زمینهٔ تصمیم (کدام نوبت، چه ساعتی) جلوی چشم بماند؛ ولی «جابه‌جایی ساعت» صفحهٔ
+  خودش را دارد، چون یک انتخاب چندگامی است (روز ← ساعت) و بازگشت از آن باید
+  بدون نوشتن ممکن باشد. هیچ‌کدام لینک مرده نیستند.
 
 - هر دو الگوی بالا **چهار حالت** را دارند: اسکلت اولیه، خطا با retry، خالی با
   CTA معنادار، و موفقیت با بازخورد (toast + ناوبری بعد از موفقیت، نه قبلش).
@@ -339,3 +382,28 @@ loading/disabled/icon/trailingIcon/block پشتیبانی می‌شود. اند�
 
 فقط **lucide** (`i-lucide-*`) — محلی باندل می‌شود. سایز رایج: متن `size-4`،
 لیست `size-5`، تب‌بار `size-6`. مخلوط‌کردن کتابخانهٔ آیکون دیگر ممنوع.
+
+**نام غلط، تصویر نمی‌شکند ولی آیکون غیب می‌شود** — در prod بی‌صدا، و در dev فقط
+با `WARN [Icon] failed to load icon lucide:calendar-x2`. پس قبل از هر فاز
+نام‌ها را با خودِ دیتای iconify بسنجید:
+
+```bash
+python3 - <<'PY'
+import json, re, pathlib
+d = json.load(open('node_modules/@iconify-json/lucide/icons.json'))
+valid = set(d['icons']) | set(d.get('aliases', {}))
+names = re.compile(r'i-lucide-([a-z0-9-]+)')   # نام بعد از پیشوند
+bad = []
+for f in list(pathlib.Path('app').rglob('*.vue')) + list(pathlib.Path('app').rglob('*.ts')):
+    for n in set(names.findall(f.read_text(encoding='utf-8'))):
+        if n not in valid:
+            bad.append((str(f), n))
+print(len(bad), sorted(bad)[:10])
+PY
+```
+
+در فاز ۱۲ چهار نام غلط اصلاح شد (`hourglass-medium`→`hourglass`,
+`circle-info`→`info`, `store-plus`→`store`, `store-search`→`search-x`) و یکی از
+فایل‌های جدید (`calendar-x2`→`calendar-x-2`). امروز خروجی این اسکریپت `0` است
+(۱۴۳ نام یکتا). دقت کنید lucide نام‌ها را *تغییر* داده است: `alert-circle` در
+aliases زنده است ولی نوشتنِ نام تازه (`circle-alert`) بهتر است.

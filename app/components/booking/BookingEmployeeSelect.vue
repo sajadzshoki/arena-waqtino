@@ -19,20 +19,20 @@ defineEmits<{
 
 <template>
   <div>
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="flex flex-col gap-3">
       <USkeleton v-for="n in 3" :key="n" class="h-16 rounded-xl" />
     </div>
 
-    <!-- Empty -->
+    <!-- حالت خالی -->
     <div v-else-if="employees.length === 0" class="flex flex-col items-center gap-3 px-6 py-10 text-center">
       <UIcon name="i-lucide-users" class="size-8 text-foreground-muted" />
       <p class="t-body-sm text-foreground-secondary">کارمندی برای این خدمت یافت نشد.</p>
     </div>
 
-    <!-- List -->
+    <!-- فهرست -->
     <div v-else class="flex flex-col gap-3">
-      <!-- Option: No preference (if optional) -->
+      <!-- گزینهٔ «بدون ترجیح» (اگر اختیاری است) -->
       <button
         v-if="optional"
         type="button"
@@ -58,7 +58,7 @@ defineEmits<{
         />
       </button>
 
-      <!-- Employees -->
+      <!-- پرسنل -->
       <button
         v-for="emp in employees"
         :key="emp.id"

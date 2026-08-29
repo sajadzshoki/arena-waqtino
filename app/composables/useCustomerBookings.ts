@@ -1,35 +1,65 @@
 import type { Booking, BookingWithDetails } from '~/types/booking'
 import type { EntityId } from '~/types/common'
-import type { CancelBookingResponse, CancelBookingErrorResponse, RescheduleBookingResponse, RescheduleBookingErrorResponse } from '~/services/bookings/booking-service'
+import type { BookingCancelBlock, BookingRescheduleBlock } from '~/config/booking-policy'
+import type { CancelBookingResult, RescheduleBookingResult } from '~/services/bookings/booking-service'
+import { bookingCancelBlock, bookingRescheduleBlock } from '~/config/booking-policy'
 
 /**
- * Composable for managing customer bookings
- * Handles fetching, cancellation, and rescheduling with enriched data
+ * نوبت‌های مشتری — فهرست، جزئیات، لغو و جابه‌جایی.
+ *
+ * سه چیزی که در فاز ۱۲ درست شد:
+ *  ۱) **یک استراتژی خطا**: هیچ `console.*` و هیچ پیام hardcode‌شده‌ای نیست؛ هر
+ *     شکست به `ServiceError` تبدیل می‌شود و پیام فارسی همان است (§۲۴). تفاوت
+ *     «شبکه/سرور» و «نوبت پیدا نشد» هم حفظ می‌شود — پیش از این هر دو null
+ *     برمی‌گرداندند و صفحه می‌گفت «نوبتی وجود ندارد».
+ *  ۲) **busy تفکیکی**: فهرست، لغو و جابه‌جایی هر کدام بار خود را دارند؛ یک
+ *     `loading` مشترک باعث می‌شد بازکردن شیتِ لغو، کل فهرست را اسکلت کند.
+ *  ۳) **سیاست از config**: «قابل لغو است؟ و اگر نه چرا؟» را این لایه از
+ *     `bookingCancelBlock` می‌گیرد — همان تابعی که سرویس هم استفاده می‌کند.
+ *
+ * داده فقط از `useServices()` خوانده می‌شود؛ صفحه هیچ‌وقت مستقیم به mock نمی‌زند.
  */
 export function useCustomerBookings() {
   const services = useServices()
   const toast = useAppToast()
 
-  const upcomingBookings = ref<BookingWithDetails[]>([])
-  const pastBookings = ref<BookingWithDetails[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const upcoming = ref<BookingWithDetails[]>([])
+  const past = ref<BookingWithDetails[]>([])
+
+  const listPending = ref(false)
+  const listError = ref<string | null>(null)
+  /**
+   * «حداقل یک بار تلاش شده» — برای این است که نقاشیِ نخستِ صفحه (SSR و لحظهٔ
+   * قبل از `onMounted`) حالت خالی/خطا نباشد: تا اولین خواندن تمام نشده،
+   * صفحه اسکلت نشان می‌دهد. روی `true` رفتن فقط در موفقیت، خطای اول را ابدی
+   * می‌کرد (صفحه روی اسکلت گیر می‌کرد).
+   */
+  const loaded = ref(false)
+
+  const detail = ref<BookingWithDetails | null>(null)
+  const detailPending = ref(false)
+  const detailLoaded = ref(false)
+  const loadError = ref<string | null>(null)
+
+  const cancelPending = ref(false)
+  const reschedulePending = ref(false)
+  /** خطای اکشن، برای نمایش *در جای خودش* (داخل شیت/نوار پایین) — toast هم همان را می‌گوید */
+  const actionError = ref<string | null>(null)
 
   /**
-   * Enrich a booking with business, service, and employee details
+   * نام/مدت از «تاریخچهٔ خودِ نوبت» خوانده می‌شود (اسنپ‌شات، وگرنه سرویس زنده یا
+   * گورِ سرویس) — نه از فهرست قابل‌رزرو؛ وگرنه غیرفعال‌کردن یک سرویس، نوبت‌های
+   * قبلی مشتری را بی‌نام می‌کرد.
    */
-  async function enrichBooking(booking: Booking): Promise<BookingWithDetails> {
-    // نام/مدت از «تاریخچهٔ خود رزرو» خوانده می‌شود (اسنپ‌شات، وگرنه سرویس زنده یا
-    // گورِ سرویس) — نه از فهرست قابل‌رزرو؛ وگرنه غیرفعال‌کردن یک سرویس، رزروهای
-    // قبلی مشتری را بی‌نام می‌کرد.
-    const [business, categories, history, employeeHistory] = await Promise.all([
+  async function enrich(booking: Booking): Promise<BookingWithDetails> {
+    const [business, categories, serviceHistory, employeeHistory] = await Promise.all([
       services.businesses.getById(booking.businessId),
       services.businesses.listCategories(),
       booking.serviceSnapshot
         ? Promise.resolve(booking.serviceSnapshot)
         : services.businesses.getServiceForHistory(booking.serviceId),
-      // نام پرسنل هم «تاریخچه» است، نه فهرست قابل‌رزرو: غیرفعال یا حذف‌شدن او
-      // از سمت مدیر، نباید نوبت ثبت‌شدهٔ مشتری را بی‌نام کند (فاز ۱۰).
+      // نام پرسنل هم «تاریخچه» است: غیرفعال یا حذف‌شدن او از سمت مدیر، نباید
+      // نوبت ثبت‌شدهٔ مشتری را بی‌نام کند (فاز ۱۰).
       booking.employeeId
         ? (booking.employeeSnapshot ?? services.businesses.getEmployeeForHistory(booking.employeeId))
         : Promise.resolve(null)
@@ -40,182 +70,147 @@ export function useCustomerBookings() {
     return {
       ...booking,
       businessName: business?.name ?? 'کسب‌وکار نامشخص',
-      serviceName: history?.name ?? 'سرویس حذف‌شده',
-      employeeName: booking.employeeId
-        ? (employeeHistory?.name ?? 'پرسنل حذف‌شده')
-        : undefined,
+      serviceName: serviceHistory?.name ?? 'سرویس حذف‌شده',
+      employeeName: booking.employeeId ? (employeeHistory?.name ?? 'پرسنل حذف‌شده') : undefined,
       businessCategoryName: category?.name,
-      // مدت: اسنپ‌شات، وگرنه بازهٔ خود رزرو (هیچ‌وقت عدد ساختگی نه)
-      serviceDuration: history?.durationMinutes
-        ?? Math.max(0, Math.round((new Date(booking.end).getTime() - new Date(booking.start).getTime()) / 60_000))
+      // مدت: اسنپ‌شات، وگرنه بازهٔ خودِ نوبت (هیچ‌وقت عدد ساختگی نه)
+      serviceDuration: serviceHistory?.durationMinutes
+        ?? Math.max(
+          0,
+          Math.round((new Date(booking.end).getTime() - new Date(booking.start).getTime()) / 60_000)
+        )
     }
   }
 
-  /**
-   * Fetch all bookings (upcoming and past) with enriched details
-   */
-  async function fetchBookings() {
-    loading.value = true
-    error.value = null
-
+  async function fetchBookings(): Promise<void> {
+    listPending.value = true
+    listError.value = null
     try {
-      const [upcoming, past] = await Promise.all([
+      const [upcomingRows, pastRows] = await Promise.all([
         services.bookings.listMine('upcoming'),
         services.bookings.listMine('past')
       ])
-
       const [enrichedUpcoming, enrichedPast] = await Promise.all([
-        Promise.all(upcoming.map(enrichBooking)),
-        Promise.all(past.map(enrichBooking))
+        Promise.all(upcomingRows.map(enrich)),
+        Promise.all(pastRows.map(enrich))
       ])
-
-      upcomingBookings.value = enrichedUpcoming
-      pastBookings.value = enrichedPast
+      upcoming.value = enrichedUpcoming
+      past.value = enrichedPast
     }
-    catch (err) {
-      error.value = 'خطا در دریافت رزروها'
-      console.error('Failed to fetch bookings:', err)
+    catch (error) {
+      // پیام سرویس (فارسی) تنها چیزی است که کاربر می‌بیند؛ جزئیات فنی نمی‌آید
+      listError.value = toServiceError(error).message
     }
     finally {
-      loading.value = false
+      loaded.value = true
+      listPending.value = false
     }
   }
 
-  /**
-   * Cancel a booking
-   */
-  async function cancelBooking(bookingId: EntityId, reason?: string): Promise<CancelBookingResponse | CancelBookingErrorResponse> {
-    loading.value = true
-    error.value = null
+  /** یک‌بار بارگذاری در mount؛ بازگشت به صفحه با `fetchBookings` تازه می‌شود. */
+  async function ensure(): Promise<void> {
+    if (loaded.value || listPending.value) return
+    await fetchBookings()
+  }
 
+  async function loadBookingById(id: EntityId): Promise<void> {
+    detailPending.value = true
+    loadError.value = null
     try {
-      const result = await services.bookings.cancel({
-        bookingId,
-        reason
-      })
-
-      if (result.success) {
-        toast.success('رزرو با موفقیت لغو شد')
-        await fetchBookings()
-        return { success: true, message: 'رزرو با موفقیت لغو شد' }
-      }
-      else {
-        toast.error(result.error.message)
-        return result
-      }
+      const booking = await services.bookings.getById(id)
+      // `null` از سرویس یعنی «نوبتی با این شناسه برای شما نیست» → حالت خالی، نه خطا
+      detail.value = booking ? await enrich(booking) : null
     }
-    catch (err) {
-      error.value = 'خطا در لغو رزرو'
-      toast.error('خطا در لغو رزرو')
-      console.error('Failed to cancel booking:', err)
-      return {
-        success: false,
-        error: { code: 'SERVER_ERROR', message: 'خطای سرور' }
-      }
+    catch (error) {
+      loadError.value = toServiceError(error).message
+      detail.value = null
     }
     finally {
-      loading.value = false
+      detailLoaded.value = true
+      detailPending.value = false
     }
   }
 
+  /** `true` یعنی نوبت لغو شد؛ پیام خطا (در صورت وجود) در `actionError` است. */
+  async function cancelBooking(bookingId: EntityId, reason?: string): Promise<boolean> {
+    return runAction(bookingId, () => services.bookings.cancel({ bookingId, ...(reason ? { reason } : {}) }), 'cancel')
+  }
+
+  async function rescheduleBooking(bookingId: EntityId, newStart: string, newEnd: string): Promise<boolean> {
+    return runAction(bookingId, () => services.bookings.reschedule({ bookingId, newStart, newEnd }), 'reschedule')
+  }
+
   /**
-   * Reschedule a booking
+   * مسیر مشترک لغو/جابه‌جایی: pending → فراخوانی → در صورت موفقیت خواندن دوباره
+   * (هیچ state دستی «تغییر داده نمی‌شود» که از واقعیت سرویس واگرا شود) → در صورت
+   * خطا، پیام همان‌جا در شیت + toast.
    */
-  async function rescheduleBooking(
+  async function runAction(
     bookingId: EntityId,
-    newStart: string,
-    newEnd: string
-  ): Promise<RescheduleBookingResponse | RescheduleBookingErrorResponse> {
-    loading.value = true
-    error.value = null
-
+    call: () => Promise<CancelBookingResult | RescheduleBookingResult>,
+    kind: 'cancel' | 'reschedule'
+  ): Promise<boolean> {
+    const pending = kind === 'cancel' ? cancelPending : reschedulePending
+    pending.value = true
+    actionError.value = null
     try {
-      const result = await services.bookings.reschedule({
-        bookingId,
-        newStart,
-        newEnd
-      })
-
+      const result = await call()
       if (result.success) {
-        toast.success('زمان رزرو با موفقیت تغییر کرد')
-        await fetchBookings()
-        const enrichedBooking = await enrichBooking(result.booking)
-        return { success: true, booking: enrichedBooking }
+        await Promise.all([
+          fetchBookings(),
+          detail.value?.id === bookingId ? loadBookingById(bookingId) : Promise.resolve()
+        ])
+        toast.success(kind === 'cancel' ? 'نوبت لغو شد.' : 'زمان نوبت به‌روز شد.')
+        return true
       }
-      else {
-        toast.error(result.error.message)
-        return result
-      }
+      // کد خطا برای لایهٔ بالاتر معنا ندارد؛ پیام فارسیِ سرویس همان چیزی است که می‌ماند
+      actionError.value = result.error.message
+      toast.error(result.error.message)
+      return false
     }
-    catch (err) {
-      error.value = 'خطا در تغییر زمان رزرو'
-      toast.error('خطا در تغییر زمان رزرو')
-      console.error('Failed to reschedule booking:', err)
-      return {
-        success: false,
-        error: { code: 'SERVER_ERROR', message: 'خطای سرور' }
-      }
+    catch (error) {
+      const serviceError = toServiceError(error)
+      actionError.value = serviceError.message
+      toast.error(serviceError.message)
+      return false
     }
     finally {
-      loading.value = false
+      pending.value = false
     }
   }
 
-  /**
-   * Get a single booking by ID with enriched details
-   */
-  async function getBookingById(bookingId: EntityId): Promise<BookingWithDetails | null> {
-    try {
-      const booking = await services.bookings.getById(bookingId)
-      if (!booking) return null
-      return await enrichBooking(booking)
-    }
-    catch (err) {
-      console.error('Failed to fetch booking:', err)
-      return null
-    }
+  /** سیاست مشترک UI/سرویس (config/booking-policy) — صفحه خودش قاعده نمی‌سازد. */
+  function cancelBlock(booking: Pick<Booking, 'status' | 'start'>): BookingCancelBlock {
+    return bookingCancelBlock(booking)
   }
 
-  /**
-   * Check if a booking can be cancelled
-   */
-  function canCancelBooking(booking: BookingWithDetails): boolean {
-    // Can't cancel if already cancelled
-    if (booking.status === 'cancelled') return false
-
-    // Can't cancel if past
-    if (new Date(booking.start).getTime() < Date.now()) return false
-
-    // Can't cancel within 2 hours of appointment
-    const hoursUntilBooking = (new Date(booking.start).getTime() - Date.now()) / (1000 * 60 * 60)
-    if (hoursUntilBooking < 2) return false
-
-    return true
-  }
-
-  /**
-   * Check if a booking can be rescheduled
-   */
-  function canRescheduleBooking(booking: BookingWithDetails): boolean {
-    // Can only reschedule pending or confirmed bookings
-    if (booking.status !== 'pending' && booking.status !== 'confirmed') return false
-
-    // Can't reschedule if past
-    if (new Date(booking.start).getTime() < Date.now()) return false
-
-    return true
+  function rescheduleBlock(booking: Pick<Booking, 'status' | 'start'>): BookingRescheduleBlock {
+    return bookingRescheduleBlock(booking)
   }
 
   return {
-    upcomingBookings: readonly(upcomingBookings),
-    pastBookings: readonly(pastBookings),
-    loading: readonly(loading),
-    error: readonly(error),
+    // فهرست
+    upcoming: readonly(upcoming),
+    past: readonly(past),
+    listPending: readonly(listPending),
+    listError: readonly(listError),
+    loaded: readonly(loaded),
     fetchBookings,
+    ensure,
+    // جزئیات
+    detail: readonly(detail),
+    detailPending: readonly(detailPending),
+    detailLoaded: readonly(detailLoaded),
+    loadError: readonly(loadError),
+    loadBookingById,
+    // اکشن‌ها
     cancelBooking,
     rescheduleBooking,
-    getBookingById,
-    canCancelBooking,
-    canRescheduleBooking
+    cancelPending: readonly(cancelPending),
+    reschedulePending: readonly(reschedulePending),
+    actionError: readonly(actionError),
+    // سیاست
+    cancelBlock,
+    rescheduleBlock
   }
 }

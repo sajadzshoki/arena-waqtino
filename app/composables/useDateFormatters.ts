@@ -1,12 +1,12 @@
 import { formatFaDate, formatFaTime, formatFaDateTime, isToday, isTomorrow, isThisWeek } from '~/utils/datetime'
 
 /**
- * Composable for date formatting utilities
- * Provides Persian date/time formatting functions
+ * ابزارهای قالب‌بندی تاریخ و ساعت (فارسی/جلالی)
+ * تابع‌های خواندن تاریخ و ساعت با ارقام و تقویم فارسی
  */
 export function useDateFormatters() {
   /**
-   * Format a date to a readable Persian label
+   * تبدیل تاریخ به برچسب خوانا (فارسی، جلالی)
    * Shows "امروز", "فردا", or the full date
    */
   function formatDateLabel(date: Date | string): string {
@@ -24,7 +24,7 @@ export function useDateFormatters() {
   }
 
   /**
-   * Format time in Persian format (HH:MM)
+   * ساعت به قالب فارسی (HH:MM با ارقام فارسی)
    */
   function formatTime(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date
@@ -32,7 +32,7 @@ export function useDateFormatters() {
   }
 
   /**
-   * Format date and time together
+   * تاریخ و ساعت، کنار هم
    */
   function formatDateTime(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date
@@ -40,7 +40,7 @@ export function useDateFormatters() {
   }
 
   /**
-   * Check if date is today
+   * آیا امروز است؟
    */
   function checkIsToday(date: Date | string): boolean {
     const d = typeof date === 'string' ? new Date(date) : date
@@ -48,7 +48,7 @@ export function useDateFormatters() {
   }
 
   /**
-   * Check if date is tomorrow
+   * آیا فردا است؟
    */
   function checkIsTomorrow(date: Date | string): boolean {
     const d = typeof date === 'string' ? new Date(date) : date
@@ -56,7 +56,7 @@ export function useDateFormatters() {
   }
 
   /**
-   * Check if date is this week
+   * آیا در همین هفته است؟
    */
   function checkIsThisWeek(date: Date | string): boolean {
     const d = typeof date === 'string' ? new Date(date) : date
@@ -64,7 +64,7 @@ export function useDateFormatters() {
   }
 
   /**
-   * Get relative time description
+   * توضیح نسبی زمان (چند دقیقه/ساعت/روز دیگر)
    */
   function getRelativeTime(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date

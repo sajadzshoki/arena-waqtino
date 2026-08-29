@@ -15,7 +15,15 @@ import { toServiceError } from '~/utils/errors'
  */
 export function useAuthRecovery() {
   const { expireSession } = useAuth()
-  const route = useRoute()
+  /**
+   * مسیر از `router.currentRoute` خوانده می‌شود، نه `useRoute()`: این recovery
+   * گاه از داخل `defineNuxtRouteMiddleware` (زنجیرهٔ گارد → useUserMode → …)
+   * صدا زده می‌شود و آن‌جا `useRoute()` هنوز مسیر *قبلی* را می‌دهد — یعنی
+   * `redirect` می‌توانست به صفحه‌ای اشاره کند که کاربر همین حالا دارد ترکش
+   * می‌کند (و در dev هم NUXT_E2005 می‌ساخت).
+   */
+  const router = useRouter()
+  const route = computed(() => router.currentRoute.value)
   /** نگهبان دوباره‌اجرا: ده‌ها درخواست هم‌زمان با یک ۴۰۱ فقط یک redirect می‌سازند. */
   const recovering = useState<boolean>('auth:recovering', () => false)
 
@@ -39,9 +47,10 @@ export function useAuthRecovery() {
         'نشست شما به پایان رسیده است.',
         'برای ادامهٔ کار دوباره وارد حساب شوید.'
       )
-      if (import.meta.client && route.path !== '/login') {
+      const current = route.value
+      if (import.meta.client && current.path !== '/login') {
         await navigateTo(
-          { path: '/login', query: { redirect: route.fullPath } },
+          { path: '/login', query: { redirect: current.fullPath } },
           { replace: true }
         )
       }

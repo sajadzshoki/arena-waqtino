@@ -17,18 +17,18 @@ defineEmits<{
 
 <template>
   <div>
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="flex flex-col gap-3">
       <USkeleton v-for="n in 3" :key="n" class="h-20 rounded-xl" />
     </div>
 
-    <!-- Empty -->
+    <!-- حالت خالی -->
     <div v-else-if="services.length === 0" class="flex flex-col items-center gap-3 px-6 py-10 text-center">
       <UIcon name="i-lucide-construction" class="size-8 text-foreground-muted" />
       <p class="t-body-sm text-foreground-secondary">این کسب‌وکار هنوز خدمتی ثبت نکرده است.</p>
     </div>
 
-    <!-- List -->
+    <!-- فهرست -->
     <div v-else class="flex flex-col gap-3">
       <button
         v-for="service in services"
@@ -52,7 +52,7 @@ defineEmits<{
               {{ service.description }}
             </p>
           </div>
-          <!-- Selected indicator -->
+          <!-- نشانگر انتخاب -->
           <span v-if="selectedId === service.id" class="shrink-0">
             <UIcon name="i-lucide-check-circle-2" class="size-5 text-primary" />
           </span>

@@ -58,16 +58,9 @@ function toggleNearby() {
   }
 }
 
-function setAvailableDay(day: 'today' | 'tomorrow' | null) {
-  draftFilters.value = {
-    ...draftFilters.value,
-    availableDay: draftFilters.value.availableDay === day ? null : day
-  }
-}
-
 const hasDraftFilters = computed(() => {
   const f = draftFilters.value
-  return f.minRating !== null || f.nearbyOnly || f.availableDay !== null || f.maxPrice !== null || draftCategoryId.value !== null
+  return f.minRating !== null || f.nearbyOnly || draftCategoryId.value !== null
 })
 </script>
 
@@ -126,33 +119,9 @@ const hasDraftFilters = computed(() => {
           نزدیک من
         </WqChip>
       </div>
-
-      <!-- زمان رزرو -->
-      <div>
-        <h3 class="t-label mb-2.5 text-foreground-strong">زمان آزاد</h3>
-        <div class="flex gap-2">
-          <WqChip
-            :selected="draftFilters.availableDay === 'today'"
-            icon="i-lucide-calendar-check"
-            @toggle="setAvailableDay('today')"
-          >
-            امروز
-          </WqChip>
-          <WqChip
-            :selected="draftFilters.availableDay === 'tomorrow'"
-            icon="i-lucide-calendar"
-            @toggle="setAvailableDay('tomorrow')"
-          >
-            فردا
-          </WqChip>
-        </div>
-        <p class="t-caption mt-2">
-          (این فیلتر در نسخهٔ آینده فعال خواهد شد)
-        </p>
-      </div>
     </div>
 
-    <!-- Footer -->
+    <!-- فوتر -->
     <template #footer>
       <div class="flex items-center gap-3">
         <WqButton

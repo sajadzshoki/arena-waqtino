@@ -48,7 +48,7 @@ const emit = defineEmits<{ select: [] }>()
     <span
       v-if="icon"
       class="flex size-11 shrink-0 items-center justify-center rounded-lg"
-      :class="selected ? 'bg-primary/15 text-primary' : 'bg-surface-muted text-foreground-muted'"
+      :class="selected ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-foreground-muted'"
     >
       <UIcon :name="icon" class="size-6" />
     </span>

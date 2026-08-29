@@ -92,7 +92,7 @@ function ariaLabel(item: DateAvailability): string {
 
 <template>
   <div>
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="flex gap-2 overflow-hidden" aria-hidden="true">
       <USkeleton v-for="n in 7" :key="n" class="h-20 w-16 shrink-0 rounded-xl" />
     </div>
@@ -111,7 +111,7 @@ function ariaLabel(item: DateAvailability): string {
       </WqButton>
     </p>
 
-    <!-- Empty -->
+    <!-- حالت خالی -->
     <div v-else-if="dates.length === 0" class="flex flex-col items-center gap-3 px-6 py-10 text-center">
       <UIcon name="i-lucide-calendar-x" class="size-8 text-foreground-muted" aria-hidden="true" />
       <p class="t-body-sm text-foreground-secondary">تاریخ قابل‌رزروی در روزهای پیش‌رو پیدا نشد.</p>
@@ -120,7 +120,7 @@ function ariaLabel(item: DateAvailability): string {
       </p>
     </div>
 
-    <!-- Date strip -->
+    <!-- نوار روزها -->
     <div
       v-else
       ref="scrollContainer"

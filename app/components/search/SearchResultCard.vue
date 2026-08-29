@@ -60,7 +60,7 @@ const formattedDistance = computed(() => {
     >
       <!-- تصویر -->
       <div class="relative size-24 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
-        <!-- Fallback -->
+        <!-- جایگزین -->
         <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-soft to-surface-muted">
           <UIcon :name="categoryIcon" class="size-8 text-primary/40" />
         </div>

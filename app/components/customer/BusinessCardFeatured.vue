@@ -41,7 +41,7 @@ function onTap() {
   trackView(props.business.id)
 }
 
-// Reset state when business changes
+// با عوض‌شدن کسب‌وکار، state نمایش تازه می‌شود
 watch(() => props.business.id, () => {
   imgLoaded.value = false
   imgError.value = false

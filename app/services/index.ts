@@ -69,8 +69,9 @@ export function createServices(): AppServices {
     // روی config.public.apiBaseUrl — بدون تغییر در مصرف‌کنندگان.
     throw createError({
       statusCode: 500,
-      statusMessage:
-        'API mode هنوز پیاده‌سازی نشده است. NUXT_PUBLIC_API_MODE=mock را استفاده کنید.'
+      // `message` (نه `statusMessage`): h3 آینده‌نگرانه statusMessage را sanitize
+      // می‌کند و پیام ما باید به‌صورت کامل به صفحهٔ خطا برسد.
+      message: 'حالت API هنوز پیاده‌سازی نشده است. NUXT_PUBLIC_API_MODE=mock را استفاده کنید.'
     })
   }
 

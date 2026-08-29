@@ -72,7 +72,7 @@ const needsName = computed(() => !props.user || isProfileIncomplete(props.user))
       v-if="!loading && needsName"
       class="t-body-sm mt-3 flex items-start gap-2 rounded-lg bg-primary-soft px-3 py-2 text-primary"
     >
-      <UIcon name="i-lucide-circle-info" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <UIcon name="i-lucide-info" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       <span>با یک بار ثبت نام، رزروها و گفتگوها شخصی‌تر و سریع‌تر می‌شوند.</span>
     </p>
   </section>

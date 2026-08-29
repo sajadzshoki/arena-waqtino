@@ -108,7 +108,8 @@ app/
     app/             کروم اپ: AppHeader، AppBottomNavigation، AppModeSwitcher،
                      AppLogo، AppThemeToggle، AppPageHeader، AppBackHeader، AppStickyAction
     ui/              Wq* — کامپوننت‌های سیستم طراحی (دکمه، فرم، اورلی، نمایش داده)
-    states/          AppLoadingState، AppEmptyState، AppErrorState، AppOfflineState
+    states/          AppLoadingState، AppEmptyState، AppErrorState، AppOfflineState،
+                     AppOfflineBanner (بنر نازک سراسری در layout — §۲۷)
     settings/        SettingsSection، SettingsRow، SettingsInfoRow (آجرهای صفحهٔ تنظیمات)
     profile/         ProfileIdentity، ProfileAvatarEditor
     customer/        BusinessCard*، BusinessSaveToggle، اسکلت‌ها
@@ -126,7 +127,9 @@ app/
                      OwnerAvailabilityInterval، OwnerScheduleSummary،
                      OwnerBusinessHoursCard، OwnerEmployeeHoursRow،
                      OwnerAvailabilitySkeleton — و ui/WqTimeField (قلم ساعت)
-    search/ bookings/ business/ employee/  (کامپوننت‌های دامنه‌ای)
+    search/ business/ employee/  (کامپوننت‌های دامنه‌ای)
+    bookings/        BookingCard (یک کارت برای «پیش‌رو» و «گذشته»)،
+                     BookingCancelSheet (تأیید لغو + دلیل + پیام خطای درجا)
   composables/       useAuth، useUserMode، useServices، useAppToast،
                      useSavedBusinesses (منبع‌واحد‌حقیقت نشان‌شده‌ها)، useUserProfile،
                      useProfileForm، useProfileAvatar، useThemePreference،
@@ -138,6 +141,10 @@ app/
                      useBusinessEmployees / useEmployeeActions / useEmployeeForm /
                      useEmployeeAssignment / useEmployeeServiceOptions
                      (فاز ۱۰: پرسنل و رابطهٔ سرویس↔پرسنل)،
+                     useCustomerBookings (فاز ۱۲: فهرست + جزئیات + لغو + جابه‌جایی،
+                     یک state مشترک برای همهٔ صفحه‌های نوبت) /
+                     useRescheduleSlots (گام روز/ساعتِ جابه‌جایی روی موتور فاز ۱۱) /
+                     useSystemBackHandler + useNetworkStatus (زیرساخت مشترک UI/اتصال)،
                      useBusinessAvailability (کش per-businessIdِ برنامهٔ هفته +
                      نوشتن + busy/actionError) / useScheduleEditor (فاز ۱۱: ماشین
                      draft — قاعدهٔ روز، بازه‌ها، dirty، save، revert)
@@ -152,7 +159,11 @@ app/
                      `AVAILABILITY_POLICY`: سقف بازه/حداقل دقیقه/قاعدهٔ «حذف
                      آخرین بازه ⇒ روز تعطیل»، الگوی شروع)،
                      timezone.ts (APP_TIMEZONE و پنجرهٔ افق رزرو — تنها جای
-                     «منطق منطقهٔ زمانی»)
+                     «منطق منطقهٔ زمانی»)،
+                     booking-policy.ts (فاز ۱۲: پنجرهٔ لغو، وضعیت‌های زنده/قابل
+                     جابه‌جایی، سقف یادداشت، افق جابه‌جایی، دلایل لغو و
+                     `bookingCancelBlock`/`bookingRescheduleBlock` — تنها جایی که
+                     «سیاست نوبت» تعریف می‌شود؛ هم UI می‌خواند هم mock service)
                      (پیکربندی دامنه، auto-import)
   layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
   pages/             index.vue، saved.vue، profile(/edit).vue، settings.vue،
@@ -160,8 +171,12 @@ app/
                      owner/{index,businesses,business/[businessId]{,/info,/manage,
                      /services{,/new,/[serviceId](/edit)},/employees{,/new,/[employeeId](/edit)},
                      /availability{,/business,/employees/[employeeId]}}}،
-                     employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی،
-                     فقط-توسعه)
+                     bookings/index.vue (پیش‌رو/گذشته) و
+                     bookings/[id]/{index,reschedule}.vue (جزئیات + جابه‌جایی؛
+                     دیگه `/bookings.vue` placeholder نداریم)،
+                     error.vue (صفحهٔ خطای سراسری: ۴۰۴ ≠ ۵۰۰، جزئیات فنی فقط dev)،
+                     employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی +
+                     بازنشانی چهار دامنه، فقط-توسعه)
   plugins/           01.services.ts، 02.session.ts، 03-user-scope.client.ts
   services/          index.ts (registry) — auth/ users/ favorites/ avatars/
                      businesses/ bookings/ owner/ …
@@ -174,6 +189,12 @@ app/
                      getBusiness/saveBusiness/listEmployees/getEmployee/
                      saveEmployee/resetEmployeeToBusinessDefault)،
                      mock-availability-management-service.ts،
+                     bookings/: booking-service.ts (قرارداد: اتحادیه‌های
+                     `CancelBookingResult`/`RescheduleBookingResult` +
+                     `resetLocalChanges`)، mock-booking-service.ts (ثبت/لغو/جابه‌جایی
+                     درجا + دفاع دوم روی همان سیاست config)،
+                     native/system-back.ts (استک LIFO دکمهٔ بازگشت؛ `@capacitor/app`
+                     اختیاری داخل `try` — بدون وابستگی native در package.json)،
                      ../availability/: availability-service.ts (قرارداد خواندن)،
                      mock-availability-service.ts (پوستهٔ نازک)،
                      availability-core.ts (موتور مشترکِ پنجرهٔ کاری/اسلات)
@@ -187,6 +208,9 @@ app/
                      می‌شود)، availability-state.ts (کوکی `wq_business_availability`:
                      دلتای برنامهٔ هفتهٔ کسب‌وکار + رکورد اختصاصی پرسنل — تنها نقطهٔ
                      نوشتن، و `resolve*` های خواندن که seed را merge می‌کنند)،
+                     booking-state.ts (کوکی `wq_business_bookings`: نوبت‌های
+                     ساخته‌شده + patch های وضعیت/زمانِ نوبت‌های seed — تنها نقطهٔ
+                     نوشتنِ دامنهٔ نوبت)،
                      avatar-assets.ts
   types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts + owner.ts
                      (OwnedBusiness / OwnerDashboard / BusinessAccess) + service.ts
@@ -207,7 +231,8 @@ app/
                      weekdayOf، قالب‌های شمسی)، schedule.ts (جبرِ بازه‌ها:
                      overlap/contains/intersect/sort)،
                      schedule-summary.ts (خلاصهٔ خوانای هفته برای نمایش)
-docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
+docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md،
+                     API-CONTRACT.md (فاز ۱۲: انتظارات روشن از بک‌اند)
 ```
 
 کامپوننت‌ها با `pathPrefix: false` اسکن می‌شوند؛ نام فایل = نام تگ (یکتا نگه دارید).
@@ -251,6 +276,7 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 | کسب‌وکارِ زمینهٔ مدیر | `wq_owner_business` → `Record<userId, businessId>` | کوکی | ۳۶۵ روز |
 | سرویس‌های کسب‌وکار (delta فاز ۹) | `wq_business_services` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
 | پرسنل کسب‌وکار (delta فاز ۱۰) | `wq_business_employees` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
+| نوبت‌های مشتری (ثبت/لغو/جابه‌جایی، delta فاز ۱۲) | `wq_business_bookings` → `{ created, patches: { [bookingId] } }` | کوکی | ۳۶۵ روز |
 | ساعت کاری کسب‌وکار و پرسنل (delta فاز ۱۱) | `wq_business_availability` → `{ businesses: { [businessId]: { business?: AvailabilityDay[], employees?: { [employeeId]: { source, days } } } } }` | کوکی | ۳۶۵ روز |
 | ترجیح تم | `wq-color-mode` | `localStorage` | همیشگی |
 | تاریخچهٔ مشاهده / پیش‌نویس رزرو | `useState` | حافظهٔ همین بار اجرا | تا پایان نشست مرورگر |
@@ -281,6 +307,13 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
   تنظیم‌شده را نگه می‌دارد و reset کردن، رکورد را حذف می‌کند نه خالی.
   کش دامنه (`owner:availability:*`) با تغییر/خروج کاربر reset می‌شود
   (`resetAvailability()` در `plugins/03-user-scope.client.ts`)؛ کوکی می‌ماند.
+- نوبت‌ها هم **به کاربر قید می‌شوند** (نه به کسب‌وکار): مالکیت خواندن در
+  `listMine`/`getById` همان‌جا اعمال می‌شود و نوبتِ حساب دیگر `null` است، نه
+  ۴۰۳ — UI حالت خالی می‌گیرد بدون اینکه وجود رکورد لو برود. `patches` عمداً
+  **درجا** وضعیت/زمان را عوض می‌کند تا «جابه‌جایی» هرگز دو رکورد نسازد
+  (رکورد کهنه‌ی لغو‌شده در تاریخچه نمی‌ماند). سقف کوکی با `COOKIE_BUDGET`
+  محافظت می‌شود: اگر delta بزرگ شد، از `created` کم می‌کند نه اینکه کل نوشتن
+  بی‌صدا گم شود.
 - نوشتن روی delta، نه کپی کل فهرست: سقف کوکی ~۴KB است و کپی‌کردن ۸ سرویس
   آن را می‌شکست (کوکیِ بزرگ بی‌صدا دور ریخته می‌شود = گم‌شدن دادهٔ کاربر).
   `removed` هم گورِ سرویس است، نه فقط حذف: تاریخچهٔ نوبت باید بگوید آن نوبت
@@ -672,7 +705,68 @@ NOT_FOUND برای پرسنلِ کسب‌وکار دیگر تا وجودش لو 
 هیچ‌کدام از مصرف‌کننده‌ها. عمداً ساخته نشدند: نه تاریخِ خاص، نه مرخصی، نه
 break در دامنه، نه drag&drop/تقویم.
 
-## ۱۳. آنچه عمداً ساخته نشده (مقید به فاز ۰)
+## ۱۳. پرداخت نهایی جلوی (فاز ۱۲)
+
+فاز ۱۲ فیچر اضافه نکرد؛ بدهی‌های ریزِ فازهای ۲–۱۱ را گرفت تا روز اتصال،
+«تمیزکاری» به «باگ‌گیری» تبدیل نشود:
+
+- **سیاست نوبت، یک‌جا**: پنجرهٔ ۱۲۰ دقیقه‌ای لغو، وضعیت‌های زنده، افق ۱۴ روزهٔ
+  جابه‌جایی، سقف یادداشت و دلایل لغو در `config/booking-policy.ts`‌اند. قبلاً
+  رقمِ «۲ ساعت» در UI و در سرویس دوباره نوشته شده بود؛ حالا هر دو (و شیت تأیید)
+  از همان تابع‌های `bookingCancelBlock`/`bookingRescheduleBlock` می‌خوانند.
+  روزِ بک‌اند، همین config جای fallback است و پاسخ `GET /businesses/:id/policy`
+  می‌شود منبع اصلی (`docs/API-CONTRACT.md` §۷-۳).
+- **حلقهٔ نوبت کامل شد**: `bookings/index.vue` (با tab های پیش‌رو/گذشته)،
+  `bookings/[id]/index.vue` (جزئیات + لغو روی همان صفحه) و
+  `bookings/[id]/reschedule.vue` (جابه‌جایی واقعی). لینک‌های `/bookings/cancel`
+  و `/bookings/reschedule` که **صفحه‌ای نداشتند** حذف شدند؛ `app/pages/bookings.vue`
+  (placeholder مرده) جاروب شد. خطای لغو داخل همان شیت می‌ماند و state را
+  خراب نمی‌کند؛ جابه‌جایی با `replace` به جزئیات برمی‌گردد.
+- **یک مدل نتیجه**: `CancelBookingResult`/`RescheduleBookingResult` (اتحادیهٔ
+  موفق/ناموفق با `code`) به قرارداد `BookingService` اضافه شد تا UI روی کد
+  شاخه بزند، نه روی متن فارسی.
+- **دکمهٔ بازگشت Android**: `services/native/system-back.ts` یک استک LIFO است؛
+  `WqSheet`/`WqConfirm` هنگام بازبودن ثبت می‌شوند، پس «بازگشت» یعنی بستنِ همان
+  لایه — نه خروج از اپ، نه جا‌ماندن در صفحه. `@capacitor/app` اختیاری و داخل
+  `try` بارگذاری می‌شود (وابستگی native نصب نشده؛ §۵۱).
+- **اتصال، شفاف**: `useNetworkStatus` + `AppOfflineBanner` در layout،
+  `AppOfflineState` در صفحه‌های داده‌محور (نوبت‌ها، جابه‌جایی، تاریخچه)؛ «خطای
+  شبکه» از «داده نداریم» جدا شد. کش آفلاین و صف ارسال عمداً ساخته نشد.
+- **یک مجموعه UI خطا**: `app/error.vue` (۴۰۴ ≠ ۵۰۰، جزئیات فنی فقط dev) و
+  `AppErrorState` در همه‌جا؛ `useSearch` پیام `ServiceError` را به‌جای بولین
+  می‌دهد و `search.vue` همان کامپوننت را نشان می‌دهد.
+- **state یک‌نمونه**: `useCustomerBookings` یک نمونهٔ مشترک برای فهرست/جزئیات/
+  اکشن‌هاست (قبلاً دو نسخهٔ موازی، بعد از لغو یکی‌شان کهنه می‌ماند)؛ غنی‌کردن نوبت
+  (`enrich` → `BookingWithDetails`) هم همان‌جا زندگی می‌کند و نگاشت
+  `DateAvailabilityEntry → ردیف نوار تاریخ` در `utils/date-availability.ts`
+  مشترک است، تا جریان رزرو و صفحهٔ جابه‌جایی «امروز/فردا/پُر» را دو جور حساب
+  نکنند.
+- **mock بی‌مزاحم**: `MOCK_BOOKED_SLOTS` و چهار نوشتنِ مستقیم روی seed حذف شد؛
+  دامنهٔ نوبت هم مثل سرویس‌ها/پرسنل/ساعت‌کاری delta کوکی دارد و `resetLocalChanges()`
+  در ابزار dev هر چهار دامنه را یکجا به پایه برمی‌گرداند.
+- **تمیزکاری قابل‌سنجش**: `any` صفر، `console.*` صفر، رنگ خارج از توکن صفر،
+  نام آیکون lucide ۱۰۰٪ معتبر (۴ نام غلط اصلاح شد)، کامنت انگلیسی صفر، و
+  نگهبان «تغییرات ذخیره‌نشده» از نسخهٔ محلی `profile/edit.vue` به
+  `useUnsavedChangesGuard` مشترک منتقل شد.
+- **قاعدهٔ «context پیش از await» جاروب شد**: در `MockBookingService`
+  (سه متد) و `MockBusinessService` (پنج متد) `useMockFlags()` بعد از
+  `await delay()` خوانده می‌شد؛ در SSR بی‌صدا به پیش‌فرض می‌افتاد (کلید
+  «شبیه‌سازی خطا/پاسخ خالی» روی خواندن‌های سرور بی‌اثر) و در لاگ prod
+  `NUXT_E1001` می‌ساخت. حالا همه‌خواندن‌های context قبل از اولین `await`اند —
+  اسکریپت بازبینی: هیچ `use(MockFlags|Cookie|State|…)(` بعد از `await` در
+  `app/services/**` و `app/composables/**` نیست.
+- **`useRoute()` از زنجیرهٔ گارد بیرون رفت**: مسیرِ گارد `guard.global.ts →
+  useUserMode → useOwnerBusinesses → useAuthRecovery` بود و `useAuthRecovery`
+  در setup خودش `useRoute()` می‌خواند؛ داخل middleware این همان مسیر *قبلی* است
+  (یعنی `redirect` می‌توانست به صفحه‌ای اشاره کند که کاربر دارد ترکش می‌کند)
+  و در dev هم `NUXT_E2005` می‌ساخت. حالا `router.currentRoute` لحظهٔ مصرف خوانده
+  می‌شود. قاعده: هر چیزی که گارد مسیر به آن دست می‌زند، نباید `useRoute()`
+  صدا بزند — `to` را بگیرید یا `router.currentRoute`.
+- **فیلترهای نیمه‌کاره حذف شدند**: `availableDay` و `maxPrice` از مدل جستجو
+  بیرون رفتند (کنترل بی‌اثر بدتر از نبودن کنترل است)؛ انتظارشان به‌عنوان فیلتر
+  **سمت سرویس** در `docs/API-CONTRACT.md` ثبت شده است.
+
+## ۱۴. آنچه عمداً ساخته نشده (مقید به فاز ۰)
 
 - صفحات واقعی مشتری/کسب‌وکار/کارمند، جریان رزرو، چت، اعلان‌ها.
 - پنل ادمین (خارج از اسکوپ کل پروژه).

@@ -36,42 +36,12 @@ const {
 } = useProfileForm()
 
 /* ─────────────── بازگشت با تغییرات ذخیره‌نشده ─────────────── */
-const leaveConfirmOpen = ref(false)
-let resolveLeave: ((proceed: boolean) => void) | null = null
-
-function askLeave(): Promise<boolean> {
-  return new Promise((resolve) => {
-    resolveLeave = resolve
-    leaveConfirmOpen.value = true
-  })
-}
-
-function settleLeave(proceed: boolean): void {
-  leaveConfirmOpen.value = false
-  resolveLeave?.(proceed)
-  resolveLeave = null
-}
-
-onBeforeRouteLeave(async () => {
-  if (!dirty.value) return true
-  return askLeave()
-})
-
-/** بستن/تازه‌سازی تب مرورگر هم تغییرات را بی‌صدا دور نمی‌ریزد. */
-function onBeforeUnload(event: BeforeUnloadEvent): void {
-  event.preventDefault()
-  event.returnValue = ''
-}
-
-watch(dirty, (next) => {
-  if (!import.meta.client) return
-  if (next) window.addEventListener('beforeunload', onBeforeUnload)
-  else window.removeEventListener('beforeunload', onBeforeUnload)
-})
-
-onUnmounted(() => {
-  if (import.meta.client) window.removeEventListener('beforeunload', onBeforeUnload)
-})
+// نسخهٔ محلیِ این منطق با نسخهٔ فرم‌های سرویس/پرسنل دو قلمه شد (هر دو یک کار
+// می‌کردند ولی یکی `released` نداشت). حالا همان `useUnsavedChangesGuard` مشترک:
+// نگهبان مسیر + beforeunload + دیالوگ خود اپ (§۴۳).
+const { confirmOpen: leaveConfirmOpen, settleLeave, release } = useUnsavedChangesGuard(
+  () => dirty.value
+)
 
 /* ─────────────── چرخهٔ حیات ─────────────── */
 onMounted(() => {
@@ -91,6 +61,9 @@ async function onSave(): Promise<void> {
     return
   }
 
+  // ذخیره که موفق شد، خروج دیگر سؤال‌برانگیز نیست (وگرنه ناوبریِ پایین همین
+  // تابع می‌توانست دیالوگ «می‌مانید؟» را وسط موفقیت باز کند).
+  release()
   toast.success('پروفایل به‌روز شد.')
   if (!result.avatarPersisted) {
     toast.info('تصویر انتخابی فقط تا پایان همین نشست نگه داشته می‌شود.', {

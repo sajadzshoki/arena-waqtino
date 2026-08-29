@@ -26,7 +26,7 @@ const cells = computed(() => [
     key: 'pending',
     label: 'در انتظار تأیید',
     value: props.metrics.pendingCount,
-    icon: 'i-lucide-hourglass-medium'
+    icon: 'i-lucide-hourglass'
   }
 ] as const)
 </script>

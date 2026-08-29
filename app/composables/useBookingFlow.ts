@@ -6,7 +6,7 @@ import type { DayAvailability, TimeSlot } from '~/types/availability'
 import type { Business, BusinessCategory } from '~/types/business'
 import { toServiceError } from '~/utils/errors'
 import { AVAILABILITY_HORIZON_DAYS } from '~/config/timezone'
-import { isTomorrowKey, todayKey, upcomingDateKeys } from '~/utils/schedule-time'
+import { upcomingDateKeys } from '~/utils/schedule-time'
 
 /**
  * مدیریت کامل فرآیند رزرو — state، navigation، و data loading.
@@ -14,7 +14,7 @@ import { isTomorrowKey, todayKey, upcomingDateKeys } from '~/utils/schedule-time
 export function useBookingFlow() {
   const services = useServices()
 
-  // Draft state
+  // state پیش‌نویس نوبت
   const draft = useState<BookingFlowDraft>('booking:draft', () => ({
     businessId: null,
     serviceId: null,
@@ -23,13 +23,13 @@ export function useBookingFlow() {
     timeSlot: null
   }))
 
-  // Current step
+  // گام فعلی
   const currentStep = useState<BookingStep>('booking:step', () => 'service')
 
-  // Warnings from validation
+  // هشدارهای اعتبارسنجی (قبل از ثبت)
   const warnings = useState<Array<{ code: string; message: string; type: string }>>('booking:warnings', () => [])
 
-  // Loading states
+  // حالت‌های بارگذاری
   const loadingBusiness = ref(false)
   const loadingSlots = ref(false)
   const loadingDates = ref(false)
@@ -53,7 +53,7 @@ export function useBookingFlow() {
    */
   const staleEmployeeNotice = useState<string | null>('booking:stale-employee', () => null)
 
-  // Cached data
+  // داده‌های خوانده‌شده (کش همان نشست)
   const business = ref<Business | null>(null)
   const category = ref<BusinessCategory | null>(null)
   const businessServices = ref<BookableService[]>([])
@@ -83,7 +83,7 @@ export function useBookingFlow() {
 
     await loadBusinessData(businessId)
 
-    // If service preselected, skip to employee step
+    // اگر خدمت از قبل انتخاب شده، مستقیم به گام پرسنل
     if (serviceId) {
       validateStep('service')
     }
@@ -174,14 +174,8 @@ export function useBookingFlow() {
         serviceId: draft.value.serviceId,
         employeeId: draft.value.employeeId
       })
-      const today = todayKey()
-      dateAvailability.value = entries.map(entry => ({
-        dateStr: entry.date,
-        hasAvailableSlots: entry.hasAvailableSlots,
-        isToday: entry.date === today,
-        isTomorrow: isTomorrowKey(entry.date),
-        status: entry.status
-      }))
+      // برچسب‌های «امروز/فردا/وقت آزاد» از util مشترک (جریان رزرو = صفحهٔ جابه‌جایی)
+      dateAvailability.value = toDateAvailabilityList(entries)
     }
     catch (e) {
       // پیام فارسی از لایهٔ سرویس؛ خطای فنی خام در UI نمی‌آید
@@ -246,7 +240,7 @@ export function useBookingFlow() {
         return draft.value.serviceId !== null
 
       case 'employee':
-        // If requiresEmployee, must have selected
+        // اگر پرسنل اجباری است، باید انتخاب شده باشد
         if (requiresEmployee.value) {
           return draft.value.employeeId !== undefined && draft.value.employeeId !== null
         }
@@ -273,7 +267,7 @@ export function useBookingFlow() {
     const stepOrder: BookingStep[] = ['service', 'employee', 'date', 'time', 'review']
     const currentIdx = stepOrder.indexOf(currentStep.value)
 
-    // Skip employee step if not required
+    // اگر پرسنل اختیاری است، از این گام رد می‌شویم
     if (currentStep.value === 'service' && !requiresEmployee.value) {
       currentStep.value = 'date'
       loadDateAvailability()
@@ -285,7 +279,7 @@ export function useBookingFlow() {
       if (nextStep) {
         currentStep.value = nextStep
 
-        // Load data for the new step
+        // خواندن داده برای گام تازه
         if (currentStep.value === 'date') {
           loadDateAvailability()
         }
@@ -306,7 +300,7 @@ export function useBookingFlow() {
 
       if (!prevStepKey) return
 
-      // Skip employee step if not required
+      // اگر پرسنل اختیاری است، از این گام رد می‌شویم
       if (prevStepKey === 'employee' && !requiresEmployee.value) {
         currentStep.value = 'service'
       }
@@ -332,7 +326,7 @@ export function useBookingFlow() {
       }
     }
 
-    // Invalidate downstream
+    // بی‌اعتبارکردن انتخاب‌های پایین‌دست
     draft.value.timeSlot = null
     // دسترس‌پذیری تابعِ سرویس است (مدت + پرسنل مجاز) → همان لحظه تازه می‌شود
     refreshAvailability()
@@ -342,7 +336,7 @@ export function useBookingFlow() {
   function setEmployee(employeeId: EntityId | null) {
     draft.value.employeeId = employeeId
     staleEmployeeNotice.value = null
-    // Invalidate downstream
+    // بی‌اعتبارکردن انتخاب‌های پایین‌دست
     draft.value.timeSlot = null
     // ساعت کاری *نفر* هم پنجرهٔ رزرو را عوض می‌کند (فاز ۱۱)
     refreshAvailability()
@@ -351,9 +345,9 @@ export function useBookingFlow() {
   /** Set date */
   function setDate(date: string) {
     draft.value.date = date
-    // Load slots for this date
+    // خواندن ساعت‌های همین روز
     loadTimeSlots(date)
-    // Invalidate timeSlot
+    // بی‌اعتبارکردن ساعت انتخاب‌شده
     draft.value.timeSlot = null
   }
 
@@ -380,7 +374,7 @@ export function useBookingFlow() {
     staleEmployeeNotice.value = null
   }
 
-  // Computed values
+  // مقادیر محاسبه‌شده
   const currentService = computed(() => {
     if (!draft.value.serviceId) return null
     return businessServices.value.find(s => s.id === draft.value.serviceId) ?? null

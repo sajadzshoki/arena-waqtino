@@ -12,8 +12,8 @@ import type { BusinessListQuery, BusinessService } from './business-service'
 
 export class MockBusinessService implements BusinessService {
   async list(query: BusinessListQuery = {}): Promise<Paginated<Business>> {
-    await delay()
     const flags = useMockFlags()
+    await delay()
     if (flags.forceError.value) throw ServiceError.network()
     if (flags.forceEmpty.value) {
       return { items: [], total: 0, page: query.page ?? 1, perPage: query.perPage ?? 10 }
@@ -57,15 +57,15 @@ export class MockBusinessService implements BusinessService {
   }
 
   async listCategories(): Promise<BusinessCategory[]> {
-    await delay(150)
     const flags = useMockFlags()
+    await delay(150)
     if (flags.forceError.value) throw ServiceError.network()
     return MOCK_CATEGORIES
   }
 
   async listFeatured(): Promise<Business[]> {
-    await delay(300)
     const flags = useMockFlags()
+    await delay(300)
     if (flags.forceError.value) throw ServiceError.network()
     // کسب‌وکارهای تاییدشده با امتیاز بالا
     return MOCK_BUSINESSES
@@ -75,8 +75,8 @@ export class MockBusinessService implements BusinessService {
   }
 
   async listPopular(): Promise<Business[]> {
-    await delay(250)
     const flags = useMockFlags()
+    await delay(250)
     if (flags.forceError.value) throw ServiceError.network()
     // محبوب‌ترین‌ها بر اساس تعداد نظر × میانگین امتیاز
     return MOCK_BUSINESSES
@@ -86,8 +86,8 @@ export class MockBusinessService implements BusinessService {
   }
 
   async listNearby(): Promise<BusinessWithDistance[]> {
-    await delay(350)
     const flags = useMockFlags()
+    await delay(350)
     if (flags.forceError.value) throw ServiceError.network()
     return MOCK_BUSINESSES
       .filter(b => b.status === 'active' && MOCK_DISTANCES[b.id] !== undefined)

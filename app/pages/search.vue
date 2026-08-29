@@ -45,7 +45,7 @@ const { data: popularBusinesses } = await useAsyncData(
 await loadCategories()
 syncFromUrl()
 
-// Execute search when context changes
+// با عوض‌شدن زمینه، جستجو اجرا می‌شود
 watch(
   [debouncedQuery, categoryId, sort, filters],
   () => {
@@ -56,7 +56,7 @@ watch(
   { immediate: true, deep: true }
 )
 
-// Filter/Sort sheet state
+// state شیت فیلتر/مرتب‌سازی
 const filterSheetOpen = ref(false)
 const sortSheetOpen = ref(false)
 
@@ -80,7 +80,7 @@ function handleClearSearch() {
   clearAll()
 }
 
-// Category map for display
+// نگاشت دسته‌بندی برای نمایش
 const categoryMap = computed(() => {
   const map = new Map(categories.value.map(c => [c.id, c]))
   return map
@@ -95,7 +95,7 @@ const selectedCategoryName = computed(() => {
   return categoryMap.value.get(categoryId.value)?.name ?? null
 })
 
-// Computed for active filter chips
+// چیپ‌های فیلتر فعال
 const activeFilterChips = computed(() => {
   const chips: { label: string; icon: string; remove: () => void }[] = []
 
@@ -120,15 +120,6 @@ const activeFilterChips = computed(() => {
       label: 'نزدیک من',
       icon: 'i-lucide-navigation',
       remove: () => setFilters({ nearbyOnly: false })
-    })
-  }
-
-  if (filters.value.availableDay) {
-    const label = filters.value.availableDay === 'today' ? 'امروز' : 'فردا'
-    chips.push({
-      label,
-      icon: 'i-lucide-calendar',
-      remove: () => setFilters({ availableDay: null })
     })
   }
 
@@ -207,7 +198,7 @@ const activeFilterChips = computed(() => {
           </span>
         </button>
 
-        <!-- Spacer -->
+        <!-- فاصله‌دهنده -->
         <div class="flex-1" />
 
         <!-- نتیجه -->
@@ -216,7 +207,7 @@ const activeFilterChips = computed(() => {
         </span>
       </div>
 
-      <!-- Active filters -->
+      <!-- فیلترهای فعال -->
       <div v-if="activeFilterChips.length > 0" class="flex flex-wrap gap-2">
         <button
           v-for="(chip, idx) in activeFilterChips"
@@ -239,21 +230,21 @@ const activeFilterChips = computed(() => {
         </button>
       </div>
 
-      <!-- Loading -->
+      <!-- بارگذاری -->
       <div v-if="searchLoading" class="flex flex-col gap-3">
         <USkeleton v-for="n in 5" :key="n" class="h-28 rounded-xl" />
       </div>
 
-      <!-- Error -->
-      <div v-else-if="searchError" class="flex flex-col items-center gap-3 rounded-xl border border-error-border bg-error-soft px-6 py-8 text-center">
-        <UIcon name="i-lucide-alert-circle" class="size-8 text-error" />
-        <p class="t-body-sm text-error">خطا در دریافت نتایج</p>
-        <WqButton variant="secondary" size="sm" icon="i-lucide-rotate-ccw" @click="executeSearch">
-          تلاش مجدد
-        </WqButton>
-      </div>
+      <!-- خطا: همان مجموعهٔ UI خطا (§۲۴) با پیام سرویس و تلاش مجدد -->
+      <AppErrorState
+        v-else-if="searchError"
+        title="نتیجه‌ها باز نشد"
+        :description="searchError"
+        retryable
+        @retry="executeSearch()"
+      />
 
-      <!-- No results -->
+      <!-- بدون نتیجه -->
       <SearchNoResults
         v-else-if="searched && results.length === 0"
         :query="debouncedQuery"
@@ -261,7 +252,7 @@ const activeFilterChips = computed(() => {
         @clear-filters="handleClearFilters"
       />
 
-      <!-- Results -->
+      <!-- نتیجه‌ها -->
       <div v-else-if="searched && results.length > 0" class="flex flex-col gap-3">
         <SearchResultCard
           v-for="biz in results"
@@ -272,7 +263,7 @@ const activeFilterChips = computed(() => {
       </div>
     </div>
 
-    <!-- Filter Sheet -->
+    <!-- شیت فیلتر -->
     <SearchFilterSheet
       v-model:open="filterSheetOpen"
       :categories="categories"
@@ -282,7 +273,7 @@ const activeFilterChips = computed(() => {
       @clear="handleClearFilters"
     />
 
-    <!-- Sort Sheet -->
+    <!-- شیت مرتب‌سازی -->
     <SearchSortSheet
       v-model:open="sortSheetOpen"
       :current-sort="sort"

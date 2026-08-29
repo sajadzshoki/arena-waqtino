@@ -32,7 +32,7 @@ watch(selectedIndex, () => {
   <div>
     <!-- تصویر اصلی -->
     <div class="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-surface-muted">
-      <!-- Fallback -->
+      <!-- جایگزین -->
       <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-soft to-surface-muted">
         <UIcon name="i-lucide-image" class="size-16 text-primary/30" />
       </div>
@@ -45,7 +45,7 @@ watch(selectedIndex, () => {
         loading="lazy"
         @error="imgError = true"
       >
-      <!-- Counter -->
+      <!-- شمارنده -->
       <span
         v-if="images.length > 1"
         class="absolute end-2 top-2 rounded-full bg-surface/90 px-2.5 py-1 t-caption font-medium text-foreground backdrop-blur-sm"

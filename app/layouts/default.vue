@@ -8,6 +8,10 @@
  */
 const route = useRoute()
 
+// اتصال، یک واقعیت سراسری است: بنر در پوسته نشان داده می‌شود تا هر صفحه‌ای که
+// دادهٔ کهنه دارد همان لحظه صادق باشد (§۲۷) — نه بیست `if` در بیست صفحه.
+const { online } = useNetworkStatus()
+
 const showTabBar = computed(() => route.meta.tabbar !== false)
 const showHeader = computed(() => route.meta.header !== false)
 </script>
@@ -25,6 +29,8 @@ const showHeader = computed(() => route.meta.header !== false)
           : 'calc(env(safe-area-inset-bottom) + 1.5rem)'
       }"
     >
+      <AppOfflineBanner v-if="!online" @retry="reloadNuxtApp()" />
+
       <slot />
     </main>
 

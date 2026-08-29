@@ -1,4 +1,6 @@
 import type { Booking } from '~/types/booking'
+import type { EntityId } from '~/types/common'
+import { applyBookingDelta, findBookingWithDelta } from './booking-state'
 import { MOCK_OWNER_BOOKINGS } from './owner-scenarios'
 
 /**
@@ -86,12 +88,24 @@ export const MOCK_BOOKINGS: Booking[] = [
   })
 ]
 
+/** ردیف‌های پایه (فقط seed؛ بدون دلتا) — برای merge در تابع‌های پایین. */
+const SEED_BOOKINGS: readonly Booking[] = [...MOCK_BOOKINGS, ...MOCK_OWNER_BOOKINGS]
+
 /**
- * منبع‌واحد‌حقیقت رزروها برای همهٔ نماها (مشتری و صاحب کسب‌وکار).
+ * منبع‌واحد‌حقیقت نوبت‌ها برای همهٔ نماها (مشتری، صاحب کسب‌وکار، دسترس‌پذیری).
  *
- * تابع است نه آرایهٔ ثابت، چون `MockBookingService` رزرو تازه را در
- * `MOCK_BOOKINGS` push می‌کند؛ پس هر خواندن باید ترکیب تازه را ببیند.
+ * تابع است نه آرایهٔ ثابت، چون دو چیز روی seed نوشته نمی‌شوند:
+ *   • نوبت‌هایی که کاربر همین مرورگر ساخته (`created`)
+ *   • لغو/جابه‌جایی نوبت‌های seed (`patches`)
+ * هر دو در `booking-state.ts` (کوکی `wq_business_bookings`) زندگی می‌کنند و این‌جا
+ * *merge* می‌شوند؛ پس «رزروِ همین‌جا» و «پیشنهاد ساعتِ همین‌جا» و «امروزِ مدیر»
+ * همه یک واقعیت را می‌بینند — و هیچ‌کس آرایهٔ mock را mutate نمی‌کند (خروجی کپی است).
  */
 export function allMockBookings(): Booking[] {
-  return [...MOCK_BOOKINGS, ...MOCK_OWNER_BOOKINGS]
+  return applyBookingDelta(SEED_BOOKINGS)
+}
+
+/** یک نوبت با شناسه (seed یا ساخته‌شده)، با دلتای اعمال‌شده. */
+export function findMockBooking(id: EntityId): Booking | null {
+  return findBookingWithDelta(SEED_BOOKINGS, id)
 }

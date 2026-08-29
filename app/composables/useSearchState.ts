@@ -2,35 +2,31 @@ import type { SearchFilters, SearchSort, SearchState } from '~/types/search'
 import { DEFAULT_FILTERS } from '~/types/search'
 
 /**
- * مدیریت state جستجو — هماهنگ با URL query.
+ * مدیریت وضعیت جستجو — هماهنگ با query آدرس.
  *
- * URL-synced:
- *   - q (query)
- *   - category (categoryId)
- *   - sort
+ * در URL (پس share/back-safe است): `q`، `category`، `sort`.
+ * فقط در حافظه (transient): `filters` — چون فیلترهای محلی نشانی‌ساز نیستند.
  *
- * Transient (در URL نیست):
- *   - filters (فقط در state محلی)
- *
- * این composable singleton است — همهٔ صفحات جستجو از یک state استفاده می‌کنند.
+ * singleton است: همهٔ صفحه‌های جستجو یک وضعیت را می‌خواند؛ state دومی برای
+ * «چیب‌ها و شیت» نساخته‌ایم (§۴۳). تأخیر ۳۰۰ms روی ورودی، درخواست‌های تکراری
+ * را حذف می‌کند (§۲۸).
  */
 export function useSearchState() {
   const route = useRoute()
   const router = useRouter()
 
-  // State اصلی
+  // وضعیت اصلی
   const query = ref<string>('')
   const categoryId = ref<string | null>(null)
   const sort = ref<SearchSort>('relevance')
   const filters = ref<SearchFilters>({ ...DEFAULT_FILTERS })
 
-  // Debounce برای query (جلوگیری از سرچ روی هر کاراکتر)
+  // تأخیر روی ورودی جستجو (روی هر کلید درخواست نمی‌فرستیم، §۳۰)
   const debouncedQuery = ref<string>('')
   let debounceTimer: NodeJS.Timeout | null = null
 
   function setQuery(newQuery: string) {
     query.value = newQuery
-    // Debounce 300ms
     if (debounceTimer) clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => {
       debouncedQuery.value = newQuery
@@ -65,7 +61,7 @@ export function useSearchState() {
     syncToUrl()
   }
 
-  // Sync از URL به state (هنگام load یا back/forward)
+  // خواندن وضعیت از URL (load و back/forward)
   function syncFromUrl() {
     const q = route.query.q as string | undefined
     const cat = route.query.category as string | undefined
@@ -77,7 +73,7 @@ export function useSearchState() {
     sort.value = s && ['relevance', 'rating', 'popular', 'nearest'].includes(s) ? s : 'relevance'
   }
 
-  // Sync از state به URL
+  // نوشتن وضعیت به URL
   function syncToUrl() {
     const newQuery: Record<string, string> = {}
 
@@ -91,7 +87,7 @@ export function useSearchState() {
     })
   }
 
-  // Computed برای state کامل
+  // وضعیت کامل جستجو
   const searchState = computed<SearchState>(() => ({
     query: query.value,
     categoryId: categoryId.value,
@@ -99,10 +95,10 @@ export function useSearchState() {
     filters: { ...filters.value }
   }))
 
-  // Computed برای بررسی فعال بودن فیلترها
+  // آیا فیلتری فعال است؟
   const hasActiveFilters = computed(() => {
     const f = filters.value
-    return f.minRating !== null || f.nearbyOnly || f.availableDay !== null || f.maxPrice !== null
+    return f.minRating !== null || f.nearbyOnly
   })
 
   const hasAnySearchContext = computed(() => {
@@ -110,7 +106,6 @@ export function useSearchState() {
   })
 
   return {
-    // State
     query: readonly(query),
     debouncedQuery: readonly(debouncedQuery),
     categoryId: readonly(categoryId),
@@ -118,11 +113,9 @@ export function useSearchState() {
     filters: readonly(filters),
     searchState: readonly(searchState),
 
-    // Computed
     hasActiveFilters,
     hasAnySearchContext,
 
-    // Actions
     setQuery,
     setCategory,
     setSort,

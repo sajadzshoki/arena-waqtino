@@ -57,7 +57,7 @@ function getCategoryForBiz(categoryId: string) {
 
     <!-- ۲. نقطهٔ ورود جستجو -->
     <div class="mt-5">
-      <CustomerSearchEntry />
+      <SearchEntry />
     </div>
 
     <!-- ۳. دسته‌بندی‌ها -->

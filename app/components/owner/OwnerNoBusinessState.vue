@@ -20,7 +20,7 @@ async function switchToCustomer(): Promise<void> {
 
 <template>
   <AppEmptyState
-    icon="i-lucide-store-plus"
+    icon="i-lucide-store"
     title="هنوز کسب‌وکاری برای مدیریت ندارید"
     description="حساب شما قابلیت مدیریت کسب‌وکار دارد، اما به هیچ کسب‌کاری متصل نیست. افزودن و ثبت کسب‌وکار در فاز بعدی وقتینو باز می‌شود."
   >

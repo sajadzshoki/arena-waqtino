@@ -32,12 +32,12 @@ onMounted(() => {
   if (businessId.value) trackView(businessId.value)
 })
 
-// Set page title
+// عنوان صفحه
 useHead({
   title: computed(() => business.value?.name ?? 'کسب‌وکار')
 })
 
-// Booking handoff — navigate to booking flow
+// انتقال به جریان رزرو
 function bookService(serviceId: string) {
   if (!business.value) return
   navigateTo({
@@ -66,11 +66,11 @@ async function share() {
       })
     }
     catch {
-      // User cancelled or error
+      // انصراف کاربر یا خطای سرویس
     }
   }
   else {
-    // Fallback: copy to clipboard
+    // جایگزین: کپی در کلیپ‌بورد
     try {
       await navigator.clipboard.writeText(window.location.href)
       toast.success('لینک کپی شد.')
@@ -86,7 +86,7 @@ async function share() {
   <div class="pb-4">
     <AppBackHeader title="جزئیات کسب‌وکار" to="/" />
 
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="flex flex-col gap-4">
       <USkeleton class="aspect-[16/10] w-full rounded-xl" />
       <USkeleton class="h-7 w-3/4 rounded" />
@@ -95,7 +95,7 @@ async function share() {
       <USkeleton class="h-32 w-full rounded-xl" />
     </div>
 
-    <!-- Error -->
+    <!-- خطا -->
     <div v-else-if="error" class="flex flex-col items-center gap-4 px-6 py-12 text-center">
       <UIcon name="i-lucide-alert-circle" class="size-12 text-error" />
       <p class="t-h3 text-foreground">خطا در دریافت اطلاعات</p>
@@ -104,7 +104,7 @@ async function share() {
       </WqButton>
     </div>
 
-    <!-- Not Found -->
+    <!-- پیدا نشد -->
     <div v-else-if="!business" class="flex flex-col items-center gap-4 px-6 py-12 text-center">
       <UIcon name="i-lucide-store" class="size-12 text-foreground-muted" />
       <p class="t-h3 text-foreground-secondary">کسب‌وکار یافت نشد</p>
@@ -113,9 +113,9 @@ async function share() {
       </WqButton>
     </div>
 
-    <!-- Content -->
+    <!-- محتوا -->
     <div v-else>
-      <!-- Gallery -->
+      <!-- گالری -->
       <BusinessGallery
         v-if="hasGallery"
         :cover-image-url="business.coverImageUrl"
@@ -123,9 +123,9 @@ async function share() {
         :business-name="business.name"
       />
 
-      <!-- Hero Info -->
+      <!-- اطلاعات سربرگ -->
       <div class="mt-4 flex flex-col gap-3">
-        <!-- Title + Favorite/Share -->
+        <!-- عنوان + نشان‌کردن/اشتراک -->
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
             <h1 class="t-h1 text-foreground-strong">{{ business.name }}</h1>
@@ -149,7 +149,7 @@ async function share() {
           </div>
         </div>
 
-        <!-- Rating + Meta -->
+        <!-- امتیاز + متادیتا -->
         <div class="flex flex-wrap items-center gap-3">
           <WqRating
             v-if="business.rating.count > 0"
@@ -166,7 +166,7 @@ async function share() {
           </span>
         </div>
 
-        <!-- Phone -->
+        <!-- تلفن -->
         <WqMetaRow
           v-if="business.phone"
           icon="i-lucide-phone"
@@ -175,13 +175,13 @@ async function share() {
         />
       </div>
 
-      <!-- About -->
+      <!-- درباره کسب‌وکار -->
       <section v-if="business.description" class="mt-6">
         <h2 class="t-section mb-3 text-foreground-strong">درباره</h2>
         <BusinessAbout :description="business.description" />
       </section>
 
-      <!-- Services -->
+      <!-- خدمت‌ها -->
       <section v-if="hasServices" class="mt-6">
         <h2 class="t-section mb-3 text-foreground-strong">خدمات</h2>
         <BusinessServiceList
@@ -191,13 +191,13 @@ async function share() {
         />
       </section>
 
-      <!-- Employees -->
+      <!-- پرسنل -->
       <section v-if="hasEmployees" class="mt-6">
         <h2 class="t-section mb-3 text-foreground-strong">تیم ما</h2>
         <BusinessEmployeeList :employees="employees" />
       </section>
 
-      <!-- Location -->
+      <!-- موقعیت -->
       <section class="mt-6">
         <h2 class="t-section mb-3 text-foreground-strong">موقعیت</h2>
         <BusinessLocation
@@ -206,7 +206,7 @@ async function share() {
         />
       </section>
 
-      <!-- Rating Summary -->
+      <!-- خلاصهٔ امتیاز -->
       <section v-if="business.rating.count > 0" class="mt-6">
         <h2 class="t-section mb-3 text-foreground-strong">امتیاز و نظرات</h2>
         <div class="rounded-xl border border-line bg-surface p-4">
@@ -215,7 +215,7 @@ async function share() {
       </section>
     </div>
 
-    <!-- Sticky Booking CTA -->
+    <!-- دکمهٔ رزرو (چسبنده) -->
     <AppStickyAction v-if="business && !loading && !error">
       <WqButton
         variant="primary"

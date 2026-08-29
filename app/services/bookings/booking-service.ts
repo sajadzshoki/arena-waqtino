@@ -38,6 +38,10 @@ export interface RescheduleBookingResponse {
   booking: Booking
 }
 
+/** نتیجهٔ نهایی هر اکشن — اتحادیهٔ «موفق/ناموفق» که UI یک‌شکل مصرفش می‌کند. */
+export type CancelBookingResult = CancelBookingResponse | CancelBookingErrorResponse
+export type RescheduleBookingResult = RescheduleBookingResponse | RescheduleBookingErrorResponse
+
 export interface RescheduleBookingErrorResponse {
   success: false
   error: {
@@ -62,4 +66,11 @@ export interface BookingService {
 
   /** تغییر زمان رزرو */
   reschedule(request: RescheduleBookingRequest): Promise<RescheduleBookingResponse | RescheduleBookingErrorResponse>
+
+  /**
+   * فقط ابزار توسعه: پاک‌کردن دلتای محلی نوبت‌ها (کوکی `wq_business_bookings`)
+   * تا دادهٔ پایه برگردد. در حالت API معنایش «هیچ» است (کش محلی نداریم) و
+   * مصرف‌کننده‌اش جز صفحهٔ dev چیزی نیست.
+   */
+  resetLocalChanges(): Promise<void>
 }

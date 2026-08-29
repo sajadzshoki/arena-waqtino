@@ -140,9 +140,3 @@ export const MOCK_MESSAGES: ChatMessage[] = [
     createdAt: isoIn(-22, 16, 40)
   }
 ]
-
-/**
- * اسلات‌های رزرو شده (برای شبیه‌سازی conflict).
- * در mock، تعدادی اسلات از پیش رزرو شده‌اند تا سناریوی conflict قابل تست باشد.
- */
-export const MOCK_BOOKED_SLOTS: Set<string> = new Set()

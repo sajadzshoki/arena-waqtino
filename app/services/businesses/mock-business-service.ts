@@ -1,15 +1,19 @@
 import type { Business, BusinessCategory, BusinessWithDistance } from '~/types/business'
 import type { EntityId, Paginated } from '~/types/common'
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
+import { toBookableEmployee } from '~/types/employee'
 import type { BookableService } from '~/types/service'
+import type { BookingEmployeeSnapshot, BookingServiceSnapshot } from '~/types/booking'
+import { assignedEmployeeIds, resolveBookingEmployeeSnapshot, resolveBusinessEmployees } from '~/services/mocks/employee-state'
+import { resolveBookingServiceSnapshot, resolveBusinessServices } from '~/services/mocks/service-state'
 import { ServiceError } from '~/utils/errors'
-import { MOCK_BUSINESSES, MOCK_CATEGORIES, MOCK_DISTANCES, MOCK_EMPLOYEES, MOCK_SERVICES } from '~/services/mocks/businesses'
+import { MOCK_BUSINESSES, MOCK_CATEGORIES, MOCK_DISTANCES, MOCK_SERVICES } from '~/services/mocks/businesses'
 import type { BusinessListQuery, BusinessService } from './business-service'
 
 export class MockBusinessService implements BusinessService {
   async list(query: BusinessListQuery = {}): Promise<Paginated<Business>> {
-    await delay()
     const flags = useMockFlags()
+    await delay()
     if (flags.forceError.value) throw ServiceError.network()
     if (flags.forceEmpty.value) {
       return { items: [], total: 0, page: query.page ?? 1, perPage: query.perPage ?? 10 }
@@ -53,15 +57,15 @@ export class MockBusinessService implements BusinessService {
   }
 
   async listCategories(): Promise<BusinessCategory[]> {
-    await delay(150)
     const flags = useMockFlags()
+    await delay(150)
     if (flags.forceError.value) throw ServiceError.network()
     return MOCK_CATEGORIES
   }
 
   async listFeatured(): Promise<Business[]> {
-    await delay(300)
     const flags = useMockFlags()
+    await delay(300)
     if (flags.forceError.value) throw ServiceError.network()
     // کسب‌وکارهای تاییدشده با امتیاز بالا
     return MOCK_BUSINESSES
@@ -71,8 +75,8 @@ export class MockBusinessService implements BusinessService {
   }
 
   async listPopular(): Promise<Business[]> {
-    await delay(250)
     const flags = useMockFlags()
+    await delay(250)
     if (flags.forceError.value) throw ServiceError.network()
     // محبوب‌ترین‌ها بر اساس تعداد نظر × میانگین امتیاز
     return MOCK_BUSINESSES
@@ -82,8 +86,8 @@ export class MockBusinessService implements BusinessService {
   }
 
   async listNearby(): Promise<BusinessWithDistance[]> {
-    await delay(350)
     const flags = useMockFlags()
+    await delay(350)
     if (flags.forceError.value) throw ServiceError.network()
     return MOCK_BUSINESSES
       .filter(b => b.status === 'active' && MOCK_DISTANCES[b.id] !== undefined)
@@ -97,11 +101,34 @@ export class MockBusinessService implements BusinessService {
 
   async listServices(businessId: EntityId): Promise<BookableService[]> {
     await delay(200)
-    return MOCK_SERVICES.filter(s => s.businessId === businessId && s.isActive)
+    // «قابل رزرو بودن» همین‌جا تصمیم گرفته می‌شود (نه در UI): فهرست مشتری فقط
+    // سرویس‌های active است و همان حالتی است که مدیر تغییرش می‌دهد.
+    return resolveBusinessServices(businessId)
+      .filter(s => s.status === 'active')
+      // `employeeIds` نمای مشتق‌شده است، نه دادهٔ دوم: منبع رابطه،
+      // `serviceIds` روی رکورد پرسنل است (فاز ۱۰) — فقط «فهرست فعال» این‌جا
+      // ساخته می‌شود تا کارت سرویس و گام انتخاب پرسنل یک چیز را ببینند.
+      .map(s => ({ ...s, employeeIds: assignedEmployeeIds(businessId, s.id) }))
   }
 
-  async listEmployees(businessId: EntityId): Promise<Employee[]> {
+  async getServiceForHistory(serviceId: EntityId): Promise<BookingServiceSnapshot | null> {
+    // بدون فلگ‌های شبیه‌سازی: این خواندن «تاریخچه» است، نه فهرست کشف/رزرو.
+    await delay(150)
+    return resolveBookingServiceSnapshot({ serviceId })
+  }
+
+  async listEmployees(businessId: EntityId): Promise<BookableEmployee[]> {
     await delay(200)
-    return MOCK_EMPLOYEES.filter(e => e.businessId === businessId && e.isActive)
+    // همان دلتای مدیر (فاز ۱۰) خوانده می‌شود، با فیلتر «قابل رزرو بودن» و
+    // برش به نمای مشتری (بی‌شمارهٔ تماس، بی‌شناسهٔ حساب).
+    return resolveBusinessEmployees(businessId)
+      .filter(e => e.status === 'active')
+      .map(toBookableEmployee)
+  }
+
+  async getEmployeeForHistory(employeeId: EntityId): Promise<BookingEmployeeSnapshot | null> {
+    // بدون فلگ‌های شبیه‌سازی: این خواندن «تاریخچه» است، نه فهرست کشف/رزرو.
+    await delay(150)
+    return resolveBookingEmployeeSnapshot({ employeeId })
   }
 }

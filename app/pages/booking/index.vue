@@ -18,6 +18,8 @@ const {
   draft,
   currentStep,
   warnings,
+  staleServiceNotice,
+  staleEmployeeNotice,
   loadingBusiness,
   loadingSlots,
   loadingDates,
@@ -31,8 +33,13 @@ const {
   currentEmployee,
   employeeOptional,
   eligibleEmployees,
+  requiresEmployee,
   isDraftComplete,
   noSlotsAvailable,
+  dayStatus,
+  dayMessage,
+  dayWindow,
+  availabilityError,
   initDraft,
   setService,
   setEmployee,
@@ -70,7 +77,7 @@ useHead({
   })
 })
 
-// Booking submission
+// ثبت نوبت
 const submitting = ref(false)
 
 async function submitBooking() {
@@ -87,14 +94,33 @@ async function submitBooking() {
       price: currentService.value.price
     }
 
-    // Validate first
+    // اول اعتبارسنجی پیش از ثبت
     const validation = await services.bookings.validateDraft(request)
 
     if (!validation.valid) {
       const errorMsg = validation.errors[0]?.message ?? 'خطا در اعتبارسنجی رزرو.'
       toast.error(errorMsg)
 
-      // If slot unavailable, go back to time selection
+      // رابطهٔ سرویس/پرسنل در لایهٔ سرویس سنجیده می‌شود (دفاع دوم). اگر همان‌جا
+      // رد شدیم، کاربر را به همان گامِ تصمیم می‌بریم و توضیح را همان‌جا نشان
+      // می‌دهیم — نه فقط یک toast که محو می‌شود.
+      const firstError = validation.errors[0]
+      if (firstError?.field === 'service') {
+        staleServiceNotice.value = firstError.message
+        draft.value.employeeId = undefined
+        draft.value.timeSlot = null
+        currentStep.value = 'service'
+        return
+      }
+      if (firstError?.field === 'employee') {
+        staleEmployeeNotice.value = firstError.message
+        draft.value.employeeId = undefined
+        draft.value.timeSlot = null
+        currentStep.value = requiresEmployee.value ? 'employee' : 'date'
+        return
+      }
+
+      // اگر ساعت رزروشدنی نبود، بازگشت به انتخاب ساعت
       if (validation.errors[0]?.field === 'timeSlot') {
         draft.value.timeSlot = null
         currentStep.value = 'time'
@@ -105,7 +131,7 @@ async function submitBooking() {
       return
     }
 
-    // Handle warnings (price change)
+    // مدیریت هشدارها (مثلاً تغییر قیمت)
     if (validation.warnings.length > 0) {
       setWarnings(validation.warnings.map(w => ({
         code: w.code,
@@ -114,7 +140,7 @@ async function submitBooking() {
       })))
     }
 
-    // Create booking
+    // ساخت نوبت
     const result = await services.bookings.create(request)
 
     if (!result.success) {
@@ -148,15 +174,19 @@ async function submitBooking() {
     navigateTo(`/booking/success?id=${bookingId}`)
   }
   catch (err) {
-    console.error('Booking error:', err)
-    toast.error('خطا در ثبت رزرو. لطفاً دوباره تلاش کنید.')
+    // پیام از `ServiceError` خوانده می‌شود (متن فارسیِ لایهٔ سرویس) و اگر چیزی
+    // نبود، جملهٔ عمومیِ خودمان؛ هیچ خطای فنی خام به کاربر نمی‌رسد (§۲۳).
+    // `console` لازم نیست: خطا در همان لحظه به کاربر گفته می‌شود و بعداً
+    // `reportError` (اگر اضافه شد) منبع واحد لاگ خواهد بود (§۶۱).
+    const message = toServiceError(err).message || 'خطا در ثبت رزرو. لطفاً دوباره تلاش کنید.'
+    toast.error(message)
   }
   finally {
     submitting.value = false
   }
 }
 
-// Navigation handlers
+// جابه‌جایی بین گام‌ها
 function handleServiceSelect(serviceId: string) {
   setService(serviceId)
 }
@@ -199,10 +229,10 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
 
 <template>
   <div class="flex min-h-dvh flex-col bg-background">
-    <!-- Header -->
+    <!-- هدر -->
     <header class="sticky top-0 z-40 border-b border-line bg-surface pt-safe">
       <div class="mx-auto flex max-w-(--wq-content-max) flex-col gap-3 px-4 py-3">
-        <!-- Back + Title -->
+        <!-- بازگشت + عنوان -->
         <div class="flex items-center gap-3">
           <button
             type="button"
@@ -219,20 +249,20 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
           </div>
         </div>
 
-        <!-- Step indicator -->
+        <!-- نشانگر گام‌ها -->
         <BookingStepIndicator :current-step="currentStep" />
       </div>
     </header>
 
-    <!-- Content -->
+    <!-- محتوا -->
     <main class="mx-auto w-full max-w-(--wq-content-max) flex-1 px-4 py-6">
-      <!-- Loading -->
+      <!-- بارگذاری -->
       <div v-if="loadingBusiness" class="flex flex-col items-center gap-3 py-12">
         <UIcon name="i-lucide-loader" class="size-8 animate-spin text-primary" />
         <p class="t-body-sm text-foreground-secondary">در حال دریافت اطلاعات...</p>
       </div>
 
-      <!-- Error -->
+      <!-- خطا -->
       <div v-else-if="error" class="flex flex-col items-center gap-4 py-12 text-center">
         <UIcon name="i-lucide-alert-circle" class="size-12 text-error" />
         <p class="t-body text-foreground">{{ error }}</p>
@@ -241,11 +271,19 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
         </WqButton>
       </div>
 
-      <!-- Steps -->
+      <!-- گام‌ها -->
       <div v-else class="flex flex-col gap-6">
-        <!-- Step 1: Service -->
+        <!-- گام ۱: خدمت -->
         <div v-if="currentStep === 'service'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب خدمت</h2>
+          <div
+            v-if="staleServiceNotice"
+            class="mb-4 flex items-start gap-2 rounded-xl border border-warning-border bg-warning-soft p-3"
+            role="status"
+          >
+            <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0 text-warning" />
+            <p class="t-body-sm text-foreground">{{ staleServiceNotice }}</p>
+          </div>
           <BookingServiceSelect
             :services="businessServices"
             :selected-id="draft.serviceId"
@@ -253,9 +291,17 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
           />
         </div>
 
-        <!-- Step 2: Employee -->
+        <!-- گام ۲: پرسنل -->
         <div v-if="currentStep === 'employee'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب متخصص</h2>
+          <div
+            v-if="staleEmployeeNotice"
+            class="mb-4 flex items-start gap-2 rounded-xl border border-warning-border bg-warning-soft p-3"
+            role="status"
+          >
+            <UIcon name="i-lucide-triangle-alert" class="mt-0.5 size-4 shrink-0 text-warning" />
+            <p class="t-body-sm text-foreground">{{ staleEmployeeNotice }}</p>
+          </div>
           <BookingEmployeeSelect
             :employees="eligibleEmployees"
             :selected-id="draft.employeeId"
@@ -264,33 +310,40 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
           />
         </div>
 
-        <!-- Step 3: Date -->
+        <!-- گام ۳: روز -->
         <div v-if="currentStep === 'date'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب تاریخ</h2>
           <BookingDateSelect
             :dates="dateAvailability"
             :selected-date="draft.date"
             :loading="loadingDates"
+            :error="availabilityError"
             @select="handleDateSelect"
+            @retry="loadDateAvailability()"
           />
         </div>
 
-        <!-- Step 4: Time -->
+        <!-- گام ۴: ساعت -->
         <div v-if="currentStep === 'time'">
           <h2 class="t-h2 mb-4 text-foreground">انتخاب زمان</h2>
           <p v-if="draft.date" class="t-caption mb-3 text-foreground-secondary">
-            {{ formatDateLabel(new Date(draft.date)) }}
+            {{ formatDateKeyLabel(draft.date) }}
           </p>
           <BookingTimeSelect
             :slots="availableSlots"
             :selected-slot="draft.timeSlot"
             :loading="loadingSlots"
             :no-slots-available="noSlotsAvailable"
+            :status="dayStatus"
+            :message="dayMessage"
+            :window="dayWindow"
+            :error="availabilityError"
             @select="handleTimeSelect"
+            @retry="loadTimeSlots(draft.date ?? '')"
           />
         </div>
 
-        <!-- Step 5: Review -->
+        <!-- گام ۵: بازبینی -->
         <div v-if="currentStep === 'review'">
           <h2 class="t-h2 mb-4 text-foreground">بازبینی و تأیید</h2>
           <BookingSummary
@@ -306,11 +359,11 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
       </div>
     </main>
 
-    <!-- Sticky Action -->
+    <!-- اکشن چسبنده -->
     <div v-if="!loadingBusiness && !error" class="sticky bottom-0 border-t border-line bg-surface pb-safe">
       <div class="mx-auto max-w-(--wq-content-max) px-4 py-3">
         <div class="flex items-center gap-3">
-          <!-- Back button (except first step) -->
+          <!-- دکمهٔ بازگشت (به‌جز گام اول) -->
           <button
             v-if="currentStep !== 'service'"
             type="button"
@@ -321,7 +374,7 @@ function handleEditStep(step: 'service' | 'employee' | 'date' | 'time') {
             <UIcon name="i-lucide-arrow-right" class="size-5 text-foreground" />
           </button>
 
-          <!-- Next / Confirm button -->
+          <!-- دکمهٔ ادامه / تأیید -->
           <WqButton
             v-if="currentStep !== 'review'"
             variant="primary"

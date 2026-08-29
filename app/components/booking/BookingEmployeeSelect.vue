@@ -2,10 +2,11 @@
 /**
  * انتخاب کارمند — مرحلهٔ دوم رزرو (در صورت نیاز).
  */
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
 
 defineProps<{
-  employees: Employee[]
+  /** نمای مشتری پرسنل (فقط active، از لایهٔ سرویس) — نام نمایشی از قبل ساخته شده. */
+  employees: BookableEmployee[]
   selectedId: string | null | undefined // undefined = not yet selected, null = "no preference"
   optional?: boolean
   loading?: boolean
@@ -18,20 +19,20 @@ defineEmits<{
 
 <template>
   <div>
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="flex flex-col gap-3">
       <USkeleton v-for="n in 3" :key="n" class="h-16 rounded-xl" />
     </div>
 
-    <!-- Empty -->
+    <!-- حالت خالی -->
     <div v-else-if="employees.length === 0" class="flex flex-col items-center gap-3 px-6 py-10 text-center">
       <UIcon name="i-lucide-users" class="size-8 text-foreground-muted" />
       <p class="t-body-sm text-foreground-secondary">کارمندی برای این خدمت یافت نشد.</p>
     </div>
 
-    <!-- List -->
+    <!-- فهرست -->
     <div v-else class="flex flex-col gap-3">
-      <!-- Option: No preference (if optional) -->
+      <!-- گزینهٔ «بدون ترجیح» (اگر اختیاری است) -->
       <button
         v-if="optional"
         type="button"
@@ -57,7 +58,7 @@ defineEmits<{
         />
       </button>
 
-      <!-- Employees -->
+      <!-- پرسنل -->
       <button
         v-for="emp in employees"
         :key="emp.id"
@@ -69,13 +70,13 @@ defineEmits<{
         @click="$emit('select', emp.id)"
       >
         <WqAvatar
-          :name="emp.name"
+          :name="emp.displayName"
           :src="emp.avatarUrl"
           size="md"
         />
         <div class="min-w-0 flex-1">
           <p class="t-body-sm font-semibold" :class="selectedId === emp.id ? 'text-primary' : 'text-foreground'">
-            {{ emp.name }}
+            {{ emp.displayName }}
           </p>
           <p v-if="emp.title" class="t-caption text-foreground-secondary">
             {{ emp.title }}

@@ -1,10 +1,12 @@
 import type { BookingFlowDraft, BookingStep, DateAvailability } from '~/types/booking-flow'
 import type { EntityId } from '~/types/common'
 import type { BookableService } from '~/types/service'
-import type { Employee } from '~/types/employee'
-import type { TimeSlot } from '~/types/availability'
+import type { BookableEmployee } from '~/types/employee'
+import type { DayAvailability, TimeSlot } from '~/types/availability'
 import type { Business, BusinessCategory } from '~/types/business'
-import { toIsoDate, generateUpcomingDates, isToday, isTomorrow } from '~/utils/datetime'
+import { toServiceError } from '~/utils/errors'
+import { AVAILABILITY_HORIZON_DAYS } from '~/config/timezone'
+import { upcomingDateKeys } from '~/utils/schedule-time'
 
 /**
  * مدیریت کامل فرآیند رزرو — state، navigation، و data loading.
@@ -12,7 +14,7 @@ import { toIsoDate, generateUpcomingDates, isToday, isTomorrow } from '~/utils/d
 export function useBookingFlow() {
   const services = useServices()
 
-  // Draft state
+  // state پیش‌نویس نوبت
   const draft = useState<BookingFlowDraft>('booking:draft', () => ({
     businessId: null,
     serviceId: null,
@@ -21,13 +23,13 @@ export function useBookingFlow() {
     timeSlot: null
   }))
 
-  // Current step
+  // گام فعلی
   const currentStep = useState<BookingStep>('booking:step', () => 'service')
 
-  // Warnings from validation
+  // هشدارهای اعتبارسنجی (قبل از ثبت)
   const warnings = useState<Array<{ code: string; message: string; type: string }>>('booking:warnings', () => [])
 
-  // Loading states
+  // حالت‌های بارگذاری
   const loadingBusiness = ref(false)
   const loadingSlots = ref(false)
   const loadingDates = ref(false)
@@ -35,13 +37,36 @@ export function useBookingFlow() {
   // Errors
   const error = ref<string | null>(null)
 
-  // Cached data
+  /**
+   * «Draft کهنه»: سرویسی که از پیش انتخاب شده (deep link یا ادامهٔ رزرو) دیگر در
+   * فهرست قابل‌رزرو نیست، چون مدیرش آن را غیرفعال کرده است. به‌جای اینکه کاربر
+   * در مرحلهٔ آخر یک خطای بی‌دلیل بگیرد، انتخاب پاک می‌شود و همین توضیح را
+   * بالای فهرست سرویس‌ها می‌بیند تا سرویس دیگری انتخاب کند.
+   */
+  const staleServiceNotice = useState<string | null>('booking:stale-service', () => null)
+
+  /**
+   * حالت دومِ «Draft کهنه» (فاز ۱۰): پرسنلی که انتخاب شده بود دیگر برای این
+   * سرویس قابل رزرو نیست — چون مدیرش غیرفعالش کرده، از این کسب‌وکار حذفش کرده،
+   * یا آن سرویس را از اختصاص‌هایش برداشته است. مثل سرویس: انتخاب پاک می‌شود و
+   * توضیح فارسی همان‌جا نشان داده می‌شود که کاربر تصمیم می‌گیرد.
+   */
+  const staleEmployeeNotice = useState<string | null>('booking:stale-employee', () => null)
+
+  // داده‌های خوانده‌شده (کش همان نشست)
   const business = ref<Business | null>(null)
   const category = ref<BusinessCategory | null>(null)
   const businessServices = ref<BookableService[]>([])
-  const employees = ref<Employee[]>([])
+  const employees = ref<BookableEmployee[]>([])
   const availableSlots = ref<TimeSlot[]>([])
   const dateAvailability = ref<DateAvailability[]>([])
+  /**
+   * نتیجهٔ پرس‌وجوی دسترس‌پذیری همان روزِ انتخاب‌شده (فاز ۱۱).
+   * UI به‌جای حدس‌زدن از «فهرست خالی»، می‌فهمد چرا ساعتی نیست: تعطیل، پر،
+   * تنظیم‌نشده یا گذشته — و پنجرهٔ کاری همان روز را برای توضیح دارد.
+   */
+  const dayAvailability = ref<DayAvailability | null>(null)
+  const availabilityError = ref<string | null>(null)
 
   /** Initialize draft with businessId and optional serviceId */
   async function initDraft(businessId: EntityId, serviceId?: EntityId) {
@@ -58,7 +83,7 @@ export function useBookingFlow() {
 
     await loadBusinessData(businessId)
 
-    // If service preselected, skip to employee step
+    // اگر خدمت از قبل انتخاب شده، مستقیم به گام پرسنل
     if (serviceId) {
       validateStep('service')
     }
@@ -82,8 +107,46 @@ export function useBookingFlow() {
 
       business.value = biz
       category.value = categories.find(c => c.id === biz.categoryId) ?? null
-      businessServices.value = svcs.filter(s => s.isActive)
-      employees.value = emps.filter(e => e.isActive)
+      // `listServices` خودش فقط سرویس‌های active را می‌دهد (تصمیم status در لایهٔ
+      // سرویس است)؛ اینجا فقط بررسی می‌کنیم انتخاب قبلی هنوز قابل رزرو باشد.
+      businessServices.value = svcs
+      // `listEmployees` خودش فقط پرسنل active را می‌دهد (تصمیم وضعیت در لایهٔ
+      // سرویس است، فاز ۱۰)؛ اینجا فقط رابطه بررسی می‌شود.
+      employees.value = emps
+
+      if (draft.value.serviceId && !svcs.some(s => s.id === draft.value.serviceId)) {
+        staleServiceNotice.value
+          = 'سرویسی که انتخاب کرده بودید دیگر برای رزرو تازه باز نیست. یک سرویس فعال را انتخاب کنید.'
+        draft.value.serviceId = null
+        draft.value.employeeId = undefined
+        draft.value.date = null
+        draft.value.timeSlot = null
+        currentStep.value = 'service'
+      }
+      else {
+        staleServiceNotice.value = null
+      }
+
+      // پرسنل انتخابی باید فعال باشد *و* سرویس انتخابی را انجام دهد. اگر سرویسی
+      // انتخاب نشده، مرحلهٔ پرسنل معنی ندارد و انتخاب قبلی بی‌ضرر می‌ماند.
+      if (draft.value.employeeId && draft.value.serviceId) {
+        const picked = employees.value.find(e => e.id === draft.value.employeeId)
+        const stillValid = !!picked && picked.status === 'active'
+          && picked.serviceIds.includes(draft.value.serviceId)
+        if (!stillValid) {
+          staleEmployeeNotice.value
+            = 'پرسنلی که انتخاب کرده بودید دیگر این سرویس را برای رزرو تازه انجام نمی‌دهد؛ ممکن است غیرفعال شده باشد یا اختصاصش تغییر کرده باشد. یک پرسنل دیگر را انتخاب کنید.'
+          draft.value.employeeId = undefined
+          draft.value.timeSlot = null
+          currentStep.value = 'employee'
+        }
+        else {
+          staleEmployeeNotice.value = null
+        }
+      }
+      else {
+        staleEmployeeNotice.value = null
+      }
     }
     catch {
       error.value = 'خطا در دریافت اطلاعات کسب‌وکار.'
@@ -93,37 +156,30 @@ export function useBookingFlow() {
     }
   }
 
-  /** Load date availability for the next 14 days */
+  /**
+   * نوار تاریخ رزرو — یک پرس‌وجوی *دسته‌ای* برای همهٔ روزها (فاز ۱۱).
+   *
+   * پیش از این، برای هر روز یک `getSlots` جدا صدا زده می‌شد (۱۴ درخواست
+   * سریالی) و «جمعه» به‌صورت ثابت تعطیل فرض می‌شد. حالا روزها از همان
+   * «برنامهٔ هفتهٔ کسب‌وکار + برنامهٔ نفر + مدت سرویس + نوبت‌ها» می‌آیند، پس
+   * تغییر ساعت کاری بی‌تغییری در این لایه‌ها به نوار تاریخ سرایت می‌کند.
+   */
   async function loadDateAvailability() {
+    if (!draft.value.businessId) return
     loadingDates.value = true
+    availabilityError.value = null
     try {
-      const upcomingDates = generateUpcomingDates(14)
-      const availability: DateAvailability[] = []
-
-      for (const date of upcomingDates) {
-        const dateStr = toIsoDate(date)
-        const slots = await services.availability.getSlots(
-          draft.value.businessId!,
-          dateStr,
-          draft.value.employeeId ?? undefined
-        )
-        const hasAvailable = slots.some(s => s.isAvailable)
-        const day = date.getDay()
-        const persianDay = (day + 1) % 7
-
-        availability.push({
-          dateStr,
-          hasAvailableSlots: hasAvailable,
-          isToday: isToday(date),
-          isTomorrow: isTomorrow(date),
-          isFriday: persianDay === 6
-        })
-      }
-
-      dateAvailability.value = availability
+      const dates = upcomingDateKeys(AVAILABILITY_HORIZON_DAYS)
+      const entries = await services.availability.getDateAvailability(draft.value.businessId, dates, {
+        serviceId: draft.value.serviceId,
+        employeeId: draft.value.employeeId
+      })
+      // برچسب‌های «امروز/فردا/وقت آزاد» از util مشترک (جریان رزرو = صفحهٔ جابه‌جایی)
+      dateAvailability.value = toDateAvailabilityList(entries)
     }
-    catch {
-      error.value = 'خطا در دریافت تاریخ‌های آزاد.'
+    catch (e) {
+      // پیام فارسی از لایهٔ سرویس؛ خطای فنی خام در UI نمی‌آید
+      availabilityError.value = toServiceError(e).message
     }
     finally {
       loadingDates.value = false
@@ -132,22 +188,50 @@ export function useBookingFlow() {
 
   /** Load time slots for a specific date */
   async function loadTimeSlots(date: string) {
+    if (!draft.value.businessId) return
     loadingSlots.value = true
     availableSlots.value = []
+    dayAvailability.value = null
     try {
-      availableSlots.value = await services.availability.getSlots(
-        draft.value.businessId!,
+      const day = await services.availability.getDayAvailability({
+        businessId: draft.value.businessId,
         date,
-        draft.value.employeeId ?? undefined
-      )
+        serviceId: draft.value.serviceId,
+        employeeId: draft.value.employeeId
+      })
+      dayAvailability.value = day
+      availableSlots.value = day.slots
     }
-    catch {
-      error.value = 'خطا در دریافت زمان‌های آزاد.'
+    catch (e) {
+      availabilityError.value = toServiceError(e).message
     }
     finally {
       loadingSlots.value = false
     }
   }
+
+  /**
+   * تازه‌سازی دسترس‌پذیری بعد از عوض‌شدن سرویس/پرسنل: گام تاریخ و گام ساعت
+   * هر دو از همان پرس‌وجو می‌خورند، پس یک «دوباره بخوان» کافی است — نه
+   * پاک‌کردن state و refetch در هر صفحه.
+   */
+  function refreshAvailability() {
+    if (currentStep.value === 'date' || currentStep.value === 'time') {
+      void loadDateAvailability()
+    }
+    if (draft.value.date && (currentStep.value === 'time' || currentStep.value === 'review')) {
+      void loadTimeSlots(draft.value.date)
+    }
+  }
+
+  /** چرا ساعتی نشان نمی‌دهیم؟ («تعطیل» ≠ «پر» ≠ «تنظیم‌نشده») */
+  const dayStatus = computed(() => dayAvailability.value?.status ?? null)
+  const dayMessage = computed(() => dayAvailability.value?.message ?? null)
+  const dayWindow = computed(() => dayAvailability.value?.window ?? [])
+  const dayClosed = computed(
+    () => dayStatus.value === 'closed' || dayStatus.value === 'not-configured'
+  )
+  const dayFullyBooked = computed(() => dayStatus.value === 'fully-booked' || dayStatus.value === 'past')
 
   /** Validate current step and proceed */
   function validateStep(step: BookingStep): boolean {
@@ -156,7 +240,7 @@ export function useBookingFlow() {
         return draft.value.serviceId !== null
 
       case 'employee':
-        // If requiresEmployee, must have selected
+        // اگر پرسنل اجباری است، باید انتخاب شده باشد
         if (requiresEmployee.value) {
           return draft.value.employeeId !== undefined && draft.value.employeeId !== null
         }
@@ -183,7 +267,7 @@ export function useBookingFlow() {
     const stepOrder: BookingStep[] = ['service', 'employee', 'date', 'time', 'review']
     const currentIdx = stepOrder.indexOf(currentStep.value)
 
-    // Skip employee step if not required
+    // اگر پرسنل اختیاری است، از این گام رد می‌شویم
     if (currentStep.value === 'service' && !requiresEmployee.value) {
       currentStep.value = 'date'
       loadDateAvailability()
@@ -195,7 +279,7 @@ export function useBookingFlow() {
       if (nextStep) {
         currentStep.value = nextStep
 
-        // Load data for the new step
+        // خواندن داده برای گام تازه
         if (currentStep.value === 'date') {
           loadDateAvailability()
         }
@@ -216,7 +300,7 @@ export function useBookingFlow() {
 
       if (!prevStepKey) return
 
-      // Skip employee step if not required
+      // اگر پرسنل اختیاری است، از این گام رد می‌شویم
       if (prevStepKey === 'employee' && !requiresEmployee.value) {
         currentStep.value = 'service'
       }
@@ -229,34 +313,41 @@ export function useBookingFlow() {
   /** Set service */
   function setService(serviceId: EntityId) {
     draft.value.serviceId = serviceId
+    staleServiceNotice.value = null
 
-    // If employee was selected, check if still valid for new service
+    // پرسنل انتخابی باید سرویس *تازه* را هم انجام بدهد؛ وگرنه انتخابش بی‌معنی
+    // است (رابطه از رکورد پرسنل خوانده می‌شود، نه از فهرست کهنهٔ سرویس).
     if (draft.value.employeeId) {
-      const service = currentService.value
-      if (service && service.employeeIds && service.employeeIds.length > 0) {
-        if (!service.employeeIds.includes(draft.value.employeeId)) {
-          draft.value.employeeId = undefined
-        }
+      const picked = employees.value.find(e => e.id === draft.value.employeeId)
+      const stillOk = !!picked && picked.serviceIds.includes(serviceId)
+      if (!stillOk) {
+        draft.value.employeeId = undefined
+        staleEmployeeNotice.value = null
       }
     }
 
-    // Invalidate downstream
+    // بی‌اعتبارکردن انتخاب‌های پایین‌دست
     draft.value.timeSlot = null
+    // دسترس‌پذیری تابعِ سرویس است (مدت + پرسنل مجاز) → همان لحظه تازه می‌شود
+    refreshAvailability()
   }
 
   /** Set employee */
   function setEmployee(employeeId: EntityId | null) {
     draft.value.employeeId = employeeId
-    // Invalidate downstream
+    staleEmployeeNotice.value = null
+    // بی‌اعتبارکردن انتخاب‌های پایین‌دست
     draft.value.timeSlot = null
+    // ساعت کاری *نفر* هم پنجرهٔ رزرو را عوض می‌کند (فاز ۱۱)
+    refreshAvailability()
   }
 
   /** Set date */
   function setDate(date: string) {
     draft.value.date = date
-    // Load slots for this date
+    // خواندن ساعت‌های همین روز
     loadTimeSlots(date)
-    // Invalidate timeSlot
+    // بی‌اعتبارکردن ساعت انتخاب‌شده
     draft.value.timeSlot = null
   }
 
@@ -277,9 +368,13 @@ export function useBookingFlow() {
     currentStep.value = 'service'
     warnings.value = []
     error.value = null
+    // یادداشت‌های «draft کهنه» هم با پیش‌نویس می‌روند (وگرنه رزرو بعدی با
+    // هشدار بی‌ربطِ رزرو قبلی شروع می‌شود).
+    staleServiceNotice.value = null
+    staleEmployeeNotice.value = null
   }
 
-  // Computed values
+  // مقادیر محاسبه‌شده
   const currentService = computed(() => {
     if (!draft.value.serviceId) return null
     return businessServices.value.find(s => s.id === draft.value.serviceId) ?? null
@@ -291,30 +386,30 @@ export function useBookingFlow() {
     return employees.value.find(e => e.id === draft.value.employeeId) ?? null
   })
 
-  /** آیا employee selection لازم است؟ */
-  const requiresEmployee = computed(() => {
-    if (!currentService.value) return false
-    const service = currentService.value
-    if (service.employeeIds && service.employeeIds.length > 0) return true
-    return employees.value.length > 0
+  /**
+   * پرسنلِ قابل‌رزرو برای سرویس انتخابی — قاعدهٔ واحد، فیلترشده در لایهٔ سرویس
+   * (فقط active) و این‌جا فقط با رابطه: «همین سرویس را انجام می‌دهد؟».
+   * هیچ «همهٔ پرسنل، حتی بی‌ربط» دیگر فهرست نمی‌شود (فاز ۱۰).
+   */
+  const serviceEmployees = computed(() => {
+    const serviceId = draft.value.serviceId
+    if (!serviceId) return []
+    return employees.value.filter(e => e.status === 'active' && e.serviceIds.includes(serviceId))
   })
 
-  /** آیا employee selection optional است؟ */
-  const employeeOptional = computed(() => {
-    if (!currentService.value) return false
-    const service = currentService.value
-    return (!service.employeeIds || service.employeeIds.length === 0) && employees.value.length > 0
-  })
+  /** لازم است؟ وقتی *کسی* این سرویس را انجام می‌دهد، انتخابش هم لازم است. */
+  const requiresEmployee = computed(() => serviceEmployees.value.length > 0)
+
+  /**
+   * اختیاری؟ وقتی کسب‌وکار پرسنل فعال دارد ولی هیچ‌کدام این سرویس را انجام
+   * نمی‌دهد، کاربر نباید مجبور به انتخاب شود (مرحله هم نمایش داده نمی‌شود).
+   */
+  const employeeOptional = computed(
+    () => !requiresEmployee.value && employees.value.length > 0
+  )
 
   /** کارمندان eligible برای service انتخاب شده */
-  const eligibleEmployees = computed(() => {
-    if (!currentService.value) return []
-    const service = currentService.value
-    if (service.employeeIds && service.employeeIds.length > 0) {
-      return employees.value.filter(e => service.employeeIds!.includes(e.id))
-    }
-    return employees.value
-  })
+  const eligibleEmployees = computed(() => serviceEmployees.value)
 
   /** Is draft complete for confirmation? */
   const isDraftComplete = computed(() => {
@@ -335,6 +430,8 @@ export function useBookingFlow() {
     draft: draft,
     currentStep: currentStep,
     warnings: warnings,
+    staleServiceNotice,
+    staleEmployeeNotice,
     loadingBusiness: loadingBusiness,
     loadingSlots: loadingSlots,
     loadingDates: loadingDates,
@@ -347,6 +444,8 @@ export function useBookingFlow() {
     employees: employees,
     availableSlots: availableSlots,
     dateAvailability: dateAvailability,
+    dayAvailability,
+    availabilityError,
 
     // Computed
     currentService,
@@ -354,8 +453,14 @@ export function useBookingFlow() {
     requiresEmployee,
     employeeOptional,
     eligibleEmployees,
+    serviceEmployees,
     isDraftComplete,
     noSlotsAvailable,
+    dayStatus,
+    dayMessage,
+    dayWindow,
+    dayClosed,
+    dayFullyBooked,
 
     // Actions
     initDraft,
@@ -368,6 +473,7 @@ export function useBookingFlow() {
     clearDraft,
     loadDateAvailability,
     loadTimeSlots,
+    refreshAvailability,
     validateStep,
     setWarnings: (w: Array<{ code: string; message: string; type: string }>) => { warnings.value = w }
   }

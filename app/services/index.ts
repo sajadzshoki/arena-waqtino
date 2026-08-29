@@ -16,6 +16,16 @@ import type { ChatService } from './chat/chat-service'
 import { MockChatService } from './chat/mock-chat-service'
 import type { AvailabilityService } from './availability/availability-service'
 import { MockAvailabilityService } from './availability/mock-availability-service'
+import type { AvatarService } from './avatars/avatar-service'
+import { MockAvatarService } from './avatars/mock-avatar-service'
+import type { OwnerService } from './owner/owner-service'
+import { MockOwnerService } from './owner/mock-owner-service'
+import type { ServiceManagementService } from './owner/service-management-service'
+import { MockServiceManagementService } from './owner/mock-service-management-service'
+import type { EmployeeManagementService } from './owner/employee-management-service'
+import { MockEmployeeManagementService } from './owner/mock-employee-management-service'
+import type { AvailabilityManagementService } from './owner/availability-management-service'
+import { MockAvailabilityManagementService } from './owner/mock-availability-management-service'
 
 /**
  * کارخانهٔ سرویس‌ها — تنها نقطهٔ تصمیم «mock یا API واقعی».
@@ -33,9 +43,21 @@ export interface AppServices {
   businesses: BusinessService
   bookings: BookingService
   notifications: NotificationService
+  /** کسب‌وکارهای نشان‌شده — منبع‌واحد‌حقیقت صفحهٔ «نشان‌شده‌ها» و همهٔ دکمه‌های Save */
   favorites: FavoriteService
+  /** استراتژی آواتار (mock: پیش‌نمایش محلی + آواتارهای آماده) */
+  avatars: AvatarService
+  /** فضای کاری صاحب کسب‌وکار: مالکیت، فهرست کسب‌وکارها و دادهٔ داشبورد */
+  owner: OwnerService
+  /** چرخهٔ حیات سرویس‌های یک کسب‌وکار (فاز ۹): فهرست/ساخت/ویرایش/وضعیت/حذف */
+  serviceManagement: ServiceManagementService
+  /** چرخهٔ حیات پرسنل یک کسب‌وکار (فاز ۱۰): فهرست/ساخت/ویرایش/اختصاص سرویس/وضعیت/حذف */
+  employeeManagement: EmployeeManagementService
+  /** ساعات کاری: نوشتن برنامهٔ هفتهٔ کسب‌وکار و پرسنل (فاز ۱۱) */
+  availabilityManagement: AvailabilityManagementService
   reviews: ReviewService
   chat: ChatService
+  /** خواندن دسترس‌پذیری: پنجرهٔ کاری + مدت سرویس + نوبت‌ها → اسلات‌ها (فاز ۱۱) */
   availability: AvailabilityService
 }
 
@@ -47,19 +69,28 @@ export function createServices(): AppServices {
     // روی config.public.apiBaseUrl — بدون تغییر در مصرف‌کنندگان.
     throw createError({
       statusCode: 500,
-      statusMessage:
-        'API mode هنوز پیاده‌سازی نشده است. NUXT_PUBLIC_API_MODE=mock را استفاده کنید.'
+      // `message` (نه `statusMessage`): h3 آینده‌نگرانه statusMessage را sanitize
+      // می‌کند و پیام ما باید به‌صورت کامل به صفحهٔ خطا برسد.
+      message: 'حالت API هنوز پیاده‌سازی نشده است. NUXT_PUBLIC_API_MODE=mock را استفاده کنید.'
     })
   }
 
   const auth = new MockAuthService(config.public.mockOtpCode)
+  const avatars = new MockAvatarService()
   return {
     auth,
-    users: new MockUserService(auth),
+    // سرویس‌های کاربر-محور نشست را می‌شناسند تا «دادهٔ کاربر جاری» خدمت دهند
+    // و خطای نشست نامعتبر (۴۰۱) از همان یک نقطه بیرون بیاید.
+    users: new MockUserService(auth, avatars),
     businesses: new MockBusinessService(),
     bookings: new MockBookingService(),
     notifications: new MockNotificationService(),
-    favorites: new MockFavoriteService(),
+    favorites: new MockFavoriteService(auth),
+    avatars,
+    owner: new MockOwnerService(auth),
+    serviceManagement: new MockServiceManagementService(auth),
+    employeeManagement: new MockEmployeeManagementService(auth),
+    availabilityManagement: new MockAvailabilityManagementService(auth),
     reviews: new MockReviewService(),
     chat: new MockChatService(),
     availability: new MockAvailabilityService()

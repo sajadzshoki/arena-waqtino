@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * WqSelectCard — کارت انتخابی (الگوی واحد «گزینهٔ انتخاب‌شونده»).
- * در سوییچر حالت، انتخاب کارمند، انتخاب سرویس و… استفاده می‌شود.
+ * در سوییچر حالت، انتخاب کارمند، انتخاب سرویس و… استفاده می‌شود، و با
+ * `role="checkbox"` هم انتخاب چندتایی (اختصاص سرویس به پرسنل) را پوشش می‌دهد.
  */
 withDefaults(
   defineProps<{
@@ -10,12 +11,19 @@ withDefaults(
     icon?: string
     selected?: boolean
     disabled?: boolean
+    /**
+     * معنای گروه انتخاب: تک‌انتخابی (radio) یا چندانتخابی (checkbox). پیش‌فرض
+     * همان radio است که همه‌جا استفاده می‌شود؛ انتخاب چندتایی (مثل اختصاص
+     * سرویس‌های یک پرسنل) باید checkbox بگوید، وگرنه صفحه‌خوان اشتباه می‌خواند.
+     */
+    role?: 'radio' | 'checkbox'
   }>(),
   {
     description: undefined,
     icon: undefined,
     selected: false,
-    disabled: false
+    disabled: false,
+    role: 'radio'
   }
 )
 
@@ -32,7 +40,7 @@ const emit = defineEmits<{ select: [] }>()
         : 'border-line bg-surface hover:border-line-strong',
       disabled && 'pointer-events-none opacity-50'
     ]"
-    role="radio"
+    :role="role"
     :aria-checked="selected"
     :disabled="disabled"
     @click="emit('select')"
@@ -40,7 +48,7 @@ const emit = defineEmits<{ select: [] }>()
     <span
       v-if="icon"
       class="flex size-11 shrink-0 items-center justify-center rounded-lg"
-      :class="selected ? 'bg-primary/15 text-primary' : 'bg-surface-muted text-foreground-muted'"
+      :class="selected ? 'bg-primary-soft text-primary' : 'bg-surface-muted text-foreground-muted'"
     >
       <UIcon :name="icon" class="size-6" />
     </span>

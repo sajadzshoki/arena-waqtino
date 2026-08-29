@@ -1,6 +1,9 @@
 import type { Business, BusinessCategory } from '~/types/business'
 import type { Employee } from '~/types/employee'
 import type { BookableService } from '~/types/service'
+import type { AvailabilityDay, AvailabilitySchedule, Weekday } from '~/types/availability'
+import { APP_TIMEZONE } from '~/config/timezone'
+import { WEEKDAY_ORDER } from '~/config/availability'
 
 /**
  * داده‌های اولیهٔ واقع‌گرایانهٔ فارسی برای توسعه.
@@ -85,7 +88,8 @@ export const MOCK_BUSINESSES: Business[] = [
     rating: { average: 4.3, count: 156 },
     isVerified: false,
     status: 'active',
-    ownerUserId: 'usr_owner_energy',
+    // بهرام (09222222222) مدیر همین کسب‌وکار است — مالکیت از همین فیلد خوانده می‌شود
+    ownerUserId: 'usr_dev_bahram',
     createdAt: '2026-01-20T09:00:00.000Z'
   },
   {
@@ -236,131 +240,212 @@ export const MOCK_BUSINESSES: Business[] = [
     status: 'active',
     ownerUserId: 'usr_owner_barber',
     createdAt: '2025-06-15T10:30:00.000Z'
-  }
+  },
+  {
+    // سناریوی فاز ۸: کسب‌وکار دومِ «سارا» — تازه ثبت‌شده، هنوز نوبتی ندارد
+    // و در وضعیت «در انتظار بررسی» است (نمایش صادقانهٔ حالت خالی + وضعیت غیرفعال).
+    id: 'biz_ayeneh',
+    slug: 'ayeneh-salon',
+    name: 'آرایشگاه زنانه آینه',
+    categoryId: 'cat_beauty',
+    description:
+      'آرایشگاه زنانه آینه در یوسف‌آباد؛ اصلاح مو، رنگ و مش، شینیون و بستهٔ عروسی. تازه به وقتینو پیوسته و در حال تکمیل خدمات و ساعت کاری است.',
+    phone: '02155667788',
+    address: { city: 'تهران', district: 'یوسف‌آباد', street: 'خیابان فرشته، پلاک ۹' },
+    coverImageUrl: null,
+    logoUrl: null,
+    gallery: [],
+    rating: { average: 0, count: 0 },
+    isVerified: false,
+    status: 'pending_review',
+    ownerUserId: 'usr_dev_sara',
+    createdAt: '2026-08-20T10:15:00.000Z'
+  },
 ]
 
 export const MOCK_EMPLOYEES: Employee[] = [
+  // مدل فاز ۱۰: نام در دو جزء نگه داشته می‌شود (نام نمایشی مشتق‌شده است)، رابطهٔ
+  // سرویس‌ها *این‌جا* ذخیره می‌شود (`serviceIds`)، و `userId` اختیاری است —
+  // پرسنل می‌تواند حساب وقتینو نداشته باشد. `phone` هم هیچوقت معنی حساب نیست.
   {
     id: 'emp_sara_pars',
     businessId: 'biz_pars',
     userId: 'usr_dev_sara',
-    name: 'سارا محمدی',
+    firstName: 'سارا',
+    lastName: 'محمدی',
     title: 'هماهنگ‌کنندهٔ نوبت‌ها و پذیرش',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: [],
   },
   {
     id: 'emp_elham_pars',
     businessId: 'biz_pars',
     userId: 'usr_dev_elham',
-    name: 'الهه احمدی',
+    firstName: 'الهه',
+    lastName: 'احمدی',
     title: 'منشی و هماهنگ‌کنندهٔ نوبت‌ها',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: [],
   },
   {
     id: 'emp_dr_ranjbar',
     businessId: 'biz_pars',
-    name: 'دکتر کیان رنجبر',
+    firstName: 'دکتر کیان',
+    lastName: 'رنجبر',
     title: 'متخصص ایمپلنت',
+    phone: '09301110022',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_pars_implant'],
   },
   {
     id: 'emp_dr_mirzaei',
     businessId: 'biz_pars',
-    name: 'دکتر فرهاد میرزایی',
+    firstName: 'دکتر فرهاد',
+    lastName: 'میرزایی',
     title: 'متخصص ارتودنسی',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_pars_ortho'],
   },
   {
     id: 'emp_mina_narenj',
     businessId: 'biz_narenj',
-    name: 'مینا رحیمی',
+    firstName: 'مینا',
+    lastName: 'رحیمی',
     title: 'آرایشگر مو و رنگ',
+    phone: '09122223344',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_narenj_color', 'srv_narenj_keratin', 'srv_narenj_haircut'],
   },
   {
     id: 'emp_omid_narenj',
     businessId: 'biz_narenj',
-    name: 'امید کاظمی',
+    firstName: 'امید',
+    lastName: 'کاظمی',
     title: 'متخصص پوست',
+    phone: '09125556677',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_narenj_skin'],
   },
   {
     id: 'emp_nike_narenj',
     businessId: 'biz_narenj',
-    name: 'نیک آهنگ',
+    firstName: 'نیک',
+    lastName: 'آهنگ',
     title: 'میکاپ آرتیست عروس',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_narenj_bridal'],
   },
   {
     id: 'emp_reza_energy',
     businessId: 'biz_energy',
-    name: 'رضا کریمی',
+    userId: 'usr_dev_bahram',
+    firstName: 'رضا',
+    lastName: 'کریمی',
     title: 'مربی بدن‌سازی',
+    phone: '09351112233',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_energy_personal'],
   },
   {
     id: 'emp_ali_energy',
     businessId: 'biz_energy',
-    name: 'علی حسینی',
+    firstName: 'علی',
+    lastName: 'حسینی',
     title: 'مربی کراس‌فیت',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_energy_crossfit'],
   },
   {
     id: 'emp_maryam_aramesh',
     businessId: 'biz_aramesh',
-    name: 'مریم سلطانی',
+    firstName: 'مریم',
+    lastName: 'سلطانی',
     title: 'روانشناس بالینی',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_aramesh_individual'],
   },
   {
     id: 'emp_hassan_aramesh',
     businessId: 'biz_aramesh',
-    name: 'حسن نوری',
+    firstName: 'حسن',
+    lastName: 'نوری',
     title: 'مشاور خانواده',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_aramesh_couple', 'srv_aramesh_family'],
   },
   {
     id: 'emp_shima_ruyesh',
     businessId: 'biz_ruyesh',
-    name: 'شیما عباسی',
+    firstName: 'شیما',
+    lastName: 'عباسی',
     title: 'مدرس زبان انگلیسی (IELTS)',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_ruyesh_ielts'],
   },
   {
     id: 'emp_amir_noora',
     businessId: 'biz_noora',
-    name: 'امیر جعفری',
+    firstName: 'امیر',
+    lastName: 'جعفری',
     title: 'عکاس پرتره و مدلینگ',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_noora_portrait', 'srv_noora_family'],
   },
   {
     id: 'emp_reza_barber',
     businessId: 'biz_barbershop',
-    name: 'رضا صادقی',
+    firstName: 'رضا',
+    lastName: 'صادقی',
     title: 'آرایشگر ارشد',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_barber_cut', 'srv_barber_vip'],
   },
   {
     id: 'emp_mehdi_barber',
     businessId: 'biz_barbershop',
-    name: 'مهدی قاسمی',
+    firstName: 'مهدی',
+    lastName: 'قاسمی',
     title: 'متخصص اصلاح ریش',
     avatarUrl: null,
-    isActive: true
+    status: 'active',
+    serviceIds: ['srv_barber_beard'],
+  },
+  {
+    // سناریوهای فاز ۱۰: «پرسنل بدون سرویس» + «فقط تاریخچه» (حذف مجاز با توضیح)
+    id: 'emp_samin_narenj',
+    businessId: 'biz_narenj',
+    firstName: 'سامین',
+    lastName: 'نویدی',
+    title: 'هماهنگ‌کنندهٔ سالن',
+    avatarUrl: null,
+    status: 'active',
+    serviceIds: [],
+  },
+  {
+    // سناریوی «غیرفعال» + «غیرفعال را می‌شود فعال کرد و به انتخاب رزرو برگردد»
+    id: 'emp_yasmin_narenj',
+    businessId: 'biz_narenj',
+    firstName: 'یاسمین',
+    lastName: 'فروزش',
+    title: 'میکاپ آرتیست',
+    phone: '09387778899',
+    avatarUrl: null,
+    status: 'inactive',
+    serviceIds: ['srv_narenj_bridal'],
   }
 ]
 
@@ -373,8 +458,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'شامل مشاورهٔ رنگ، تست حساسیت و ماسک ترمیمی پایان کار',
     price: 3_200_000,
     durationMinutes: 180,
-    employeeIds: ['emp_mina_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_keratin',
@@ -383,8 +467,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'کراتینه برزیلی با مواد درجه یک + پروتئین‌تراپی',
     price: 2_450_000,
     durationMinutes: 120,
-    employeeIds: ['emp_mina_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_skin',
@@ -393,8 +476,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'پاکسازی عمیق + ماسک مناسب نوع پوست',
     price: 890_000,
     durationMinutes: 60,
-    employeeIds: ['emp_omid_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_bridal',
@@ -403,8 +485,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'میکاپ حرفه‌ای عروس + تست میکاپ + شینیون مو',
     price: 8_500_000,
     durationMinutes: 240,
-    employeeIds: ['emp_nike_narenj'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_narenj_haircut',
@@ -413,8 +494,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'شامل شستشو، کوتاهی و حالت‌دهی',
     price: 450_000,
     durationMinutes: 45,
-    employeeIds: ['emp_mina_narenj'],
-    isActive: true
+    status: 'active'
   },
 
   // === کلینیک پارس ===
@@ -425,7 +505,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'معاینه کامل + عکس‌برداری در صورت نیاز',
     price: 450_000,
     durationMinutes: 30,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_implant',
@@ -434,8 +514,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'ارزیابی استخوان فک، بررسی عکس CBCT و ارائهٔ طرح درمان',
     price: 600_000,
     durationMinutes: 45,
-    employeeIds: ['emp_dr_ranjbar'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_scaling',
@@ -444,7 +523,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'تمیز کردن حرفه‌ای دندان + پولیش',
     price: 750_000,
     durationMinutes: 45,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_whitening',
@@ -453,7 +532,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'سفیدکردن دندان با لیزر در یک جلسه',
     price: 3_800_000,
     durationMinutes: 60,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_pars_ortho',
@@ -462,8 +541,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'بررسی ناهنجاری فک و دندان + طرح درمان ارتودنسی',
     price: 500_000,
     durationMinutes: 30,
-    employeeIds: ['emp_dr_mirzaei'],
-    isActive: true
+    status: 'active'
   },
 
   // === باشگاه انرژی ===
@@ -474,7 +552,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'آنالیز بدن + تنظیم برنامهٔ تمرینی + توصیهٔ تغذیه‌ای',
     price: 350_000,
     durationMinutes: 45,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_energy_crossfit',
@@ -483,8 +561,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'کلاس ۶۰ دقیقه‌ای کراس‌فیت با مربی رسمی',
     price: 180_000,
     durationMinutes: 60,
-    employeeIds: ['emp_ali_energy'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_energy_personal',
@@ -493,8 +570,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه تمرین خصوصی با مربی اختصاصی',
     price: 500_000,
     durationMinutes: 60,
-    employeeIds: ['emp_reza_energy'],
-    isActive: true
+    status: 'active'
   },
 
   // === آموزشگاه رویش ===
@@ -505,7 +581,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'مصاحبهٔ شفاهی + آزمون کتبی کوتاه',
     price: 0,
     durationMinutes: 30,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_ruyesh_ielts',
@@ -514,8 +590,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'جلسهٔ اول دورهٔ آمادگی آزمون آیلتس (جلسهٔ آزمایشی)',
     price: 450_000,
     durationMinutes: 90,
-    employeeIds: ['emp_shima_ruyesh'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_ruyesh_conversation',
@@ -524,7 +599,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه تمرین مکالمه با پارتنر نیتیو',
     price: 280_000,
     durationMinutes: 60,
-    isActive: true
+    status: 'active'
   },
 
   // === استودیو نورا ===
@@ -535,8 +610,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک ساعت عکاسی پرتره در استودیو + ۱۰ عکس ویرایش‌شده',
     price: 2_200_000,
     durationMinutes: 60,
-    employeeIds: ['emp_amir_noora'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_noora_family',
@@ -545,8 +619,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'عکاسی خانوادگی در فضای باز + ۱۵ عکس ویرایش‌شده',
     price: 3_500_000,
     durationMinutes: 90,
-    employeeIds: ['emp_amir_noora'],
-    isActive: true
+    status: 'active'
   },
 
   // === مرکز مشاوره آرامش ===
@@ -557,8 +630,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه ۵۰ دقیقه‌ای مشاورهٔ فردی',
     price: 700_000,
     durationMinutes: 50,
-    employeeIds: ['emp_maryam_aramesh'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_aramesh_couple',
@@ -567,8 +639,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه ۷۰ دقیقه‌ای مشاورهٔ زوجین',
     price: 1_100_000,
     durationMinutes: 70,
-    employeeIds: ['emp_hassan_aramesh'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_aramesh_family',
@@ -577,8 +648,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'یک جلسه ۶۰ دقیقه‌ای مشاورهٔ خانوادگی',
     price: 900_000,
     durationMinutes: 60,
-    employeeIds: ['emp_hassan_aramesh'],
-    isActive: true
+    status: 'active'
   },
 
   // === آرایشگاه جنتلمن ===
@@ -589,8 +659,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'شستشو + کوتاهی مو + حالت‌دهی',
     price: 250_000,
     durationMinutes: 30,
-    employeeIds: ['emp_reza_barber'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_barber_beard',
@@ -599,8 +668,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'طراحی و اصلاح ریش با تیغ و ماشین',
     price: 150_000,
     durationMinutes: 20,
-    employeeIds: ['emp_mehdi_barber'],
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_barber_vip',
@@ -609,8 +677,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'اصلاح مو و ریش + ماسک صورت + شستشوی صورت',
     price: 550_000,
     durationMinutes: 75,
-    employeeIds: ['emp_reza_barber'],
-    isActive: true
+    status: 'active'
   },
 
   // === کلینیک پتلند ===
@@ -621,7 +688,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'معاینهٔ عمومی + آزمایش خون + توصیه‌های بهداشتی',
     price: 650_000,
     durationMinutes: 40,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_petland_vaccine',
@@ -630,7 +697,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'تزریق واکسن چندگانه (سگ یا گربه)',
     price: 380_000,
     durationMinutes: 20,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_petland_grooming',
@@ -639,7 +706,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'حمام + کوتاهی مو + ناخن + تمیز کردن گوش',
     price: 550_000,
     durationMinutes: 90,
-    isActive: true
+    status: 'active'
   },
 
   // === خدمات نظافتی تمیزآز ===
@@ -650,7 +717,7 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'هر ساعت نظافت عمومی منزل',
     price: 180_000,
     durationMinutes: 60,
-    isActive: true
+    status: 'active'
   },
   {
     id: 'srv_tamiraz_deep',
@@ -659,7 +726,24 @@ export const MOCK_SERVICES: BookableService[] = [
     description: 'نظافت کامل + شستشوی پنجره + تمیز کردن کابینت',
     price: 2_500_000,
     durationMinutes: 360,
-    isActive: true
+    status: 'active'
+  },
+  {
+    id: 'srv_narenj_color_fix',
+    businessId: 'biz_narenj',
+    name: 'تصحیح رنگ مو',
+    description: 'رفع عیب رنگ و نچرال‌کردن ته مو در یک جلسه',
+    price: 1_900_000,
+    durationMinutes: 90,
+    status: 'inactive'
+  },
+  {
+    id: 'srv_narenj_kidcut',
+    businessId: 'biz_narenj',
+    name: 'کوتاهی مو کودک',
+    price: 380_000,
+    durationMinutes: 30,
+    status: 'active'
   }
 ]
 
@@ -679,3 +763,116 @@ export const MOCK_DISTANCES: Record<string, number> = {
   biz_petland: 3.8,
   biz_barbershop: 8.2
 }
+
+/**
+ * برنامهٔ ساعت کاری هفتگی (فاز ۱۱) — seed.
+ *
+ * دو نوع رکورد در یک آرایه:
+ *   • بدون `employeeId` → ساعت *پیش‌فرض کسب‌وکار*
+ *   • با `employeeId` + `source: 'custom'` → برنامهٔ اختصاصی یک نفر
+ * پرسنلی که ردیف ندارد یعنی «مطابق کسب‌وکار» کار می‌کند — این حالت *بازنمایی*
+ * صریح همان `business-default` است، نه فراموشی داده. برای همین هیچ‌جا هفت سطر
+ * برای هر نفر کپی نمی‌شود.
+ *
+ * `biz_ayeneh` عمداً ردیف ندارد: صفحهٔ ساعات کاری باید «تنظیم‌نشده» را هم
+ * تجربه کند (حالت خالی، نه صفر ساختگی).
+ */
+
+type SeedDay = Partial<Record<Weekday, Array<[string, string]>>>
+
+function seedWeek(businessId: string, days: SeedDay, employeeId?: string): AvailabilitySchedule {
+  const weekDays: AvailabilityDay[] = WEEKDAY_ORDER.map((weekday) => {
+    const intervals = days[weekday]
+    return {
+      weekday,
+      enabled: Array.isArray(intervals) && intervals.length > 0,
+      intervals: (intervals ?? []).map(([start, end]) => ({ start, end }))
+    }
+  })
+  return {
+    businessId,
+    ...(employeeId ? { employeeId } : {}),
+    timezone: APP_TIMEZONE,
+    days: weekDays,
+    source: employeeId ? 'custom' : 'business-default',
+    updatedAt: '2026-04-18T10:12:00.000Z'
+  }
+}
+
+const FULL_WEEK = (start: string, end: string): SeedDay => ({
+  saturday: [[start, end]],
+  sunday: [[start, end]],
+  monday: [[start, end]],
+  tuesday: [[start, end]],
+  wednesday: [[start, end]]
+})
+
+export const MOCK_SCHEDULES: AvailabilitySchedule[] = [
+  // آرایشگاه زنانه نارنج: چهارشنبه با استراحت ناهار (دو بازه در روز)، پنج‌شنبه کوتاه، جمعه تعطیل
+  seedWeek('biz_narenj', {
+    ...FULL_WEEK('09:00', '19:00'),
+    wednesday: [['09:00', '13:00'], ['15:00', '19:00']],
+    thursday: [['10:00', '16:00']]
+  }),
+  // دندان‌پزشکی پارس: سه‌شنبه نیم‌روز، پنج‌شنبه و جمعه تعطیل
+  seedWeek('biz_pars', {
+    ...FULL_WEEK('08:00', '17:00'),
+    wednesday: [['09:00', '13:00']]
+  }),
+  // باشگاه انرژی: همهٔ روزها باز، آخر هفته کوتاه‌تر
+  seedWeek('biz_energy', {
+    saturday: [['06:00', '22:00']],
+    sunday: [['06:00', '22:00']],
+    monday: [['06:00', '22:00']],
+    tuesday: [['06:00', '22:00']],
+    wednesday: [['06:00', '22:00']],
+    thursday: [['08:00', '18:00']],
+    friday: [['08:00', '14:00']]
+  }),
+  seedWeek('biz_shoka', {
+    ...FULL_WEEK('08:00', '18:00'),
+    thursday: [['08:00', '14:00']]
+  }),
+  seedWeek('biz_ruyesh', {
+    ...FULL_WEEK('08:00', '20:00'),
+    thursday: [['09:00', '15:00']]
+  }),
+  seedWeek('biz_noora', {
+    ...FULL_WEEK('10:00', '19:00'),
+    thursday: [['10:00', '16:00']]
+  }),
+  seedWeek('biz_aramesh', { ...FULL_WEEK('09:00', '18:00') }),
+  seedWeek('biz_tamiraz', {
+    ...FULL_WEEK('07:00', '20:00'),
+    thursday: [['07:00', '20:00']],
+    friday: [['08:00', '14:00']]
+  }),
+  seedWeek('biz_petland', {
+    ...FULL_WEEK('09:00', '18:00'),
+    thursday: [['09:00', '15:00']]
+  }),
+  seedWeek('biz_barbershop', {
+    ...FULL_WEEK('09:00', '21:00'),
+    thursday: [['09:00', '21:00']]
+  }),
+
+  // ── برنامه‌های اختصاصی پرسنل ──
+  // مینا (نارنج): کوتاه‌تر از کسب‌وکار + فاصلهٔ ناهار — یعنی «پرسنل ⊆ کسب‌وکار» با دو بازه
+  seedWeek('biz_narenj', {
+    saturday: [['10:00', '14:00'], ['16:00', '19:00']],
+    sunday: [['10:00', '14:00'], ['16:00', '19:00']],
+    monday: [['10:00', '14:00']],
+    tuesday: [['10:00', '14:00'], ['16:00', '19:00']],
+    wednesday: [['10:00', '13:00'], ['16:00', '19:00']],
+    thursday: [['11:00', '16:00']]
+  }, 'emp_mina_narenj'),
+  // نایک (نارنج): فقط شیفت صبح
+  seedWeek('biz_narenj', {
+    ...FULL_WEEK('09:00', '13:00')
+  }, 'emp_nike_narenj'),
+  // دکتر رنجبر (پارس): فقط دو روز، داخل ساعات کلینیک
+  seedWeek('biz_pars', {
+    saturday: [['09:00', '13:00']],
+    monday: [['14:00', '17:00']]
+  }, 'emp_dr_ranjbar')
+]

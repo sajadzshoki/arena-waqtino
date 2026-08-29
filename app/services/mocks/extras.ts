@@ -1,9 +1,8 @@
 import type { ChatConversation, ChatMessage } from '~/types/chat'
 import type { Favorite, Review } from '~/types/review'
 import type { AppNotification } from '~/types/notification'
-import type { WorkingHours } from '~/types/availability'
 
-/** داده‌های مکمل mock: علاقه‌مندی‌ها، اعلان‌ها، نظرها، گفتگوها، ساعت کاری */
+/** داده‌های مکمل mock: علاقه‌مندی‌ها، اعلان‌ها، نظرها، گفتگوها، اسلات‌های اشغال‌شده */
 
 function isoIn(daysFromNow: number, hour: number, minute = 0): string {
   const d = new Date()
@@ -141,106 +140,3 @@ export const MOCK_MESSAGES: ChatMessage[] = [
     createdAt: isoIn(-22, 16, 40)
   }
 ]
-
-/**
- * ساعت کاری هفتگی کسب‌وکارها (هفتهٔ ایرانی: شنبه=۰ … جمعه=۶).
- * منبع تولید اسلات‌های قابل‌رزرو در MockAvailabilityService.
- */
-export const MOCK_WORKING_HOURS: Record<string, WorkingHours[]> = {
-  biz_narenj: [
-    { day: 0, isOpen: true, ranges: [{ start: '09:00', end: '19:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '09:00', end: '19:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '09:00', end: '19:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '09:00', end: '19:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '09:00', end: '19:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '10:00', end: '16:00' }] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_pars: [
-    { day: 0, isOpen: true, ranges: [{ start: '08:00', end: '17:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '08:00', end: '17:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '08:00', end: '17:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '08:00', end: '17:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '09:00', end: '13:00' }] },
-    { day: 5, isOpen: false, ranges: [] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_energy: [
-    { day: 0, isOpen: true, ranges: [{ start: '06:00', end: '22:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '06:00', end: '22:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '06:00', end: '22:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '06:00', end: '22:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '06:00', end: '22:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '08:00', end: '18:00' }] },
-    { day: 6, isOpen: true, ranges: [{ start: '08:00', end: '14:00' }] }
-  ],
-  biz_shoka: [
-    { day: 0, isOpen: true, ranges: [{ start: '08:00', end: '18:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '08:00', end: '18:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '08:00', end: '18:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '08:00', end: '18:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '08:00', end: '18:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '08:00', end: '14:00' }] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_ruyesh: [
-    { day: 0, isOpen: true, ranges: [{ start: '08:00', end: '20:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '08:00', end: '20:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '08:00', end: '20:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '08:00', end: '20:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '08:00', end: '20:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '09:00', end: '15:00' }] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_noora: [
-    { day: 0, isOpen: true, ranges: [{ start: '10:00', end: '19:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '10:00', end: '19:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '10:00', end: '19:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '10:00', end: '19:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '10:00', end: '19:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '10:00', end: '16:00' }] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_aramesh: [
-    { day: 0, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 5, isOpen: false, ranges: [] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_tamiraz: [
-    { day: 0, isOpen: true, ranges: [{ start: '07:00', end: '20:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '07:00', end: '20:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '07:00', end: '20:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '07:00', end: '20:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '07:00', end: '20:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '07:00', end: '20:00' }] },
-    { day: 6, isOpen: true, ranges: [{ start: '08:00', end: '14:00' }] }
-  ],
-  biz_petland: [
-    { day: 0, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '09:00', end: '18:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '09:00', end: '15:00' }] },
-    { day: 6, isOpen: false, ranges: [] }
-  ],
-  biz_barbershop: [
-    { day: 0, isOpen: true, ranges: [{ start: '09:00', end: '21:00' }] },
-    { day: 1, isOpen: true, ranges: [{ start: '09:00', end: '21:00' }] },
-    { day: 2, isOpen: true, ranges: [{ start: '09:00', end: '21:00' }] },
-    { day: 3, isOpen: true, ranges: [{ start: '09:00', end: '21:00' }] },
-    { day: 4, isOpen: true, ranges: [{ start: '09:00', end: '21:00' }] },
-    { day: 5, isOpen: true, ranges: [{ start: '09:00', end: '21:00' }] },
-    { day: 6, isOpen: false, ranges: [] }
-  ]
-}
-
-/**
- * اسلات‌های رزرو شده (برای شبیه‌سازی conflict).
- * در mock، تعدادی اسلات از پیش رزرو شده‌اند تا سناریوی conflict قابل تست باشد.
- */
-export const MOCK_BOOKED_SLOTS: Set<string> = new Set()

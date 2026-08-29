@@ -1,3 +1,5 @@
+import { toFaDigits } from './digits'
+
 const faDate = new Intl.DateTimeFormat('fa-IR', {
   dateStyle: 'full'
 })
@@ -12,7 +14,11 @@ const faTime = new Intl.DateTimeFormat('fa-IR', {
 })
 
 const faDateTime = new Intl.DateTimeFormat('fa-IR', {
-  dateStyle: 'medium',
+  // ترکیب `dateStyle` با گزینه‌ای مثل hour مطابق ECMA-402 نامعتبر است
+  // (در Node خطای «Invalid option : option» می‌دهد)؛ پس اجزا صریح می‌آیند.
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
   hour: '2-digit',
   minute: '2-digit'
 })
@@ -112,4 +118,35 @@ export function formatDateLabel(date: Date): string {
   if (isToday(date)) return 'امروز'
   if (isTomorrow(date)) return 'فردا'
   return `${formatFaWeekday(date)}، ${formatFaShortDate(date)}`
+}
+
+/**
+ * زمان نسبی فارسی برای متادیتا («۳ روز پیش») — برای تاریخ‌های گذشته.
+ * بیرون از پنجرهٔ روزانه به تاریخ شمسی برمی‌گردد تا مبهم نشود.
+ */
+export function formatRelativeFa(
+  date: Date | string | number,
+  now: Date = new Date()
+): string {
+  const then = new Date(date)
+  const diffSeconds = Math.floor((now.getTime() - then.getTime()) / 1000)
+  if (Number.isNaN(diffSeconds)) return formatFaDate(then)
+  if (diffSeconds < 60) return 'همین حالا'
+
+  const units: Array<[number, string]> = [
+    [60, 'دقیقه'],
+    [24, 'ساعت'],
+    [7, 'روز'],
+    [4.35, 'هفته']
+  ]
+
+  let value = diffSeconds / 60
+  for (let i = 0; i < units.length; i++) {
+    const [step, name] = units[i]!
+    if (i === units.length - 1 || value < step) {
+      return `${toFaDigits(Math.floor(value))} ${name} پیش`
+    }
+    value = value / step
+  }
+  return formatFaDate(then)
 }

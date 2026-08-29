@@ -45,6 +45,11 @@ export class ServiceError extends Error {
   static validation(message: string): ServiceError {
     return new ServiceError('VALIDATION_ERROR', message, 422)
   }
+
+  /** تعارض با وضعیت فعلی داده (مثلاً «این سرویس نوبت زنده دارد و حذف نمی‌شود»). */
+  static conflict(message: string): ServiceError {
+    return new ServiceError('CONFLICT', message, 409)
+  }
 }
 
 export function toServiceError(error: unknown): ServiceError {

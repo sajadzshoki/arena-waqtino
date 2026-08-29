@@ -57,7 +57,7 @@ function getCategoryForBiz(categoryId: string) {
 
     <!-- ۲. نقطهٔ ورود جستجو -->
     <div class="mt-5">
-      <CustomerSearchEntry />
+      <SearchEntry />
     </div>
 
     <!-- ۳. دسته‌بندی‌ها -->
@@ -97,6 +97,7 @@ function getCategoryForBiz(categoryId: string) {
             :key="biz.id"
             :business="biz"
             :category="getCategoryForBiz(biz.categoryId)"
+            show-save-action
           />
         </div>
       </template>
@@ -166,6 +167,7 @@ function getCategoryForBiz(categoryId: string) {
           :key="biz.id"
           :business="biz"
           :category="getCategoryForBiz(biz.categoryId)"
+          show-save-action
         />
       </div>
     </DiscoverySection>

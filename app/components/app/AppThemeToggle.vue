@@ -1,38 +1,17 @@
 <script setup lang="ts">
 /**
- * AppThemeToggle — چرخهٔ حالت نمایش: سیستم → روشن → تیره.
- * ترجیح کاربر در کوکی (storageKey: wq-color-mode) نگه داشته می‌شود.
+ * AppThemeToggle — میانبر هدر برای همان مدیر تم مرکزی (`useThemePreference`).
+ * چرخش: سیستم → روشن → تیره. ترجیح در localStorage با کلید `wq-color-mode`
+ * می‌ماند و پیش از paint اعمال می‌شود (فلاش تم اشتباه نداریم).
+ * وضعیت فقط با رنگ منتقل نمی‌شود: آیکون عوض می‌شود و `aria-label` نام حالت را می‌گوید.
  */
-const colorMode = useColorMode()
-
-type Preference = 'system' | 'light' | 'dark'
-const ORDER: Preference[] = ['system', 'light', 'dark']
-
-const meta: Record<Preference, { icon: string; label: string }> = {
-  system: { icon: 'i-lucide-monitor-smartphone', label: 'هماهنگ با سیستم' },
-  light: { icon: 'i-lucide-sun', label: 'روشن' },
-  dark: { icon: 'i-lucide-moon', label: 'تیره' }
-}
-
-const preference = computed<Preference>({
-  get: () => (colorMode.preference as Preference) || 'system',
-  set: value => {
-    colorMode.preference = value
-  }
-})
-
-const current = computed(() => meta[preference.value] ?? meta.system)
-
-function cycle() {
-  const index = ORDER.indexOf(preference.value)
-  preference.value = ORDER[(index + 1) % ORDER.length] ?? 'system'
-}
+const { currentOption, cycle } = useThemePreference()
 </script>
 
 <template>
   <WqIconButton
-    :icon="current.icon"
-    :label="`حالت نمایش: ${current.label} — برای تغییر لمس کنید`"
+    :icon="currentOption.icon"
+    :label="`حالت نمایش: ${currentOption.label} — برای تغییر لمس کنید`"
     variant="ghost"
     size="lg"
     @click="cycle"

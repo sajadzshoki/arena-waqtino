@@ -5,14 +5,15 @@
 import type { BookingFlowDraft } from '~/types/booking-flow'
 import type { Business, BusinessCategory } from '~/types/business'
 import type { BookableService } from '~/types/service'
-import type { Employee } from '~/types/employee'
+import type { BookableEmployee } from '~/types/employee'
 
 defineProps<{
   draft: BookingFlowDraft
   business: Business | null
   category: BusinessCategory | null
   service: BookableService | null
-  employee: Employee | null | undefined // null = "no preference", undefined = not selected
+  /** نمای مشتری پرسنل (فاز ۱۰) — `displayName` از لایهٔ سرویس آماده می‌آید. */
+  employee: BookableEmployee | null | undefined // null = «فرقی نمی‌کند»، undefined = انتخاب‌نشده
   warnings?: Array<{ code: string; message: string; type: string }>
 }>()
 
@@ -31,7 +32,7 @@ function formatDate(date: string): string {
 
 <template>
   <div class="flex flex-col gap-4">
-    <!-- Warnings -->
+    <!-- هشدارها -->
     <div
       v-if="warnings && warnings.length > 0"
       class="flex flex-col gap-2 rounded-xl border border-warning-border bg-warning-soft p-4"
@@ -42,7 +43,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Business -->
+    <!-- کسب‌وکار -->
     <div v-if="business" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -55,7 +56,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Service -->
+    <!-- خدمت -->
     <div v-if="service" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -76,7 +77,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Employee -->
+    <!-- پرسنل -->
     <div v-if="employee !== undefined" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -87,9 +88,9 @@ function formatDate(date: string): string {
           </template>
           <template v-else>
             <div class="flex items-center gap-2">
-              <WqAvatar :name="employee.name" :src="employee.avatarUrl" size="sm" />
+              <WqAvatar :name="employee.displayName" :src="employee.avatarUrl" size="sm" />
               <div>
-                <p class="t-body-sm font-medium text-foreground">{{ employee.name }}</p>
+                <p class="t-body-sm font-medium text-foreground">{{ employee.displayName }}</p>
                 <p v-if="employee.title" class="t-caption text-foreground-secondary">{{ employee.title }}</p>
               </div>
             </div>
@@ -106,7 +107,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Date & Time -->
+    <!-- تاریخ و ساعت -->
     <div v-if="draft.date && draft.timeSlot" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0 flex-1">
@@ -129,7 +130,7 @@ function formatDate(date: string): string {
       </div>
     </div>
 
-    <!-- Price -->
+    <!-- هزینه -->
     <div v-if="service" class="rounded-xl border border-line bg-surface p-4">
       <div class="flex items-center justify-between">
         <p class="t-body-sm font-medium text-foreground">هزینه</p>

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const { user, isAuthenticated } = useAuth()
-const { canSwitchMode, currentModeMeta } = useUserMode()
+const { canSwitchMode, currentModeMeta, currentMode } = useUserMode()
+
+// لوگو کاربر را به خانهٔ «همین حالت» می‌برد، نه به حالت مشتری — در فضای کاری
+// مدیر، بازگشت به / یعنی افتادن ناخواسته به UI مشتری.
+const homeTo = computed(() => MODE_LANDING[currentMode.value])
 const switcherOpen = useState<boolean>('ui:mode-switcher', () => false)
 </script>
 
@@ -9,7 +13,11 @@ const switcherOpen = useState<boolean>('ui:mode-switcher', () => false)
     <div
       class="mx-auto flex h-(--wq-header-h) max-w-(--wq-content-max) items-center justify-between gap-3 px-4"
     >
-      <NuxtLink to="/" class="rounded-lg" aria-label="وقتینو — بازگشت به خانه">
+      <NuxtLink
+        :to="homeTo"
+        class="rounded-lg"
+        :aria-label="`وقتینو — بازگشت به ${currentModeMeta.label}`"
+      >
         <AppLogo />
       </NuxtLink>
 

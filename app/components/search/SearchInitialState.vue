@@ -69,7 +69,7 @@ defineProps<{
       </div>
     </section>
 
-    <!-- Loading -->
+    <!-- بارگذاری -->
     <div v-if="loading" class="flex flex-col gap-3">
       <USkeleton v-for="n in 3" :key="n" class="h-20 rounded-xl" />
     </div>

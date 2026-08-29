@@ -22,9 +22,22 @@ app/services/*         قراردادها + پیاده‌سازی mock/api  «ت
 - دسترسی به داده فقط با `useServices()` → `$services` (پلاگین `01.services.ts`).
 - انتخاب mock یا API واقعی فقط در `app/services/index.ts` رخ می‌دهد
   (`NUXT_PUBLIC_API_MODE`). تعویض mock→api هیچ تغییری در UI نمی‌خواهد.
-- خطاها به‌صورت `ServiceError` (با پیام فارسی) از سرویس بیرون می‌آیند.
+- خطاها به‌صورت `ServiceError` (با پیام فارسی) از سرویس بیرون می‌آیند؛ UI هیچ
+  خطای فنی خام (`TypeError`، متن HTTP، کد وضعیت) نشان نمی‌دهد.
+- `ServiceError` با `UNAUTHORIZED`/۴۰۱ فقط در یک نقطه مدیریت می‌شود:
+  `useAuthRecovery.recover(error)` → پاک‌سازی نشست + اعلان فارسی +
+  `/login?redirect=…`. صفحه‌ها تصمیم نمی‌گیرند «با ۴۰۱ چه کنم»؛ در حالت api هم
+  همان مسیر کار می‌کند چون `Api*Service` پاسخ ۴۰۱ را به همین شکل نگاشت می‌کند.
+- اعتبارسنجی فقط در `app/utils/validation.ts` تعریف می‌شود. فرم آن را برای
+  نمایش پیام‌ها صدا می‌زند و سرویس‌ها برای «دفاع دوم» — پس UI و بک‌اند آینده
+  یک قاعده دارند، نه دو قاعده.
+- هیچ کامپوننت/صفحه‌ای شیء mock را mutate نمی‌کند؛ هر نوشتن از
+  `services.*` می‌گذرد. برای نمایش، وضعیت‌های مشترک در `useState` نگه داشته
+  می‌شوند (منبع‌واحد‌حقیقت)، نه آرایهٔ محلی هر صفحه.
+- فایل واقعی کاربر جایی بارگذاری نمی‌شود: آواتار پشت `AvatarService` است
+  (mock: پیش‌نمایش محلی + آواتارهای آماده). نقطهٔ اتصال بک‌اند همین قرارداد است.
 
-### محافظت مسیر (από فاز ۲)
+### محافظت مسیر (از فاز ۲)
 
 `app/middleware/guard.global.ts` مبتنی بر route meta است:
 
@@ -52,6 +65,13 @@ app/app.config.ts           ── alias رنگ‌های معنایی: primary='
   `bg-primary`, …) مجاز است؛ رنگ هگز در `.vue` ممنوع.
 - دارک‌مود دستی طراحی شده (بلوک `.dark` در tokens.css)؛ با سیستم کاربر همگام است
   و از هدر قابل تغییر است.
+- مدیر تم یکی است: `useThemePreference()` (سه گزینه: سیستم/روشن/تیره) که روی
+  `@nuxtjs/color-mode` نوشته شده و ترجیح را در `localStorage` با کلید
+  `wq-color-mode` نگه می‌دارد. هیچ صفحه‌ای state تم خصوصی ندارد و مکانیزم تم
+  تازه‌ای برای فیچر جدید اختراع نمی‌شود؛ اسکریپت همان ماژول قبل از رندر اجرا
+  می‌شود پس فلاش روشن/تیره (FOUC) نداریم.
+- حالت‌های تعامل (hover/active/focus/disabled) و رنگ‌های معنایی باید در هر دو تم
+  درست باشند — تغییر رنگ برند در `tokens.css` تنها نقطهٔ لازم است.
 - تایپوگرافی فارسی به‌صورت utility معنایی: `t-display`, `t-page-title`,
   `t-section`, `t-heading`, `t-body`, `t-body-sm`, `t-secondary`, `t-caption`,
   `t-label`, `t-num`.
@@ -88,17 +108,131 @@ app/
     app/             کروم اپ: AppHeader، AppBottomNavigation، AppModeSwitcher،
                      AppLogo، AppThemeToggle، AppPageHeader، AppBackHeader، AppStickyAction
     ui/              Wq* — کامپوننت‌های سیستم طراحی (دکمه، فرم، اورلی، نمایش داده)
-    states/          AppLoadingState، AppEmptyState، AppErrorState، AppOfflineState
-  composables/       useAuth، useUserMode، useServices، useAppToast
-  config/            navigation.ts، booking-status.ts (پیکربندی دامنه، auto-import)
+    states/          AppLoadingState، AppEmptyState، AppErrorState، AppOfflineState،
+                     AppOfflineBanner (بنر نازک سراسری در layout — §۲۷)
+    settings/        SettingsSection، SettingsRow، SettingsInfoRow (آجرهای صفحهٔ تنظیمات)
+    profile/         ProfileIdentity، ProfileAvatarEditor
+    customer/        BusinessCard*، BusinessSaveToggle، اسکلت‌ها
+    owner/           فضای کاری مدیر: هدر زمینه، سوییچر، نوبت بعدی، فهرست امروز،
+                     شاخص‌ها، اکشن‌های سریع، کارت کسب‌وکار، حالت دسترسی/خالی، اسکلت‌ها؛
+                     سرویس‌ها (فاز ۹): OwnerServiceCard، OwnerServiceForm،
+                     OwnerServiceActionsSheet، OwnerServiceDeleteDialog،
+                     OwnerServiceStatusBadge، OwnerServicesSkeleton؛
+                     پرسنل (فاز ۱۰): OwnerEmployeeCard، OwnerEmployeeStatusBadge،
+                     OwnerEmployeeActionsSheet، OwnerEmployeeServicePicker،
+                     OwnerEmployeeAssignmentSheet، OwnerEmployeeForm،
+                     OwnerEmployeeRemoveDialog، OwnerEmployeesSkeleton؛
+                     ساعت کاری (فاز ۱۱): OwnerAvailabilityEditorPanel (بدنهٔ مشترک
+                     فهرست/ویرایش)، OwnerAvailabilityEditor، OwnerAvailabilityDay،
+                     OwnerAvailabilityInterval، OwnerScheduleSummary،
+                     OwnerBusinessHoursCard، OwnerEmployeeHoursRow،
+                     OwnerAvailabilitySkeleton — و ui/WqTimeField (قلم ساعت)
+    search/ business/ employee/  (کامپوننت‌های دامنه‌ای)
+    bookings/        BookingCard (یک کارت برای «پیش‌رو» و «گذشته»)،
+                     BookingCancelSheet (تأیید لغو + دلیل + پیام خطای درجا)
+  composables/       useAuth، useUserMode، useServices، useAppToast،
+                     useSavedBusinesses (منبع‌واحد‌حقیقت نشان‌شده‌ها)، useUserProfile،
+                     useProfileForm، useProfileAvatar، useThemePreference،
+                     useAuthRecovery، useLogout، useMockFlags، useAsyncAction،
+                     useOwnerBusinesses / useBusinessContext / useOwnerDashboard /
+                     useOwnerBusinessEntry (زمینه و دادهٔ فضای کاری)،
+                     useBusinessServices / useServiceActions / useServiceForm /
+                     useUnsavedChangesGuard (فاز ۹: چرخهٔ حیات سرویس)،
+                     useBusinessEmployees / useEmployeeActions / useEmployeeForm /
+                     useEmployeeAssignment / useEmployeeServiceOptions
+                     (فاز ۱۰: پرسنل و رابطهٔ سرویس↔پرسنل)،
+                     useCustomerBookings (فاز ۱۲: فهرست + جزئیات + لغو + جابه‌جایی،
+                     یک state مشترک برای همهٔ صفحه‌های نوبت) /
+                     useRescheduleSlots (گام روز/ساعتِ جابه‌جایی روی موتور فاز ۱۱) /
+                     useSystemBackHandler + useNetworkStatus (زیرساخت مشترک UI/اتصال)،
+                     useBusinessAvailability (کش per-businessIdِ برنامهٔ هفته +
+                     نوشتن + busy/actionError) / useScheduleEditor (فاز ۱۱: ماشین
+                     draft — قاعدهٔ روز، بازه‌ها، dirty، save، revert)
+  config/            navigation.ts، booking-status.ts، business-status.ts،
+                     service-status.ts (نگاشت وضعیت سرویس + اکشن مجاز)،
+                     service-policy.ts (سیاست حذف)، service-form.ts (گزینه‌های فرم)،
+                     employee-status.ts (نگاشت وضعیت پرسنل: برچسب/رنگ/آیکون/
+                     پیامد/مجازبودن اکشن — تنها منبع «وضعیت یعنی چه»)،
+                     employee-policy.ts (سیاست حذف پرسنل)،
+                     employee-form.ts (گزینه‌های فرم پرسنل)،
+                     availability.ts (WEEKDAY_ORDER، برچسب‌های فارسی، سیاست
+                     `AVAILABILITY_POLICY`: سقف بازه/حداقل دقیقه/قاعدهٔ «حذف
+                     آخرین بازه ⇒ روز تعطیل»، الگوی شروع)،
+                     timezone.ts (APP_TIMEZONE و پنجرهٔ افق رزرو — تنها جای
+                     «منطق منطقهٔ زمانی»)،
+                     booking-policy.ts (فاز ۱۲: پنجرهٔ لغو، وضعیت‌های زنده/قابل
+                     جابه‌جایی، سقف یادداشت، افق جابه‌جایی، دلایل لغو و
+                     `bookingCancelBlock`/`bookingRescheduleBlock` — تنها جایی که
+                     «سیاست نوبت» تعریف می‌شود؛ هم UI می‌خواند هم mock service)
+                     (پیکربندی دامنه، auto-import)
   layouts/           default.vue (پوستهٔ موبایل؛ meta.tabbar)
-  pages/             index.vue، dev/design.vue (شوکیس فقط-توسعه)
-  plugins/           01.services.ts، 02.session.ts
-  services/          index.ts (registry) — auth/ users/ businesses/ (contract+mock)
-    mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses)
-  types/             مدل دامنه (auto-import) + page-meta.ts
-  utils/             digits، datetime، duration، delay، errors (ServiceError)
-docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
+  pages/             index.vue، saved.vue، profile(/edit).vue، settings.vue،
+                     notifications.vue، booking*، business/[id] (جزئیات مشتری)،
+                     owner/{index,businesses,business/[businessId]{,/info,/manage,
+                     /services{,/new,/[serviceId](/edit)},/employees{,/new,/[employeeId](/edit)},
+                     /availability{,/business,/employees/[employeeId]}}}،
+                     bookings/index.vue (پیش‌رو/گذشته) و
+                     bookings/[id]/{index,reschedule}.vue (جزئیات + جابه‌جایی؛
+                     دیگه `/bookings.vue` placeholder نداریم)،
+                     error.vue (صفحهٔ خطای سراسری: ۴۰۴ ≠ ۵۰۰، جزئیات فنی فقط dev)،
+                     employee*، dev/design.vue (شوکیس + کلیدهای شبیه‌سازی +
+                     بازنشانی چهار دامنه، فقط-توسعه)
+  plugins/           01.services.ts، 02.session.ts، 03-user-scope.client.ts
+  services/          index.ts (registry) — auth/ users/ favorites/ avatars/
+                     businesses/ bookings/ owner/ …
+                     (هر دامنه: قرارداد + پیاده‌سازی mock)
+                     owner/: owner-service.ts، service-management-service.ts،
+                     owner-access.ts (مالکیت مشترک)، mock-service-management-service.ts،
+                     employee-management-service.ts (قرارداد فاز ۱۰)،
+                     mock-employee-management-service.ts،
+                     availability-management-service.ts (قرارداد فاز ۱۱:
+                     getBusiness/saveBusiness/listEmployees/getEmployee/
+                     saveEmployee/resetEmployeeToBusinessDefault)،
+                     mock-availability-management-service.ts،
+                     bookings/: booking-service.ts (قرارداد: اتحادیه‌های
+                     `CancelBookingResult`/`RescheduleBookingResult` +
+                     `resetLocalChanges`)، mock-booking-service.ts (ثبت/لغو/جابه‌جایی
+                     درجا + دفاع دوم روی همان سیاست config)،
+                     native/system-back.ts (استک LIFO دکمهٔ بازگشت؛ `@capacitor/app`
+                     اختیاری داخل `try` — بدون وابستگی native در package.json)،
+                     ../availability/: availability-service.ts (قرارداد خواندن)،
+                     mock-availability-service.ts (پوستهٔ نازک)،
+                     availability-core.ts (موتور مشترکِ پنجرهٔ کاری/اسلات)
+    mocks/           داده‌های واقع‌گرایانهٔ فارسی (users، businesses، extras،
+                     owner-scenarios، customers)،
+                     session.ts (نگهبان نشست)، user-state.ts (کوکی `wq_user_data`)،
+                     service-state.ts (کوکی `wq_business_services`: delta + گور
+                     سرویس، تنها منبع‌واحد‌حقیقت سرویس‌ها)،
+                     employee-state.ts (کوکی `wq_business_employees`: delta + گور
+                     پرسنل + `assignedEmployeeIds` که نمای سرویس از آن ساخته
+                     می‌شود)، availability-state.ts (کوکی `wq_business_availability`:
+                     دلتای برنامهٔ هفتهٔ کسب‌وکار + رکورد اختصاصی پرسنل — تنها نقطهٔ
+                     نوشتن، و `resolve*` های خواندن که seed را merge می‌کنند)،
+                     booking-state.ts (کوکی `wq_business_bookings`: نوبت‌های
+                     ساخته‌شده + patch های وضعیت/زمانِ نوبت‌های seed — تنها نقطهٔ
+                     نوشتنِ دامنهٔ نوبت)،
+                     avatar-assets.ts
+  types/             مدل دامنه (auto-import) + page-meta.ts + theme.ts + owner.ts
+                     (OwnedBusiness / OwnerDashboard / BusinessAccess) + service.ts
+                     (BookableService / ServiceInput / ManagedService / ServiceStatus) +
+                     employee.ts (Employee / BookableEmployee / EmployeeInput /
+                     ManagedEmployee / EmployeeRemovePolicy / employeeDisplayName) +
+                     availability.ts (Weekday، AvailabilityDay/Interval/Schedule،
+                     ScheduleSource، DayAvailabilityStatus، DayAvailability،
+                     DateAvailabilityEntry)
+  utils/             digits (شامل parseFaNumber/groupFaNumber)، datetime، duration،
+                     delay، errors (ServiceError + conflict)،
+                     validation.ts (قواعد مشترک فرم/سرویس: validateServiceForm،
+                     validateEmployeeForm/employeeInputError،
+                     validateSchedule/employeeScheduleConflictDays — یک قاعده برای
+                     فرم و برای دفاع دوم در لایهٔ سرویس)،
+                     schedule-time.ts (تنها جای «ساعت/روزِ هفته/کلید تاریخ»:
+                     normalizeTime، instantOf/localTimeOf، upcomingDateKeys،
+                     weekdayOf، قالب‌های شمسی)، schedule.ts (جبرِ بازه‌ها:
+                     overlap/contains/intersect/sort)،
+                     schedule-summary.ts (خلاصهٔ خوانای هفته برای نمایش)
+docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md،
+                     API-CONTRACT.md (فاز ۱۲: انتظارات روشن از بک‌اند)
 ```
 
 کامپوننت‌ها با `pathPrefix: false` اسکن می‌شوند؛ نام فایل = نام تگ (یکتا نگه دارید).
@@ -112,6 +246,14 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
 - نام‌گذاری کامپوننت‌ها: `App*` برای کروم/زیرساخت، `Wq*` آیندهٔ احتمالی برای
   primitiveهای اختصاصی وقتینو.
 - اعدادِ جادویی و رنگِ جادویی ممنوع؛ ابعاد ساختاری از `--wq-*` می‌آیند.
+- تاریخ فارسی فقط از `app/utils/datetime.ts`: `Intl.DateTimeFormat('fa-IR')` را
+  با `dateStyle` به‌همراه `hour/minute` صدا نزنید (ECMA-402 ترکیبشان را ممنوع می‌کند؛
+  Node با `TypeError: Invalid option : option` می‌ترکاند). اجزا را صریح بدهید:
+  `year/month/day/hour/minute`.
+- سرویس‌های mock به composables (`useCookie`/`useState`/`useMockFlags`) تکیه
+  دارند؛ آن‌ها را **قبل از اولین `await` متد** بخوانید — بعد از await، context
+  ناکس در SSR تضمین‌شده نیست (در client مشکلی نیست چون instance سراسری است).
+  عملی: همهٔ واکشی‌های کاربر-محور از `onMounted`/رویداد کاربر آغاز می‌شوند.
 - خروجی لینت/تایپچک/بیلد در پایان هر فاز باید سبز باشد (`.github`-کمتر، حداقل
   `npm run check`).
 - کامیت هر فاز: پیام conventional؛ push به ریموت پیش‌فرض.
@@ -124,9 +266,551 @@ docs/                ARCHITECTURE.md، DESIGN-SYSTEM.md، CONSTITUTION.md
   (Vazirmatn Variable) — بدون وابستگی شبکهٔ ثالث.
 - هیچ دسترسی مستقیم به `window`/`document` بیرون از نگه‌بان `import.meta.client`.
 
-## ۸. آنچه عمداً ساخته نشده (مقید به فاز ۰)
+## ۸. دامنهٔ داده و ماندگاری (از فاز ۷)
+
+| داده | کلید | محل | عمر |
+| --- | --- | --- | --- |
+| نشست | `wq_session` | کوکی | ۳۰ روز |
+| حالت فعال | `wq_mode` | کوکی | ۳۶۵ روز |
+| نشان‌شده‌ها + پروفایل ویرایش‌شده | `wq_user_data` → `Record<userId, {favorites, profile}>` | کوکی | ۳۶۵ روز |
+| کسب‌وکارِ زمینهٔ مدیر | `wq_owner_business` → `Record<userId, businessId>` | کوکی | ۳۶۵ روز |
+| سرویس‌های کسب‌وکار (delta فاز ۹) | `wq_business_services` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
+| پرسنل کسب‌وکار (delta فاز ۱۰) | `wq_business_employees` → `{ businesses: { [businessId]: { patches, created } }, removed }` | کوکی | ۳۶۵ روز |
+| نوبت‌های مشتری (ثبت/لغو/جابه‌جایی، delta فاز ۱۲) | `wq_business_bookings` → `{ created, patches: { [bookingId] } }` | کوکی | ۳۶۵ روز |
+| ساعت کاری کسب‌وکار و پرسنل (delta فاز ۱۱) | `wq_business_availability` → `{ businesses: { [businessId]: { business?: AvailabilityDay[], employees?: { [employeeId]: { source, days } } } } }` | کوکی | ۳۶۵ روز |
+| ترجیح تم | `wq-color-mode` | `localStorage` | همیشگی |
+| تاریخچهٔ مشاهده / پیش‌نویس رزرو | `useState` | حافظهٔ همین بار اجرا | تا پایان نشست مرورگر |
+
+- دادهٔ کاربر-محور **به `userId` قید می‌شود**؛ برای چنداکانتیسم چیز دیگری
+  اختراع نکرده‌ایم — فقط اینکه دو حساب روی هم نوشته نشوند.
+- `plugins/03-user-scope.client.ts` تنها جایی است که با تغییر/خروج کاربر،
+  stateهای گذرا (`saved:*`, `profile:*`, `owner:*`, تاریخچهٔ مشاهده، پیش‌نویس
+  رزرو) را reset می‌کند و در مقابل، دادهٔ دامنه را برای نشست تازه آماده
+  می‌کند (`ensureLoaded` برای نشان‌شده‌ها و فهرست کسب‌وکارهای مدیر). منطق
+  login/logout در صفحه‌ها پخش نمی‌شود.
+- **سرویس‌ها به کسب‌وکار قید می‌شوند، نه به کاربر** (`wq_business_services`
+  کلیدِ بیرونی‌اش `businessId` است). دلیل دوگانه: (۱) اگر شناسهٔ کاربر هم در
+  کلید می‌آمد، دو مدیر یک کسب‌وکار دو نسخه از یک واقعیت می‌دیدند؛ (۲) خروج از
+  حساب نباید دادهٔ یک کسب‌وکار را نابود کند. با این حال *کش* فهرست
+  (`owner:services:*`) در پلاگین دامنهٔ کاربر reset می‌شود تا دادهٔ حساب قبلی
+  روی حساب تازه نچسبد.
+- پرسنل هم **به کسب‌وکار** قید می‌شود (`wq_business_employees`)، چون «پرسنلِ
+  کدام کسب‌وکار است» مالکیت داده را تعریف می‌کند. سوییچ/خروج حساب فقط *کش*
+  `owner:employees:*` را بازنشانی می‌کند (`useBusinessEmployeesCache().reset()`)
+  تا دادهٔ حساب قبلی به حساب تازه نچسبد؛ خودِ کوکی دست‌نخورده می‌ماند.
+  `removed` در این دامنه گورِ **نام** است: نوبتی که دیروز به «امید کاظمی» بوده،
+  فردا هم با همان نام خوانده می‌شود، حتی اگر رکورد پرسنل حذف شده باشد.
+- ساعت کاری هم **به کسب‌وکار** قید می‌شود؛ `employeeId` هرگز تنها کلید نیست
+  (پرسنل یک کسب‌وکار با همان شناسه در کسب‌وکار دیگر معنایی ندارد و سرویس
+  `NOT_FOUND` می‌دهد، نه دادهٔ اشتباه). در این دامنه «مطابق ساعات کاری
+  کسب‌وکار» یعنی **نبودِ** رکورد، پس دلتا فقط برنامه‌های اختصاصیِ واقعاً
+  تنظیم‌شده را نگه می‌دارد و reset کردن، رکورد را حذف می‌کند نه خالی.
+  کش دامنه (`owner:availability:*`) با تغییر/خروج کاربر reset می‌شود
+  (`resetAvailability()` در `plugins/03-user-scope.client.ts`)؛ کوکی می‌ماند.
+- نوبت‌ها هم **به کاربر قید می‌شوند** (نه به کسب‌وکار): مالکیت خواندن در
+  `listMine`/`getById` همان‌جا اعمال می‌شود و نوبتِ حساب دیگر `null` است، نه
+  ۴۰۳ — UI حالت خالی می‌گیرد بدون اینکه وجود رکورد لو برود. `patches` عمداً
+  **درجا** وضعیت/زمان را عوض می‌کند تا «جابه‌جایی» هرگز دو رکورد نسازد
+  (رکورد کهنه‌ی لغو‌شده در تاریخچه نمی‌ماند). سقف کوکی با `COOKIE_BUDGET`
+  محافظت می‌شود: اگر delta بزرگ شد، از `created` کم می‌کند نه اینکه کل نوشتن
+  بی‌صدا گم شود.
+- نوشتن روی delta، نه کپی کل فهرست: سقف کوکی ~۴KB است و کپی‌کردن ۸ سرویس
+  آن را می‌شکست (کوکیِ بزرگ بی‌صدا دور ریخته می‌شود = گم‌شدن دادهٔ کاربر).
+  `removed` هم گورِ سرویس است، نه فقط حذف: تاریخچهٔ نوبت باید بگوید آن نوبت
+  «چه چیزی» بوده.
+- سوییچ **حالت** (مشتری↔صاحب↔کارمند) هیچ reset ای انجام نمی‌دهد: حالت فقط
+  ناوبری و فرود را عوض می‌کند، نه مالکیت داده. بنابراین دادهٔ مشترک کاربر
+  (نشست، پروفایل، نشان‌شده‌ها) و زمینهٔ مدیر هر دو سالم می‌مانند.
+- عمداً ماندگار نمی‌شود: خطاهای فرم، متن موقت، باز/بسته‌بودن شیت‌ها،
+  پیش‌نمایش آواتارِ فایلِ انتخابی (فقط `useState('avatar:local-previews')`).
+  دلیل: دادهٔ کاربری نه، حالت UI است.
+- در `apiMode='api'` این کوکی‌ها نوشته/خوانده نمی‌شوند؛ `Api*Service`ها
+  منبع‌حقیقت را از بک‌اند می‌گیرند (کوکی‌ها متعلق به لایهٔ mock‌اند:
+  `app/services/mocks/*`).
+
+## ۹. فضای کاری صاحب کسب‌وکار (فاز ۸)
+
+سه مفهوم، سه نقطهٔ مسئول — هیچ‌کدام در صفحه تکرار نمی‌شوند:
+
+| مفهوم | صاحب | چه سؤالی را جواب می‌دهد |
+| --- | --- | --- |
+| دادهٔ کسب‌وکارِ مدیر | `OwnerService` (`app/services/owner/`) | چه چیزی را می‌توانم مدیریت کنم؟ + شمارش‌ها |
+| زمینهٔ کاری | `useBusinessContext()` | الان کدام کسب‌وکار را مدیریت می‌کنم؟ |
+| دادهٔ داشبورد هر کسب‌وکار | `useOwnerDashboard()` | امروز/نوبت بعدی/شاخص‌های همین کسب‌وکار |
+
+```
+app/pages/owner/**              صفحات نازک — فقط ترکیب‌بندی و «فاز نمایش»
+   ↓
+useOwnerBusinessEntry           ورود + ماشین فاز (مشترک داشبورد/اطلاعات/مدیریت)
+useBusinessContext              زمینه + کوکی + تصمیم resolve (open / choose / empty / error)
+useOwnerBusinesses              کش فهرست کسب‌وکارهای مدیر (ادغام درخواست‌های هم‌زمان)
+useOwnerDashboard               داشبورد، کش‌شده به‌ازای businessId
+   ↓
+OwnerService (MockOwnerService)
+   ↓
+mocks/businesses.ts · mocks/owner-scenarios.ts · mocks/bookings.ts · mocks/customers.ts
+```
+
+- صفحه هیچ فیلتری روی رزروها انجام نمی‌دهد، آمار جمع نمی‌زند و وضعیت را
+  ترجمه نمی‌کند: `getDashboard(businessId)` همان `OwnerDashboard` را می‌دهد
+  (نوبت بعدی، امروز، `OwnerBusinessMetrics`). روزِ «امروز»، پنجرهٔ محلی سرویس
+  است، نه `new Date()` داخل کامپوننت.
+- `business-status.ts` مثل `booking-status.ts` تنها جای ترجمهٔ وضعیت چرخهٔ
+  حیات است (`BUSINESS_STATUS_META` + `businessStatusMeta`)؛ وضعیتی که بک‌اند
+  بعداً اضافه کند، فقط همان فایل را جابه‌جا می‌کند و `BusinessStatusBadge`
+  برای مقدار ناشناخته هم نمی‌شکند (حالت خنثی با برچسب «نامشخص»).
+
+### مالکیت: واقعی، در لایهٔ سرویس
+
+- مرجع مالکیت، رکورد کسب‌وکار است: `business.ownerUserId === session.user.id`.
+  `getOwnedBusiness(id)` اگر نبود `ServiceError.notFound` و اگر بود ولی مالِ
+  کاربر نبود `ServiceError.forbidden` می‌دهد؛ صفحه فقط همان را به فاز
+  `not_found` / `forbidden` نگاشت می‌کند (با `OwnerAccessState` و راه بازگشت).
+- مخفی‌کردن لینک، دسترسی نیست: گارد `capability: 'business'` روی مسیر +
+  اعتبارسنجی سرویس روی **هر** id. `/owner/business/biz_pars` برای سارا که آن‌جا
+  کارمند است، عمداً رد می‌شود.
+- در `apiMode='api'` همان دو پاسخ (۴۰۴/۴۰۳) از سرور می‌آیند؛ UI تغییری
+  نمی‌خواهد — سرور مرجع باقی می‌ماند.
+
+### انزوای داده بین چند کسب‌وکار
+
+- کش داشبورد `Record<businessId, OwnerDashboard>` است و صفحه `data[currentId]`
+  را می‌خواند؛ «نوبت‌های کسب‌وکار الف داخل کسب‌وکار ب» به‌خاطر شکل state
+  ناممکن است، نه به‌خاطر نظم کدنویسی.
+- با سوییچ، کلید عوض می‌شود → پیش از پاسخ تازه `initializing` است و صفحه
+  اسکلت نشان می‌دهد: نه صفرهای بی‌معنی، نه نام و دادهٔ قبلی.
+- بازگشت به کسب‌وکار قبلی از همان کش می‌آید (بدون واکشی اضافه) و
+  `refresh()` همان یک کلید را تازه می‌کند؛ خطای یک کسب‌وکار، کشِ دیگری را
+  نمی‌شکند.
+- فهرست `useOwnerBusinesses` تنها منبع نام/تصویر/شمارش‌هاست و `enter()` آن را
+  با پاسخ تازه هم‌راستا می‌کند (`syncOne`) تا هدر و کارت‌ها یک عدد را بگویند.
+
+### تصمیم زمینه (URL first)
+
+| وضعیت | رفتار |
+| --- | --- |
+| id در URL و مالِ کاربر | همان کسب‌وکار باز می‌شود (deep link بعد از refresh هم همین) |
+| یک کسب‌وکار | بدون پرسش انتخاب می‌شود |
+| انتخاب ذخیره‌شدهٔ معتبر | همان برگردانده می‌شود (`wq_owner_business`) |
+| چند کسب‌وکار، بدون انتخاب | صفحهٔ `/owner` فهرست انتخاب را نشان می‌دهد (نه حدس) |
+| هیچ کسب‌وکاری | حالت خالی عمدی در همان فضای کاری؛ کاربر به حالت مشتری پرتاب نمی‌شود |
+
+### جای‌فاز بعدی
+
+از فاز ۹، «سرویس‌ها» از همان ریلِ شرح‌داده‌شده بیرون آمده است: یک route
+(`…/services`)، یک قرارداد جدید (`ServiceManagementService`)، و فعال‌شدن ردیف
+صفحهٔ مدیریت — بدون تغییر در `OwnerService` و بدون state موازی. نوبت‌ها،
+پرسنل و دسترس‌پذیری هنوز با برچسب صادقانهٔ «به‌زودی» قفل‌اند و همان الگو را
+دنبال می‌کنند.
+
+## ۱۰. سرویس‌های کسب‌وکار: چرخهٔ حیات در یک منبع (فاز ۹)
+
+سرویس، یک موجودیت است با دو نمای مصرفی. کل طراحی از همین جمله می‌آید: اگر
+مشتری و مدیر دو دادهٔ موازی داشته باشند، هم‌رسانی‌شان به مسابقهٔ refetch
+تبدیل می‌شود.
+
+```
+app/pages/owner/business/[businessId]/services/**      فهرست · افزودن · جزئیات · ویرایش
+   ↓
+useBusinessServices(businessId)   کش per-businessId + اکشن‌های نوشتن + sync کش
+useServiceActions(businessId)     toggle/حذف با سیاست و دیالوگ (مشترک فهرست و جزئیات)
+useServiceForm({mode,…})          فرم مشترک ساخت/ویرایش + dirty + validate + submit
+useUnsavedChangesGuard(dirty)     نگهبان خروج (نگهبان مسیر + beforeunload)
+   ↓
+ServiceManagementService          list/get/create/update/setStatus/remove (+resetLocalChanges توسعه)
+MockServiceManagementService      مالکیت، رابطهٔ سرویس↔کسب‌وکار، دفاع دومِ اعتبارسنجی، سیاست حذف
+   ↓
+app/services/mocks/service-state.ts   تنها نقطهٔ خواندن/نوشتن حالت سرویس‌ها (کوکی delta)
+```
+
+خواندن‌های *دیگر* هم همان یک منبع را می‌خوانند: `MockBusinessService.listServices`
+(فقط active)، `MockBookingService.validateDraft/create`، و `MockOwnerService.metricsOf`
+(«شمارش سرویس‌ها» در داشبورد). پس «غیرفعال کردم» یعنی در هر چهار جا همین
+لحظه اعمال شده — بدون رویداد، بدون store مرکزی تازه.
+
+### مدل و وضعیت
+
+- `BookableService.status: 'active' | 'inactive'` جای `isActive` را گرفت. بولین
+  «قابل‌نمایش‌بودن» نمی‌توانست معنی «غیرفعال ≠ حذف» را حمل کند؛ چرخهٔ حیات
+  نیاز به *وضعیت* دارد، نه پرچم.
+- `durationMinutes` و `price` عدد نرمال‌شده‌اند. ورودی رشتهٔ خام می‌ماند و
+  فقط در لحظهٔ ذخیره parse می‌شود؛ `groupFaNumber`/`formatToman` رشته‌ی نمایشی
+  می‌سازند. رشتهٔ محلی‌سازی‌شده هرگز مقدار دامنه نمی‌شود.
+- ترجمهٔ وضعیت متمرکز است: `SERVICE_STATUS_META` برچسب، رنگ، آیکون، `hint`،
+  `bookable` و **اکشن مجاز** (`toggle.to/label/consequence`) را با هم می‌دهد؛
+  `serviceStatusMeta()` برای وضعیت ناشناخته حالت خنثی می‌دهد تا پاسخ تازهٔ
+  بک‌اند UI را نشکند. هیچ کامپوننتی «فعال/غیرفعال» را hardcode نمی‌کند.
+- `ManagedService = BookableService + liveBookingCount + bookingCount +
+  deletePolicy` — آنچه مدیر برای تصمیم لازم دارد در همان رکورد است، نه در
+  شرط‌های UI.
+
+### انزوای چندکسب‌وکاری
+
+کش `Record<businessId, ManagedService[]>` است (همان الگوی داشبورد فاز ۸) و
+هر نوشتن فقط کلیدِ همان کسب‌وکار را بازنویسی می‌کند. رابطهٔ سرویس↔کسب‌وکار
+در لایهٔ سرویس هم دوباره چک می‌شود: `get(biz_ayeneh, srv_narenj_haircut)`
+عمداً **Not Found** می‌گیرد، نه ۴۰۳ — تا وجود رکورد به مدیر دیگری لو نرود.
+
+### نوشتن و بازگشت به UI
+
+اکشن‌ها `{ ok, service, message }` برمی‌گردانند (نه throw)، چون صفحه باید
+toast/nav را بدون try/catch بنویسد؛ `message` همان پیام فارسی `ServiceError`
+است و ۴۰۱ پیش از آن از مسیر مرکزی احراز هویت رد می‌شود. بعد از موفقیت، کش
+همان کسب‌وکار upsert/remove می‌شود و `useOwnerDashboardCache().invalidate(businessId)`
+صدا زده می‌شود — تا «۶ سرویس قابل رزرو»ی داشبورد با واقعیّت میانهٔ صفحه
+یکی بماند.
+
+### حذف: سیاست، نه سلیقهٔ UI
+
+`app/config/service-policy.ts` سه پیچ دارد (`blockWhenLiveBookings`,
+`allowWhenHistoryOnly`, `minAgeDaysBeforeDelete`) و نتیجه به‌صورت
+`ServiceDeletePolicy` روی خود رکورد می‌آید. دیالوگ حذف دو حالت دارد: تأیید
+قطعی، یا «حذف نمی‌شود، چون نوبت پیش‌رو دارد — غیرفعالش کن». `remove()`
+سیاست را **دوباره** در لایهٔ سرویس بررسی می‌کند و `ServiceError.conflict`
+می‌دهد، تا یک فهرست کهنه نتواند چیزی را که همین حالا نوبت گرفته حذف کند.
+
+### تاریخچه در برابر تغییرات امروز
+
+`Booking.price` از قبل اسنپ‌شات لحظهٔ ثبت بود؛ فاز ۹ `serviceSnapshot
+{name, durationMinutes}` را هم هنگام `create` می‌نویسد. خواننده‌ها با این
+اولویت می‌روند: اسنپ‌شات رزرو ← رکورد زندهٔ سرویس ← گورِ سرویسِ حذف‌شده
+(`resolveBookingServiceSnapshot`). خواننده‌ها همین مسیر را می‌روند، نه
+فهرستِ قابل‌رزرو: `useCustomerBookings` (تاریخچهٔ مشتری)، رسیدِ `/booking/success`،
+و نوبت‌های فضای کار مالک. نتیجه: تغییر نام، تغییر مدت، غیرفعال‌سازی و حذف
+سرویس، هیچ‌کدام متن رزروهای قبلی را بازنویسی نمی‌کنند.
+
+### draft رزرو در برابر سرویس غیرفعال
+
+دو لایهٔ دفاع: (۱) `useBookingFlow.loadBusinessData` اگر سرویسِ انتخابی در
+فهرست قابل‌رزرو نباشد، انتخاب و قلم‌های وابسته را پاک می‌کند، کاربر را به
+گام «انتخاب خدمت» می‌گرداند و بالای فهرست توضیح می‌دهد؛ (۲)
+`MockBookingService.validateDraft` در بررسی نهایی همان را با پیام فارسی
+(`field: 'service'`) رد می‌کند. deep link به سرویس غیرفعال هم از همین مسیر
+می‌گذرد — پس «رزرو روی چیزی که نیست» ممکن نیست، نه اینکه خطای عجیب بدهد.
+
+## ۱۱. پرسنل: یک رابطه، دو نما (فاز ۱۰)
+
+«پرسنل» و «کاربر» دو موجودیت‌اند. این جداسازی، کل معماری این فاز را تعیین می‌کند:
+اگر پرسنل زیرمجموعهٔ حساب کاربری ساخته می‌شد، هر کسب‌وکاری که می‌خواست یک
+همکارِ بدون‌حساب را ثبت کند، مجبور به «دعوت» می‌شد — و دعوت، یعنی یک جریان
+احراز هویت نیمه‌کاره. پس:
+
+```
+app/pages/owner/business/[businessId]/employees/**    فهرست · افزودن · جزئیات · ویرایش
+   ↓
+useBusinessEmployees(businessId)   کش per-businessId + نوشتن + sync + باطل‌کردن داشبورد
+useEmployeeActions(businessId)     toggle وضعیت / حذف با سیاست و دیالوگ (مشترک فهرست و جزئیات)
+useEmployeeForm({mode,…})          فرم مشترک ساخت/ویرایش + dirty + validate + submit
+useEmployeeAssignment(businessId, employeeId)  شیت اختصاص سرویس (dirty، save، معلق‌ها)
+useEmployeeServiceOptions(businessId)           سازندهٔ ردیف‌ها — یک قاعده برای سه سطح
+   ↓
+EmployeeManagementService          list/get/create/update/setStatus/assignServices/remove
+MockEmployeeManagementService      مالکیت، رابطه، دفاع دومِ اعتبارسنجی، سیاست حذف، گور نام
+   ↓
+app/services/mocks/employee-state.ts   تنها نقطهٔ خواندن/نوشتن (کوکی delta)
+```
+
+### مدل: دو جزء نام، یک رابطه، یک وضعیت
+
+- `Employee = { id, businessId, userId?, firstName, lastName, title?, phone?,
+  avatarUrl?, status, serviceIds, createdAt?, updatedAt? }`. هیچ فیلد
+  منابع‌انسانی (کدملی، قرارداد، سابقه، ایمیل) عمداً اضافه نشده — فاز «مدیریت
+  پرسنل» است، نه HR.
+- `displayName` ذخیره نمی‌شود؛ `employeeDisplayName()` از `firstName`/`lastName`
+  ساخته می‌شود. دو منبع برای یک نام = اختلاف تضمینی.
+- `userId` **اختیاری** است و هیچوقت معنی «حساب این پرسنل» را به UI القاء نمی‌کند؛
+  `phone` هم فقط یک راه تماس است (اختیاری، نرمال‌شده به رقم ASCII) و در
+  «اتصال حساب» نقشی ندارد.
+- `serviceIds` روی رکورد پرسنل است و **تنها** منبع رابطه. نمای سرویس
+  (`BookableService.employeeIds`) در `MockBusinessService.listServices` از
+  `assignedEmployeeIds(businessId, serviceId)` مشتق می‌شود. رابطهٔ دوطرفهٔ
+  ذخیره‌شده یعنی دو واقعیت که هر لحظه می‌توانند جدا شوند؛ یک‌طرفه با مشتق،
+  «اختصاص بدهم و گام انتخاب پرسنل همان لحظه عوض شود» را رایگان می‌کند.
+
+### وضعیت: چرخهٔ حیات، نه حذف
+
+`status: 'active' | 'inactive'` و همهٔ معنی‌اش در `app/config/employee-status.ts`
+(برچسب فارسی، رنگ/آیکون معنایی، توضیح پیامد، `bookable`، مقصد و متن سوییچ).
+هیچ کامپوننتی شرط `status === 'active'` را با برچسب دست‌ساز تکرار نمی‌کند؛
+`OwnerEmployeeStatusBadge` همان mapping را می‌زند. دو قانونِ رفتاری:
+
+- **غیرفعال ≠ حذف**: از انتخاب پرسنلِ رزرو بیرون می‌رود (فیلتر در لایهٔ سرویس،
+  نه در UI)، در فهرست مدیر و در تاریخچه می‌ماند، و `serviceIds` ش پاک نمی‌شود —
+  فعال‌کردن دوباره چیزی برای بازاختصاص نگذاشته باشد.
+- وضعیت ناشناخته از بک‌اند UI را نمی‌شکند: `employeeStatusMeta('…')` حالت خنثی
+  «نامشخص» با `toggle: null` می‌دهد، پس «سوییچ» روی چیزی که نمی‌شناسیم نمایش داده
+  نمی‌شود.
+
+### انزوای چندکسب‌وکاری و مالکیت
+
+فهرست/جزئیات/ویرایش همیشه از `businessId` زمینه خوانده می‌شوند و هر عمل نوشتن،
+`businessId` + `employeeId` می‌گیرد؛ «نیست» و «مال این کسب‌وکار نیست» هر دو یک
+`NOT_FOUND` می‌گیرند تا وجود یک رکورد به مدیر دیگری لو نرود. کش store به
+`businessId` کلید می‌خورد (`owner:employees:{data,…}`)، پس سوییچ A⇄B هیچ ردیفی
+از A در B نشان نمی‌دهد و در میانهٔ سوییچ اسکلت است نه دادهٔ قبلی.
+
+### حذف: سیاست، نه سلیقهٔ UI
+
+`app/config/employee-policy.ts` چهار پیچِ قابل‌تنظیم دارد (`blockWhenLiveBookings`،
+`allowWhenHistoryOnly`، `blockWhenAccountLinked`، `minAgeDaysBeforeRemove`) و
+نتیجه در خود داده (`ManagedEmployee.removePolicy = { canRemove, blocker, hint }`)
+می‌آید؛ UI فقط اجرا می‌کند. دیالوگ حذف در حالت بلوکه «غیرفعال‌کردن» را پیشنهاد
+می‌دهد — بن‌بست نداریم. `MockEmployeeManagementService.remove` سیاست را **دوباره**
+بررسی می‌کند، تا فهرست کهنه نتواند کسی را که همین حالا نوبت پیش‌رو گرفته حذف کند.
+«سرویسِ بدون پرسنل می‌ماند» هم فقط هشدار اطلاعاتی است (`orphanedServiceNames`)،
+نه بلوک: رزرو بدون پرسنل در مدل کسب‌وکار مجاز است.
+
+### تاریخچه در برابر تغییرات امروز
+
+`Booking.employeeId` همراه `employeeSnapshot: { name }` نوشته می‌شود؛ هر خواندن
+تاریخچه (`getEmployeeForHistory`، `OwnerService.toItem`) اول اسنپ‌شات، بعد رکورد
+زنده، و در آخر گورِ `employee-state` را می‌خواند. نتیجه: تغییر نام، غیرفعال‌شدن
+یا حذف پرسنل، هیچ نوبت ثبت‌شده‌ای را باطل یا بی‌نام نمی‌کند — و رزروهای قدیمی‌تر
+که اسنپ‌شات ندارند، از رکورد زنده/گور حل می‌شوند (برچسب صادقانهٔ «پرسنل
+حذف‌شده» وقتی هیچ‌کدام نیست).
+
+### draft رزرو در برابر پرسنل غیرفعال یا بی‌رابطه
+
+دو لایهٔ دفاع، همان الگوی فاز ۹: (۱) `useBookingFlow` فقط
+`status === 'active' && serviceIds.includes(serviceId)` را فهرست می‌کند و با
+تغییر سرویس، پرسنلِ بی‌ربط را از پیش‌نویس بیرون می‌کشد؛ (۲)
+`MockBookingService.validateDraft` در بررسی نهایی هر سه را دوباره می‌سنجد
+(`employee` با پیام‌های «دیگر برای رزرو تازه فعال نیست» / «این سرویس را انجام
+نمی‌دهد؛ یا پرسنل دیگری را انتخاب کنید یا بدون انتخاب پرسنل ادامه دهید»). صفحهٔ
+`/booking` خطای `field: 'employee'` را به همان گام برمی‌گرداند: انتخاب پاک،
+یادداشت بالای فهرست، و گام «پرسنل» (یا «تاریخ» اگر آن سرویس دیگر پرسنلی ندارد).
+پیش‌نویس کهنه پس از فعال‌سازی دوباره بی‌دلیل رد نمی‌شود — `validateDraft`
+بازخوانی می‌کند، نه قفلشدن.
+
+### اتصال حساب: آماده، ساخته‌نشده
+
+فاز ۱۰ فقط **می‌خواند**: `ManagedEmployee.linkedAccount = { state, accountActive }`
+اطلاعات خنثی است («این نفر حساب وقتینو دارد/ندارد») و به هیچ دعوت‌نامه، کد،
+«ارسال دوباره» یا وضعیت «در انتظار» ترجمه نمی‌شود. مسیر نوشتنِ آینده عمداً
+تعریف‌نشده مانده تا با بک‌اند هم‌قرارداد شود؛ شکل پیشنهادی، دو متد جدا روی همان
+قرارداد است:
+
+```
+linkEmployeeToUser(businessId, employeeId, userId)   // اتصال، با تأیید مالکیت هر دو سو
+unlinkEmployeeFromUser(businessId, employeeId)       // قطع اتصال؛ رکورد پرسنل می‌ماند
+```
+
+چرا *دو* متد و نه یک فیلد اختیاری در `EmployeeInput`؟ چون اتصال، یک تصمیم
+امنیتیِ جداست (باید هر دو طرف را بررسی کند و در آینده با رمز یک‌بارمصرف یا
+تأیید صاحب حساب همراه شود) و نباید در «ویرایش نام» پنهان شود. در عوض ساختار
+داده از امروز آماده است: رابطهٔ پرسنل↔کسب‌وکار per-business است، پس یک User
+می‌تواند هم‌زمان مشتری باشد، مدیر کسب‌وکار A، و پرسنل کسب‌وکارهای B و C — بدون
+هیچ قید یکتایی سراسری روی `userId`. فاز ۱۱ (دسترس‌پذیری) و «حالت کارمند» هم از
+همان `Employee.id` به‌عنوان کلید زمینه استفاده می‌کنند؛ هیچ مهاجرت داده‌ای
+لازم نیست.
+
+## ۱۲. ساعت کاری: پنجره‌ها، نه اسلات‌های ذخیره‌شده (فاز ۱۱)
+
+ساعت کاری «لیست اسلات‌ها» نیست؛ **پنجره‌های تکرارشوندهٔ هفتگی** است و اسلات‌ها
+موقع خواندن از `پنجرهٔ کاری ∩ پنجرهٔ نفر + مدت سرویس + نوبت‌های موجود` ساخته
+می‌شوند. اگر برنامهٔ هفته عوض شود، هیچ اسلاتِ یتیمی پشت نمی‌ماند:
+
+```
+app/pages/owner/business/[businessId]/availability/**        مرکز · برنامهٔ کسب‌وکار · برنامهٔ نفر
+app/pages/booking/index.vue                                  گام تاریخ/ساعت (مصرف‌کنندهٔ همین دامنه)
+   ↓
+useScheduleEditor({ businessId, employeeId? })   draft، قاعدهٔ روز/بازه، dirty، save، revert
+useBusinessAvailability(businessId)              کش per-businessId + نوشتن + busy/actionError
+   ↓
+AvailabilityManagementService   getBusiness/saveBusiness/listEmployees/getEmployee/saveEmployee/resetEmployeeToBusinessDefault
+AvailabilityService             getDayAvailability(query) · getDateAvailability(businessId, dates, opts)
+MockBookingService              validateDraft/create/reschedule ← همان پنجره‌ها (تداخل و «خارج از ساعت»)
+   ↓
+app/services/availability/availability-core.ts   dayContext → buildSlots → resolveDayAvailability
+app/services/mocks/availability-state.ts         تنها نقطهٔ خواندن/نوشتن (کوکی delta)
+```
+
+### مدل: پیکربندی، نه رویداد
+
+`AvailabilitySchedule = { days: AvailabilityDay[] }` و
+`AvailabilityDay = { weekday: 'saturday' … 'friday', enabled, intervals[] }`؛
+`intervals` همیشه `[{ start: 'HH:mm', end: 'HH:mm' }]` است — «باز/بسته» هرگز به
+`openingTime/closingTime` تقلیل پیدا نمی‌کند، چون ناهار/شیفتهای تکه‌ای روز اول
+فاز است نه بعدی. روزِ هفته در دامنه **نام** است (`'friday'`)، نه عدد: هیچ
+تبدیلِ `getDay()` پراکنده‌ای در UI باقی نمی‌ماند و «تعطیلی جمعه» از قانون
+تقویمی به دادهٔ کسب‌وکار منتقل می‌شود. برچسب فارسی فقط در لایهٔ نمایش
+(`weekdayLabel`) اضافه می‌شود.
+
+### «مطابق کسب‌وکار» یعنی نبودِ رکورد
+
+پرسنل `ScheduleSource = 'business-default' | 'custom'` دارد و **برنامه را کپی
+نمی‌کند**؛ تا وقتی source پیش‌فرض است، ردیفی در دلتا نیست
+(`persistEmployeeSchedule` در حالت پیش‌فرض رکورد را حذف می‌کند). دو پیامد:
+تغییر ساعت کسب‌وکار بی‌مهاجرت به همهٔ پرسنل سرایت می‌کند، و «بازگشت به
+پیش‌فرض» یک حذف ساده است نه بازنویسی آرایه.
+
+برنامهٔ اختصاصی باید **داخل بازه‌های واقعی** کسب‌وکار باشد — مقایسه با
+«نخستین باز شدن و آخرین بستن» عمداً انجام نمی‌شود، وگرنه «۰۹ تا ۱۹» روی
+کسب‌وکاری که ۱۲ تا ۱۴ ناهار است قبول می‌شد. روزی که کسب‌وکار در آن تعطیل است،
+هیچ بازه‌ای برای نفر پذیرفته نیست. قانون یکی‌ست و در دو جا اجرا می‌شود:
+`validateSchedule` + `employeeScheduleConflictDays` در فرم، و همان توابع در
+لایهٔ سرویس (دفاع دوم).
+
+تغییر ساعت کسب‌وکار، برنامهٔ پرسنل را **بازنویسی یا حذف نمی‌کند**؛ موقع خواندن
+`intersectDays` آن را با پنجرهٔ امروز ماسک می‌کند و `conflictDays`/
+`conflictMessage` روی نمای پرسنل می‌نشیند تا owner بداند ساعتی که نوشته فعلاً
+اعمال نمی‌شود.
+
+### چهار قاعدهٔ ویرایش که در کامپوننت نیستند
+
+۱) روز خاموش ⇒ ویرایشگر بازه‌ها خاموش، ولی بازه‌ها **نگه داشته** می‌شوند تا با
+روشن‌کردن دوباره برگردند. ۲) روز روشن ⇒ دست‌کم یک بازه؛ برداشتن *آخرین* بازه
+عمداً روز را تعطیل می‌کند (`AVAILABILITY_POLICY.disableDayWhenLastIntervalRemoved`)
+به‌جای اینکه کاربر را با «روز روشنِ بی‌ساعت» تنها بگذارد. ۳) `start < end`؛
+۱۸:۰۰→۰۹:۰۰ رد می‌شود و هرگز بی‌صدا جابه‌جا نمی‌شود (بازهٔ شبانه در این فاز
+ممنوع است، پس «حدس» نداریم). ۴) هم‌پوشانی رد، مرزِ چسبیده مجاز؛ ترتیب نمایش و
+ذخیره همیشه زمانی است. `validateSchedule` همان‌ها را روی payload هم می‌گیرد تا
+«payload دستی» از دیوار رد نشود.
+
+### draft ≠ دادهٔ ذخیره‌شده
+
+`useScheduleEditor` با کپیِ draft کار می‌کند؛ keystroke هیچ نوشتنی در مخزن
+نمی‌کند (تست شد: کوکی قبل و بعد از ویرایش برابر است) و `save` صریح است. مقایسهٔ
+dirty **معنادار** است: روز خاموش با بازهٔ نگه‌داشته == روز خاموشِ بی‌بازه، پس
+«خاموش/روشن و برگشتن» دیالوگ «تغییرات ذخیره‌نشده» را باز نمی‌کند و صفحهٔ
+کسب‌وکاری که هرگز تنظیم نشده از همان اول «تغییر دارد» نمی‌گوید.
+
+### موتور مشترکِ رزرو و مدیر
+
+`availability-core.dayContext()` تنها جایی است که می‌فهمد یک روز برای یک
+سرویس/نفر چه وضعیتی دارد و `status` را برمی‌گرداند:
+`available | fully-booked | closed | not-configured | past | unavailable`.
+«تعطیل» و «پُر» هرگز یکی نمی‌شوند، و «سرویس غیرفعال»/«پرسنل غیرفعال»/«سرویس
+اختصاص‌نیافته» با `unavailable` + پیام فارسی جدا می‌شوند. `MockBookingService`
+هم از همان `dayContext` + `withinWindows` استفاده می‌کند (نه یک کپی منطق):
+`validateDraft` بیرون‌ازپنجره/تداخل/روز تعطیل را رد می‌کند و `reschedule` هم
+همین را — با `excludeBookingId` تا نوبتِ در حال جابه‌جایی خودش را نبیند.
+ظرفیت از **نوبت‌های زنده** خوانده می‌شود (`bookingsOfDay`)، پس «دو منبع رزرو»
+نداریم؛ `MOCK_BOOKED_SLOTS` فقط قفلِ in-memory همان سرویس است.
+
+### انزوای داده
+
+کلید دلتا `businessId` است و `employeeId` هرگز تنها خوانده/نوشته نمی‌شود؛
+مالکیت در `resolveOwnedBusiness` بررسی می‌شود (FORBIDDEN برای کسب‌وکار دیگر،
+NOT_FOUND برای پرسنلِ کسب‌وکار دیگر تا وجودش لو نرود). نوشتن در یک کسب‌وکار،
+دیگری را تکان نمی‌دهد و `listEmployees(biz_ayeneh)` هرگز پرسنل نارنج را
+برنمی‌گرداند. منطقهٔ زمانی از `app/config/timezone.ts` می‌آید؛ هیچ UI تبدیل
+منطقهٔ زمانی نیست و هیچ کامپوننتی ساعت را به UTC تبدیل نمی‌کند.
+
+### آماده برای استثناها، بدون ساختنشان
+
+`resolveDayAvailability` روز را از `dayContext` می‌گیرد؛ جای افزودن
+`AvailabilityException[]` (مرخصی، تعطیلات رسمی، override یک‌روزه) همان
+`dayContext` است — یک `filter/override` روی پنجرهٔ همان تاریخ، بدون تغییر
+هیچ‌کدام از مصرف‌کننده‌ها. عمداً ساخته نشدند: نه تاریخِ خاص، نه مرخصی، نه
+break در دامنه، نه drag&drop/تقویم.
+
+## ۱۳. پرداخت نهایی جلوی (فاز ۱۲)
+
+فاز ۱۲ فیچر اضافه نکرد؛ بدهی‌های ریزِ فازهای ۲–۱۱ را گرفت تا روز اتصال،
+«تمیزکاری» به «باگ‌گیری» تبدیل نشود:
+
+- **سیاست نوبت، یک‌جا**: پنجرهٔ ۱۲۰ دقیقه‌ای لغو، وضعیت‌های زنده، افق ۱۴ روزهٔ
+  جابه‌جایی، سقف یادداشت و دلایل لغو در `config/booking-policy.ts`‌اند. قبلاً
+  رقمِ «۲ ساعت» در UI و در سرویس دوباره نوشته شده بود؛ حالا هر دو (و شیت تأیید)
+  از همان تابع‌های `bookingCancelBlock`/`bookingRescheduleBlock` می‌خوانند.
+  روزِ بک‌اند، همین config جای fallback است و پاسخ `GET /businesses/:id/policy`
+  می‌شود منبع اصلی (`docs/API-CONTRACT.md` §۷-۳).
+- **حلقهٔ نوبت کامل شد**: `bookings/index.vue` (با tab های پیش‌رو/گذشته)،
+  `bookings/[id]/index.vue` (جزئیات + لغو روی همان صفحه) و
+  `bookings/[id]/reschedule.vue` (جابه‌جایی واقعی). لینک‌های `/bookings/cancel`
+  و `/bookings/reschedule` که **صفحه‌ای نداشتند** حذف شدند؛ `app/pages/bookings.vue`
+  (placeholder مرده) جاروب شد. خطای لغو داخل همان شیت می‌ماند و state را
+  خراب نمی‌کند؛ جابه‌جایی با `replace` به جزئیات برمی‌گردد.
+- **یک مدل نتیجه**: `CancelBookingResult`/`RescheduleBookingResult` (اتحادیهٔ
+  موفق/ناموفق با `code`) به قرارداد `BookingService` اضافه شد تا UI روی کد
+  شاخه بزند، نه روی متن فارسی.
+- **دکمهٔ بازگشت Android**: `services/native/system-back.ts` یک استک LIFO است؛
+  `WqSheet`/`WqConfirm` هنگام بازبودن ثبت می‌شوند، پس «بازگشت» یعنی بستنِ همان
+  لایه — نه خروج از اپ، نه جا‌ماندن در صفحه. `@capacitor/app` اختیاری و داخل
+  `try` بارگذاری می‌شود (وابستگی native نصب نشده؛ §۵۱).
+- **اتصال، شفاف**: `useNetworkStatus` + `AppOfflineBanner` در layout،
+  `AppOfflineState` در صفحه‌های داده‌محور (نوبت‌ها، جابه‌جایی، تاریخچه)؛ «خطای
+  شبکه» از «داده نداریم» جدا شد. کش آفلاین و صف ارسال عمداً ساخته نشد.
+- **یک مجموعه UI خطا**: `app/error.vue` (۴۰۴ ≠ ۵۰۰، جزئیات فنی فقط dev) و
+  `AppErrorState` در همه‌جا؛ `useSearch` پیام `ServiceError` را به‌جای بولین
+  می‌دهد و `search.vue` همان کامپوننت را نشان می‌دهد.
+- **state یک‌نمونه**: `useCustomerBookings` یک نمونهٔ مشترک برای فهرست/جزئیات/
+  اکشن‌هاست (قبلاً دو نسخهٔ موازی، بعد از لغو یکی‌شان کهنه می‌ماند)؛ غنی‌کردن نوبت
+  (`enrich` → `BookingWithDetails`) هم همان‌جا زندگی می‌کند و نگاشت
+  `DateAvailabilityEntry → ردیف نوار تاریخ` در `utils/date-availability.ts`
+  مشترک است، تا جریان رزرو و صفحهٔ جابه‌جایی «امروز/فردا/پُر» را دو جور حساب
+  نکنند.
+- **mock بی‌مزاحم**: `MOCK_BOOKED_SLOTS` و چهار نوشتنِ مستقیم روی seed حذف شد؛
+  دامنهٔ نوبت هم مثل سرویس‌ها/پرسنل/ساعت‌کاری delta کوکی دارد و `resetLocalChanges()`
+  در ابزار dev هر چهار دامنه را یکجا به پایه برمی‌گرداند.
+- **تمیزکاری قابل‌سنجش**: `any` صفر، `console.*` صفر، رنگ خارج از توکن صفر،
+  نام آیکون lucide ۱۰۰٪ معتبر (۴ نام غلط اصلاح شد)، کامنت انگلیسی صفر، و
+  نگهبان «تغییرات ذخیره‌نشده» از نسخهٔ محلی `profile/edit.vue` به
+  `useUnsavedChangesGuard` مشترک منتقل شد.
+- **قاعدهٔ «context پیش از await» جاروب شد**: در `MockBookingService`
+  (سه متد) و `MockBusinessService` (پنج متد) `useMockFlags()` بعد از
+  `await delay()` خوانده می‌شد؛ در SSR بی‌صدا به پیش‌فرض می‌افتاد (کلید
+  «شبیه‌سازی خطا/پاسخ خالی» روی خواندن‌های سرور بی‌اثر) و در لاگ prod
+  `NUXT_E1001` می‌ساخت. حالا همه‌خواندن‌های context قبل از اولین `await`اند —
+  اسکریپت بازبینی: هیچ `use(MockFlags|Cookie|State|…)(` بعد از `await` در
+  `app/services/**` و `app/composables/**` نیست.
+- **`useRoute()` از زنجیرهٔ گارد بیرون رفت**: مسیرِ گارد `guard.global.ts →
+  useUserMode → useOwnerBusinesses → useAuthRecovery` بود و `useAuthRecovery`
+  در setup خودش `useRoute()` می‌خواند؛ داخل middleware این همان مسیر *قبلی* است
+  (یعنی `redirect` می‌توانست به صفحه‌ای اشاره کند که کاربر دارد ترکش می‌کند)
+  و در dev هم `NUXT_E2005` می‌ساخت. حالا `router.currentRoute` لحظهٔ مصرف خوانده
+  می‌شود. قاعده: هر چیزی که گارد مسیر به آن دست می‌زند، نباید `useRoute()`
+  صدا بزند — `to` را بگیرید یا `router.currentRoute`.
+- **فیلترهای نیمه‌کاره حذف شدند**: `availableDay` و `maxPrice` از مدل جستجو
+  بیرون رفتند (کنترل بی‌اثر بدتر از نبودن کنترل است)؛ انتظارشان به‌عنوان فیلتر
+  **سمت سرویس** در `docs/API-CONTRACT.md` ثبت شده است.
+
+## ۱۴. آنچه عمداً ساخته نشده (مقید به فاز ۰)
 
 - صفحات واقعی مشتری/کسب‌وکار/کارمند، جریان رزرو، چت، اعلان‌ها.
 - پنل ادمین (خارج از اسکوپ کل پروژه).
 - فرم‌های کامل ثبت‌نام/ورود (پوستهٔ composable + سرویس آماده است).
 - اتصال API واقعی (`apiMode==='api'` عمداً خطای راهنما می‌دهد).
+- (فاز ۷) مرکز اعلان‌ها، پوش‌نوتیفیکیشن، چت، دیدگاه‌ها، حذف حساب، تغییر شمارهٔ
+  موبایل با تأیید — صفحهٔ `/notifications` عمداً فقط حالت صادقانهٔ «فعلاً در
+  دسترس نیست» است.
+- (فاز ۹) **قیمت‌گذاری پیچیده** (تخفیف، دستهٔ قیمت، تبدیل ارز، واحد پول دیگر) و
+  سرویس رایگان: قیمت ۰ عمداً در فرم رد می‌شود («سرویس رایگان» هنوز در مدل
+  کسب‌وکار تعریف نشده)؛ `WqPrice` صفر را فقط برای دادهٔ قدیمی «رایگان» می‌زند.
+- (فاز ۹) «موتور وابستگی» که محاسبه کند با حذف یک سرویس چه چیزی می‌سوزد —
+  سیاست حذف عمداً چند پیچِ قابل‌تنظیم در `app/config/service-policy.ts` است تا
+  پاسخ را بک‌اند بدهد، نه اینکه front-end گراف حل کند.
+- (فاز ۱۰) **هر نوع اتصال حساب به پرسنل**: نه دعوت‌نامه، نه رمز یک‌بارمصرف، نه
+  `linkEmployeeToUser`/`unlink` — فقط خواندنِ `linkedAccount` به‌عنوان اطلاعات
+  خنثی. دلیل: اتصال، قرارداد بک‌اند می‌خواهد و ساختن «دکمهٔ دعوت»ی که کاری
+  نمی‌کند، همان «قابلیت شکستهٔ جعلی» است که ممنوع کرده‌ایم.
+- (فاز ۱۰) **حالت کارمند/Employee Mode**: `/employee*` عمداً همان
+  `AppPlaceholderPage`ها می‌ماند. فاز ۱۰ فقط زمینه را آماده می‌کند: `Employee`
+  با کلید per-business، وضعیت و رابطه روی یک رکورد، و `useBusinessEmployees`
+  که همان منبع را می‌خواند.
+- (فاز ۱۱) **استثناهای تقویمی**: تعطیلات رسمی، مرخصی/غیبت، «آن روز خاص را عوض
+  کن»، ظرفیت هم‌زمان، booking buffer/استراحت بین نوبت‌ها، مدیریت شیفت، نمای
+  تقویم، drag & drop، و «مسدودسازی نوبت‌های گذشته هنگام تغییر ساعت» — مدل باز
+  است (`AvailabilitySchedule` + جایی که `AvailabilityException[]` به
+  `dayContext` اضافه می‌شود) ولی هیچ‌کدام از این‌ها در فاز ۱۱ معنا نداشت؛
+  ساعت کاری **پنجره** است و محاسبهٔ ظرفیت واقعی قرارداد بک‌اند می‌خواهد.
+- (فاز ۱۱) **UI منطقهٔ زمانی** و چندمنطقه‌ای: `APP_TIMEZONE` پیکربندی اپ است؛
+  «هر کسب‌وکار منطقهٔ زمانی خودش» عمداً ساخته نشد (ساختارش در
+  `AvailabilitySchedule.timezone` باز است، ولی انتخاب‌کننده و تبدیل در UI
+  ممنوع — منطق زمان فقط در `utils/schedule-time.ts`).
+- (فاز ۱۱) **ویرایش ساعت از حالت کارمند** و نمایش ساعت کاری در صفحهٔ مشتری:
+  نمای مشتری از همان `AvailabilityService` وقت می‌گیرد، ولی «برنامهٔ هفتهٔ
+  کسب‌وکار» به‌عنوان بلوک اطلاعاتی در `/business/[id]` عمداً اضافه نشد (اسکوپ
+  فاز، ابزار owner است).
+- (فاز ۱۰) **هر نوشتن روی دادهٔ مشترک مشتری**: نمای مشتریِ پرسنل
+  (`BookableEmployee`) فقط‌خواندنی است و شمارهٔ تماس/شناسهٔ حساب را هرگز نمی‌برد؛
+  سناریوهای «ویرایش پرسنل از اپ مشتری» عمداً وجود ندارد.
+- (فاز ۹) دسترس‌پذیری: `employeeIds` روی مدل سرویس در فاز ۹ فقط *نمای مشتق* شد
+  (منبع رابطه به `Employee.serviceIds` منتقل شد) و تقویم/ظرفیت واقعی به فاز ۱۱
+  موکول است.
+- (فاز ۸) هر نوع **نوشتن** در فضای کاری: ثبت/ویرایش کسب‌وکار، CRUD سرویس و
+  پرسنل، پیکربندی دسترس‌پذیری، مدیریت کامل نوبت‌ها (تأیید/لغو/جابه‌جایی)،
+  مدیریت مشتریان، تحلیل و نمودار، پرداخت، چت، حالت کارمند، و هر نوع ادمین.
+  داشبورد فاز ۸ فقط *می‌خواند*؛ آمار و نمودار تزئینی نمی‌سازد.
+- شمارندهٔ جعلی، تاریخ انقضای جعلی نشست و هر «شبیه‌سازی» که واقعیت نداشته باشد.

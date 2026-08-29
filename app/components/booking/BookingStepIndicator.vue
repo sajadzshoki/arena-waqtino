@@ -61,7 +61,7 @@ function isStepActive(step: BookingStep, current: BookingStep): boolean {
       <span
         v-if="idx < STEPS.length - 1"
         class="h-px w-3 bg-line"
-        :class="stepIndex(step.key) < stepIndex(currentStep) ? 'bg-primary/40' : ''"
+        :class="stepIndex(step.key) < stepIndex(currentStep) ? 'bg-primary-border' : ''"
       />
     </template>
   </div>

@@ -2,29 +2,29 @@ import type { Business, BusinessCategory } from '~/types/business'
 import type { EntityId } from '~/types/common'
 
 /**
- * اجرای جستجو با فیلترها و مرتب‌سازی.
+ * اجرای جستجو: خواندن از سرویس + فیلتر/مرتب‌سازی محلی روی همان صفحه.
  *
- * از useSearchState برای state و از service برای data استفاده می‌کند.
+ * state در `useSearchState` (URL-synced) و داده فقط از `services.businesses` —
+ * صفحه نه `$fetch` می‌زند نه mock (§۱۸). خطا **پیام** است نه بولین: همان
+ * `ServiceError` فارسی که بقیهٔ صفحه‌ها نشان می‌دهند (§۲۳).
  */
 export function useSearch() {
   const services = useServices()
   const { debouncedQuery, categoryId, sort, filters } = useSearchState()
 
-  // State
   const results = ref<Business[]>([])
   const loading = ref(false)
-  const error = ref(false)
+  const error = ref<string | null>(null)
   const total = ref(0)
-  const searched = ref(false) // آیا حداقل یک بار سرچ شده؟
+  const searched = ref(false) // آیا حداقل یک بار جستجو شده؟
 
-  // Categories (برای نمایش در initial state)
   const categories = ref<BusinessCategory[]>([])
   const categoriesLoading = ref(false)
 
-  // Distances (برای nearby filter)
+  // فاصله‌ها، برای فیلتر «نزدیک من»
   const distances = ref<Record<EntityId, number>>({})
 
-  /** بارگذاری دسته‌بندی‌ها (برای initial state) */
+  /** بارگذاری دسته‌بندی‌ها (برای نمای اولیه) */
   async function loadCategories() {
     if (categories.value.length > 0) return
     categoriesLoading.value = true
@@ -32,7 +32,7 @@ export function useSearch() {
       categories.value = await services.businesses.listCategories()
     }
     catch {
-      // silent — در initial state اگر نباشد مشکلی نیست
+      // بی‌صدا: حداکثرش این است که چیپ‌های دسته غایب بمانند، نه کل جستجو
     }
     finally {
       categoriesLoading.value = false
@@ -42,21 +42,25 @@ export function useSearch() {
   /** اجرای جستجو */
   async function executeSearch() {
     loading.value = true
-    error.value = false
+    error.value = null
     searched.value = true
 
     try {
-      // ۱. دریافت نتایج از service
+      // ۱. نتایج از سرویس
       const query = debouncedQuery.value.trim()
+      // صفحهٔ اول با اندازهٔ بزرگ: جستجو هنوز «بی‌نهایت‌اسکرول» ندارد، ولی از
+      // همان اول صفحه‌بندی‌محور می‌خواند تا اتصال بک‌اند تغییر معماری نخواهد
+      // (`page`/`perPage` در قرارداد §۳۱).
       const paginated = await services.businesses.list({
         search: query || undefined,
         categoryId: categoryId.value || undefined,
-        perPage: 50 // فعلاً همه را یکجا
+        page: 1,
+        perPage: 50
       })
 
       let items: Business[] = [...paginated.items]
 
-      // ۲. دریافت فاصله‌ها اگر nearby فعال است
+      // ۲. اگر «نزدیک من» فعال است، فاصله‌ها خوانده می‌شود
       if (filters.value.nearbyOnly) {
         const nearbyList = await services.businesses.listNearby()
         const distMap: Record<EntityId, number> = {}
@@ -66,7 +70,7 @@ export function useSearch() {
         items = items.filter(b => distMap[b.id] !== undefined)
       }
 
-      // ۳. اعمال فیلترها
+      // ۳. اعمال فیلترهای محلی
       items = applyFilters(items)
 
       // ۴. مرتب‌سازی
@@ -75,8 +79,8 @@ export function useSearch() {
       results.value = items
       total.value = items.length
     }
-    catch {
-      error.value = true
+    catch (err) {
+      error.value = toServiceError(err).message || 'دریافت نتیجه‌ها ممکن نشد.'
       results.value = []
       total.value = 0
     }
@@ -85,29 +89,25 @@ export function useSearch() {
     }
   }
 
-  /** اعمال فیلترها روی نتایج */
+  /** اعمال فیلترها روی نتایج همین صفحه */
   function applyFilters(items: Business[]): Business[] {
     let filtered = [...items]
     const f = filters.value
 
-    // فیلتر امتیاز
+    // حداقل امتیاز
     if (f.minRating !== null) {
       filtered = filtered.filter(b => b.rating.average >= f.minRating!)
     }
 
-    // فیلتر nearby (فقط آن‌هایی که فاصله دارند)
+    // «نزدیک من»: فقط کسب‌وکارهایی که فاصله‌شان خوانده شده
     if (f.nearbyOnly) {
       filtered = filtered.filter(b => distances.value[b.id] !== undefined)
     }
 
-    // فیلتر maxPrice (بر اساس حداقل قیمت سرویس)
-    // فعلاً ساده — بعداً از service price استفاده می‌شود
-    // if (f.maxPrice !== null) { ... }
-
     return filtered
   }
 
-  /** مرتب‌سازی نتایج */
+  /** مرتب‌سازی نتایج (سمت کلاینت — بک‌اند `sort` ندارد، §۳۱) */
   function applySort(items: Business[]): Business[] {
     const sorted = [...items]
 

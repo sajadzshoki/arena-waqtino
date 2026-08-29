@@ -30,6 +30,8 @@ export function resolveDefaultMode(
 export function useUserMode() {
   const { capabilities } = useAuth()
   const services = useServices()
+  // فقط برای «تعداد» — واکشی ندارد (load در `ensureLoaded` صفحه‌ها انجام می‌شود)
+  const { count: ownedCount } = useOwnerBusinesses()
 
   const availableModes = computed<UserMode[]>(() => {
     const modes = new Set<UserMode>()
@@ -93,8 +95,15 @@ export function useUserMode() {
   /** آیا سوییچر حالت باید نمایش داده شود؟ */
   const canSwitchMode = computed(() => availableModes.value.length > 1)
 
-  /** نام کسب‌وکار مرتبط با یک حالت (اگر داشته باشد) */
+  /**
+   * نام کسب‌وکار مرتبط با یک حالت (اگر داشته باشد).
+   * صاحبِ چند کسب‌وکار «یک نام» نمی‌بیند، چون حالت به یک کسب‌وکار محدود نیست —
+   * تعداد واقعی‌تر است و فضای «زمینه» را به صفحهٔ خودش (سوییچر) می‌سپارد.
+   */
   function modeContextLabel(mode: UserMode): string | null {
+    if (mode === 'business' && ownedCount.value > 1) {
+      return `${toFaDigits(ownedCount.value)} کسب‌وکار قابل مدیریت`
+    }
     const cap = capabilities.value.find(
       c =>
         (mode === 'customer' && c.kind === 'customer') ||

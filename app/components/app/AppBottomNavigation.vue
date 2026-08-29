@@ -8,11 +8,20 @@ const { currentMode } = useUserMode()
 
 const items = computed<AppNavItem[]>(() => NAVIGATION[currentMode.value])
 
+/** تطبیق «بخش مسیر»: `/owner/business` با `/owner/businesses` اشتباه نشود. */
+function inSegment(path: string, base: string): boolean {
+  return base !== '/' && (path === base || path.startsWith(`${base}/`))
+}
+
 function isActive(item: AppNavItem): boolean {
   if (!item.enabled || !item.to) return false
-  // مسیر فرود حالت فقط با مسیر دقیق فعال می‌شود؛ بقیهٔ تب‌ها prefix-match.
-  const isModeRoot = MODE_LANDING[currentMode.value] === item.to
-  return isModeRoot ? route.path === item.to : route.path.startsWith(item.to)
+  const path = route.path
+  const bases = [item.to, ...(item.activeWhen ?? [])]
+  return bases.some(base => {
+    // مسیر فرود حالت فقط با مسیر دقیق فعال می‌شود؛ بقیهٔ مسیرها بخش‌به‌بخش.
+    const isModeRoot = MODE_LANDING[currentMode.value] === base
+    return isModeRoot ? path === base : inSegment(path, base)
+  })
 }
 </script>
 

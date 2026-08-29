@@ -4,7 +4,7 @@
  * هدف: مرجع بصری زنده برای ساخت صفحات آینده بدون اختراع سبک تازه.
  */
 if (!import.meta.dev) {
-  throw createError({ statusCode: 404, statusMessage: 'صفحهٔ موردنظر یافت نشد' })
+  throw createError({ statusCode: 404, message: 'صفحهٔ موردنظر یافت نشد' })
 }
 
 useHead({ title: 'سیستم طراحی' })
@@ -26,11 +26,13 @@ const statusSwatches = [
   { label: 'اطلاع', base: 'bg-info', soft: 'bg-info-soft', border: 'border-info-border' }
 ]
 const surfaceSwatches = [
-  { label: 'background', class: 'bg-background' },
-  { label: 'surface', class: 'bg-surface' },
-  { label: 'raised', class: 'bg-surface-raised' },
-  { label: 'muted', class: 'bg-surface-muted' },
-  { label: 'inverse', class: 'bg-surface-inverse' }
+  { label: 'background', class: 'bg-background', text: 'text-foreground' },
+  { label: 'surface', class: 'bg-surface', text: 'text-foreground' },
+  { label: 'raised', class: 'bg-surface-raised', text: 'text-foreground' },
+  { label: 'muted', class: 'bg-surface-muted', text: 'text-foreground' },
+  // سطح معکوس رنگ متنِ خودش را می‌خواهد (`text-inverse` در دو تم جابه‌جا می‌شود)؛
+  // نه رنگِ پیش‌فرض صفحه و نه هگزِ hardcode — وگرنه شوکیس، خودِ قاعده را می‌شکند.
+  { label: 'inverse', class: 'bg-surface-inverse', text: 'text-inverse' }
 ]
 const textSamples = [
   { label: 'foreground', class: 'text-foreground' },
@@ -129,6 +131,44 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
   probeClear()
   probeRefresh()
 })
+
+/* ——— بازنشانی دادهٔ محلی (فقط توسعه — از لایهٔ سرویس، نه از mock) ——— */
+const resetting = ref(false)
+const management = services.serviceManagement
+
+const assignments = services.employeeManagement
+
+const hours = services.availabilityManagement
+
+const bookings = services.bookings
+
+/**
+ * چهار دامنه، چهار تغییر محلی مستقل (سرویس‌ها، پرسنل، ساعات کاری، نوبت‌ها) — پس
+ * هر چهارتا پاک می‌شوند تا «دموی کاملِ فاز ۹ تا ۱۲» یکجا از اول شروع شود؛ هیچ‌کدام
+ * دیگری را پاک نمی‌کند و پاک‌کردن یک دامنه خواستهٔ دامنهٔ دیگر نیست.
+ *
+ * چرا از لایهٔ سرویس و نه مستقیم از mock؟ همان مسیری که خودِ سرویس‌ها برای
+ * نوشتن استفاده می‌کنند (`resetLocalChanges`) — صفحهٔ dev هم نباید mock را
+ * دور بزند، وگرنه فردا با تغییر schema mock این ابزار بی‌صدا غلط می‌زند (§۵۴).
+ */
+async function resetLocalData(): Promise<void> {
+  resetting.value = true
+  try {
+    await Promise.all([
+      management.resetLocalChanges(),
+      assignments.resetLocalChanges(),
+      hours.resetLocalChanges(),
+      bookings.resetLocalChanges()
+    ])
+    toast.success('دادهٔ سرویس‌ها، پرسنل، ساعات کاری و نوبت‌ها به حالت پایه برگشت.')
+  }
+  catch (e) {
+    toast.error(toServiceError(e).message)
+  }
+  finally {
+    resetting.value = false
+  }
+}
 </script>
 
 <template>
@@ -172,8 +212,10 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
             class="flex items-center justify-between border-b border-line-subtle px-4 py-2.5 last:border-b-0"
             :class="s.class"
           >
-            <span class="t-body-sm" :class="s.label === 'inverse' ? 'text-foreground' : 'text-foreground'" style="direction: ltr" dir="ltr">{{ s.label }}</span>
-            <span v-if="s.label === 'inverse'" class="t-caption" style="color: #fafaf8">سطح معکوس</span>
+            <span class="t-body-sm" :class="s.text" style="direction: ltr" dir="ltr">{{ s.label }}</span>
+            <span class="t-caption" :class="s.text">
+              {{ s.label === 'inverse' ? 'سطح معکوس' : 'سطح' }}
+            </span>
           </div>
         </div>
 
@@ -427,7 +469,7 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
       v-if="mockFlags.enabled.value"
       class="mt-8"
       title="شبیه‌سازی پاسخ mock"
-      subtitle="loading / success / empty / error بدون بک‌اند واقعی"
+      subtitle="loading / success / empty / error / ۴۰۱ بدون بک‌اند واقعی"
     >
       <div class="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
         <div class="flex items-center justify-between">
@@ -437,6 +479,38 @@ watch([mockFlags.forceError, mockFlags.forceEmpty], () => {
         <div class="flex items-center justify-between">
           <span class="t-label">شبیه‌سازی پاسخ خالی</span>
           <USwitch v-model="mockFlags.forceEmpty.value" color="primary" />
+        </div>
+        <p class="t-caption text-foreground-tertiary">
+          «خطای شبکه» همه‌جا پیام خطا می‌سازد و «پاسخ خالی» فهرست‌ها را خالی
+          می‌کند — از جمله فهرست سرویس‌ها و پرسنل مدیر. برای دیدن «هنوز
+          سرویسی/پرسنلی ندارم» با دادهٔ واقعی‌تر، کسب‌وکار آینه (صفر سرویس، صفر
+          پرسنل) را انتخاب کنید.
+        </p>
+        <div class="flex items-start justify-between gap-3">
+          <span class="min-w-0">
+            <span class="t-label block">شبیه‌سازی نشست نامعتبر (۴۰۱)</span>
+            <span class="t-caption block">
+              هر کارِ کاربر-محور (نشان‌کردن، پروفایل، ذخیرهٔ پروفایل) خطای نشست
+              می‌گیرد → پاک‌سازی مرکزی نشست و هدایت به /login.
+            </span>
+          </span>
+          <USwitch v-model="mockFlags.forceUnauthorized.value" color="primary" />
+        </div>
+        <USeparator />
+        <div class="flex items-start justify-between gap-3">
+          <span class="min-w-0">
+            <span class="t-label block">بازنشانی تغییرات محلی سرویس‌ها، پرسنل، ساعات کاری و نوبت‌ها</span>
+            <span class="t-caption block">
+              هر چه در فاز ۹ تا ۱۲ ساخته/ویرایش/اختصاص/غیرفعال/حذف یا تنظیم شده و هر
+              نوبتِ ثبت‌ یا لغو/جابه‌جاشده در کوکی‌های «wq_business_services»،
+              «wq_business_employees»، «wq_business_availability» و
+              «wq_business_bookings» می‌نشیند؛ این دکمه همان تغییرات محلی را پاک
+              می‌کند تا دادهٔ پایه برگردد و دمو از اول قابل تکرار باشد.
+            </span>
+          </span>
+          <WqButton size="md" variant="tertiary" :loading="resetting" @click="resetLocalData">
+            بازنشانی
+          </WqButton>
         </div>
         <USeparator />
         <div class="min-h-16">

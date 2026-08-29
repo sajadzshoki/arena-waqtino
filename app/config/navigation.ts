@@ -14,12 +14,18 @@ export interface AppNavItem {
   icon: string
   to?: string
   enabled: boolean
+  /**
+   * مسیرهایی که این تب را هم «فعال» نگه می‌دارند (تطبیق بخشِ مسیر، نه رشته).
+   * لازم است چون صفحهٔ یک تب می‌تواند عمیق‌تر از `to` باشد
+   * (مثلاً فضای کاری مالک روی `/owner/business/<id>` باز می‌شود).
+   */
+  activeWhen?: string[]
 }
 
 /** مسیر فرود هر حالت — بعد از ورود یا سوییچ حالت به اینجا هدایت می‌شود. */
 export const MODE_LANDING: Record<UserMode, string> = {
   customer: '/',
-  business: '/business',
+  business: '/owner',
   employee: '/employee'
 }
 
@@ -31,12 +37,31 @@ const CUSTOMER_NAV: AppNavItem[] = [
   { key: 'profile', label: 'پروفایل', icon: 'i-lucide-user-round', to: '/profile', enabled: true }
 ]
 
+/**
+ * ناوبری حالت «صاحب کسب‌وکار» — فضای کاری مستقل از حالت مشتری.
+ *
+ * سه تب، همه واقعی: نمای کلی (داشبورد همان کسب‌وکارِ زمینه)، فهرست
+ * کسب‌وکارهای قابل مدیریت، و حساب. تب‌های «نوبت‌ها/تقویم/خدمات/کارمندان»
+ * عمداً اینجا نیستند؛ در صفحهٔ «مدیریت کسب‌وکار» با برچسب صادقانهٔ «به‌زودی»
+ * معرفی می‌شوند و در فاز خودشان به همین ناوبری اضافه می‌شوند.
+ */
 const BUSINESS_NAV: AppNavItem[] = [
-  { key: 'dashboard', label: 'داشبورد', icon: 'i-lucide-layout-dashboard', to: '/business', enabled: true },
-  { key: 'bookings', label: 'نوبت‌ها', icon: 'i-lucide-clipboard-list', to: '/business/bookings', enabled: true },
-  { key: 'calendar', label: 'تقویم', icon: 'i-lucide-calendar', to: '/business/calendar', enabled: true },
-  { key: 'business', label: 'کسب‌وکار', icon: 'i-lucide-store', to: '/business/manage', enabled: true },
-  { key: 'more', label: 'بیشتر', icon: 'i-lucide-ellipsis', to: '/business/more', enabled: true }
+  {
+    key: 'workspace',
+    label: 'نمای کلی',
+    icon: 'i-lucide-layout-dashboard',
+    to: '/owner',
+    activeWhen: ['/owner/business'],
+    enabled: true
+  },
+  {
+    key: 'businesses',
+    label: 'کسب‌وکارها',
+    icon: 'i-lucide-store',
+    to: '/owner/businesses',
+    enabled: true
+  },
+  { key: 'profile', label: 'حساب', icon: 'i-lucide-user-round', to: '/profile', enabled: true }
 ]
 
 const EMPLOYEE_NAV: AppNavItem[] = [
@@ -71,7 +96,7 @@ export const MODE_META: Record<UserMode, ModeMeta> = {
     mode: 'business',
     label: 'صاحب کسب‌وکار',
     icon: 'i-lucide-store',
-    description: 'مدیریت نوبت‌ها، خدمات و کارمندان'
+    description: 'نمای کلی و مدیریت کسب‌وکارهای خودت'
   },
   employee: {
     mode: 'employee',

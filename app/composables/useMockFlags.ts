@@ -11,6 +11,11 @@ export function useMockFlags() {
   const forceError = useState<boolean>('mock:force-error', () => false)
   /** همهٔ خواندن‌ها نتیجهٔ خالی برگردانند */
   const forceEmpty = useState<boolean>('mock:force-empty', () => false)
+  /**
+   * همهٔ درخواست‌های کاربر-محور پاسخ ۴۰۱ بگیرند — برای آزمایش مسیر
+   * «نشست نامعتبر → پاک‌سازی مرکزی نشست → هدایت به ورود» (بدون تایمر جعلی).
+   */
+  const forceUnauthorized = useState<boolean>('mock:force-unauthorized', () => false)
 
-  return { enabled, forceError, forceEmpty }
+  return { enabled, forceError, forceEmpty, forceUnauthorized }
 }

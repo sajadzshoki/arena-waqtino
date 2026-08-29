@@ -27,6 +27,9 @@ const props = withDefaults(
 const emit = defineEmits<{ confirm: []; cancel: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 
+// همان قاعدهٔ WqSheet: بازگشت = بستن دیالوگ (نه خروج از صفحه/اپ)
+useSystemBackHandler(open, () => onCancel())
+
 const resolvedIcon = computed(
   () =>
     props.icon ??

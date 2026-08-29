@@ -18,6 +18,18 @@ export interface Booking {
   status: BookingStatus
   /** قیمت لحظهٔ ثبت رزرو (تومان) — از تغییر بعدی قیمت سرویس مستقل است */
   price: Toman
+  /**
+   * اسنپ‌شات نام/مدت سرویس در لحظهٔ ثبت (فاز ۹) — تا «سرویس بعداً نامش عوض شد یا حذف
+   * شد» تاریخچهٔ رزرو را خراب نکند. رزروهای قدیمی‌تر ممکن است نداشته باشند؛
+   * خواننده باید از سرویس زنده/گورِ سرویس پرشان کند.
+   */
+  serviceSnapshot?: BookingServiceSnapshot
+  /**
+   * اسنپ‌شات نام پرسنل در لحظهٔ ثبت (فاز ۱۰) — «این نفر بعداً نامش عوض شد یا از
+   * این کسب‌وکار حذف شد» نباید تاریخچهٔ نوبت را بی‌نام یا گمراه کند. رزروهای
+   * قدیمی‌تر ممکن است نداشته باشند؛ خواننده از رکورد زنده/گورِ پرسنل پرش می‌کند.
+   */
+  employeeSnapshot?: BookingEmployeeSnapshot
   notes?: string
   cancelledBy?: BookingCancelledBy
   cancelReason?: string
@@ -25,9 +37,20 @@ export interface Booking {
 }
 
 /**
- * Booking with resolved names for display purposes
- * This is what the UI uses after enriching the base Booking data
+ * نوبت با نام‌های حل‌شده برای نمایش
+ * همان چیزی که UI بعد از غنی‌کردن دادهٔ پایهٔ نوبت می‌خواند
  */
+/** چیزی که رزرو «بود»، نه لزوماً چیزی که سرویس «هست». */
+export interface BookingServiceSnapshot {
+  name: string
+  durationMinutes: number
+}
+
+/** نام پرسنلی که نوبت را انجام می‌دهد/داده — همان لحظهٔ ثبت. */
+export interface BookingEmployeeSnapshot {
+  name: string
+}
+
 export interface BookingWithDetails extends Booking {
   businessName: string
   serviceName: string

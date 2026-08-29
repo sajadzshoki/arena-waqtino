@@ -1,189 +1,142 @@
 <script setup lang="ts">
 /**
- * صفحه نوبت‌های مشتری
- * نمایش رزروهای آینده و گذشته با امکان مدیریت
+ * نوبت‌های من — تاریخچهٔ رزرو مشتری.
+ *
+ * سؤالی که این صفحه جواب می‌دهد: «کدام نوبتم باقی است و کدام‌ها رد شده‌اند؟»
+ * پس سلسله‌مراتب هر ردیف: کسب‌وکار ← خدمت/پرسنل ← زمان ← وضعیت. «پیش‌رو» و
+ * «گذشته» دو منبع جدا نیستند: یک خواندن، دو نمای فیلترشده (چون «گذشتن» یک
+ * واقعیت زمانی است، نه دو جدول).
+ *
+ * داده فقط از `useCustomerBookings` (و در نتیجه لایهٔ سرویس) می‌آید؛ خطا با
+ * «تلاش مجدد» درست می‌شود، نه با reload کل اپ. صفحه عمداً `access: 'auth'` است:
+ * بدون نشست، فهرست معنایی ندارد (§۱۲).
  */
-definePageMeta({
-  layout: 'default'
-})
+definePageMeta({ access: 'auth' })
+useHead({ title: 'نوبت‌های من' })
 
-useHead({
-  title: 'نوبت‌های من'
-})
+const { upcoming, past, listPending, listError, loaded, ensure, fetchBookings } = useCustomerBookings()
+const { online } = useNetworkStatus()
 
-const { 
-  upcomingBookings, 
-  pastBookings, 
-  loading, 
-  error, 
-  fetchBookings 
-} = useCustomerBookings()
+type Scope = 'upcoming' | 'past'
+const scope = useState<Scope>('bookings:scope', () => 'upcoming')
 
-// بارگذاری اولیه
-onMounted(() => {
-  fetchBookings()
-})
+const rows = computed(() => (scope.value === 'upcoming' ? upcoming.value : past.value))
+const counts = computed(() => ({ upcoming: upcoming.value.length, past: past.value.length }))
+const hasAny = computed(() => upcoming.value.length + past.value.length > 0)
 
-// Tab فعال
-const activeTab = ref<'upcoming' | 'past'>('upcoming')
+const options = computed(() => [
+  { id: 'upcoming' as const, label: 'پیش‌رو', icon: 'i-lucide-calendar-clock' },
+  { id: 'past' as const, label: 'گذشته', icon: 'i-lucide-archive' }
+])
+
+onMounted(ensure)
 </script>
 
 <template>
-  <div class="min-h-screen bg-background">
-    <!-- Header -->
-    <AppHeader title="نوبت‌های من" />
-
-    <!-- Content -->
-    <div class="container mx-auto px-4 py-6">
-      <!-- Tabs -->
-      <div class="mb-6 flex gap-2 border-b border-line">
-        <button
-          class="relative px-4 py-3 text-sm font-medium transition-colors"
-          :class="activeTab === 'upcoming' ? 'text-primary' : 'text-foreground-secondary hover:text-foreground'"
-          @click="activeTab = 'upcoming'"
-        >
-          نوبت‌های آینده
-          <span 
-            v-if="upcomingBookings.length > 0"
-            class="ms-2 inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
-          >
-            {{ upcomingBookings.length }}
-          </span>
-          <span 
-            v-if="activeTab === 'upcoming'"
-            class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-          />
-        </button>
-        <button
-          class="relative px-4 py-3 text-sm font-medium transition-colors"
-          :class="activeTab === 'past' ? 'text-primary' : 'text-foreground-secondary hover:text-foreground'"
-          @click="activeTab = 'past'"
-        >
-          نوبت‌های گذشته
-          <span 
-            v-if="pastBookings.length > 0"
-            class="ms-2 inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
-          >
-            {{ pastBookings.length }}
-          </span>
-          <span 
-            v-if="activeTab === 'past'"
-            class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-          />
-        </button>
-      </div>
-
-      <!-- Loading State -->
-      <div v-if="loading" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="animate-pulse rounded-2xl border border-line bg-surface p-4">
-          <div class="h-4 w-3/4 rounded bg-line" />
-          <div class="mt-3 h-3 w-1/2 rounded bg-line" />
-          <div class="mt-2 h-3 w-2/3 rounded bg-line" />
-        </div>
-      </div>
-
-      <!-- Error State -->
-      <AppErrorState
-        v-else-if="error"
-        title="خطا در دریافت نوبت‌ها"
-        :description="error"
-        icon="i-lucide-alert-circle"
-      >
-        <template #actions>
-          <WqButton @click="fetchBookings">
-            تلاش مجدد
-          </WqButton>
-        </template>
-      </AppErrorState>
-
-      <!-- Upcoming Bookings -->
-      <div v-else-if="activeTab === 'upcoming'">
-        <AppEmptyState
-          v-if="upcomingBookings.length === 0"
-          title="هنوز نوبتی ندارید"
-          description="اولین نوبت خود را رزرو کنید"
-          icon="i-lucide-calendar"
-        >
-          <template #actions>
-            <WqButton to="/search">
-              جستجوی کسب‌وکارها
-            </WqButton>
-          </template>
-        </AppEmptyState>
-
-        <div v-else class="space-y-4">
-          <BookingsBookingCardUpcoming
-            v-for="booking in upcomingBookings"
-            :key="booking.id"
-            :booking="booking"
-          />
-        </div>
-      </div>
-
-      <!-- Past Bookings -->
-      <div v-else-if="activeTab === 'past'">
-        <AppEmptyState
-          v-if="pastBookings.length === 0"
-          title="نوبت گذشته‌ای ندارید"
-          description="نوبت‌های لغو شده، انجام شده و عدم مراجعه در اینجا نمایش داده می‌شوند"
-          icon="i-lucide-history"
+  <div class="pb-4">
+    <AppPageHeader
+      title="نوبت‌های من"
+      subtitle="وقت‌هایی که گرفتی و نتیجه‌شان"
+    >
+      <template #actions>
+        <WqIconButton
+          icon="i-lucide-rotate-ccw"
+          label="تازه‌سازی نوبت‌ها"
+          :disabled="listPending"
+          @click="fetchBookings()"
         />
+      </template>
+    </AppPageHeader>
 
-        <div v-else class="space-y-4">
-          <div
-            v-for="booking in pastBookings"
-            :key="booking.id"
-            class="rounded-2xl border border-line bg-surface p-4"
-          >
-            <NuxtLink :to="`/bookings/${booking.id}`" class="block">
-              <!-- Business Name -->
-              <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-store" class="size-4 text-foreground-secondary" />
-                <h3 class="truncate font-semibold text-foreground">{{ booking.businessName }}</h3>
-              </div>
+    <!-- بارگذاری اولیه: اسکلت، نه صفحهٔ سفید (§۲۵) -->
+    <AppLoadingState
+      v-if="!loaded || (listPending && !hasAny)"
+      :rows="3"
+      label="در حال خواندن نوبت‌ها…"
+    />
 
-              <!-- Service Name -->
-              <div class="mt-2 flex items-center gap-2">
-                <UIcon name="i-lucide-concierge-bell" class="size-4 text-foreground-secondary" />
-                <p class="truncate text-sm text-foreground-secondary">{{ booking.serviceName }}</p>
-              </div>
+    <!-- اتصال قطع است → پیام «چرا» و تلاش مجدد، نه خطای سرویس (§۲۷) -->
+    <AppOfflineState
+      v-else-if="listError && !online"
+      title="بدون اینترنت، نوبت‌ها تازه نمی‌شوند"
+      description="اتصال را بررسی کنید؛ نوبت‌ها همان‌جا مانده‌اند و با یک تلاش دوباره خوانده می‌شوند."
+      @retry="fetchBookings()"
+    />
 
-              <!-- Date and Time -->
-              <div class="mt-2 flex items-center gap-2">
-                <UIcon name="i-lucide-calendar" class="size-4 text-foreground-secondary" />
-                <span class="text-sm text-foreground">
-                  {{ formatDateLabel(new Date(booking.start)) }} • {{ formatFaTime(new Date(booking.start)) }}
-                </span>
-              </div>
+    <AppErrorState
+      v-else-if="listError"
+      title="نوبت‌ها باز نشد"
+      :description="listError"
+      retryable
+      @retry="fetchBookings()"
+    />
 
-              <!-- Status Badge -->
-              <div class="mt-3">
-                <div
-                  v-if="booking.status === 'completed'"
-                  class="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1"
-                >
-                  <UIcon name="i-lucide-check-circle" class="size-3.5 text-success" />
-                  <span class="text-xs font-medium text-success">انجام شده</span>
-                </div>
-                <div
-                  v-else-if="booking.status === 'cancelled'"
-                  class="inline-flex items-center gap-1 rounded-full bg-error/10 px-2.5 py-1"
-                >
-                  <UIcon name="i-lucide-x-circle" class="size-3.5 text-error" />
-                  <span class="text-xs font-medium text-error">لغو شده</span>
-                </div>
-                <div
-                  v-else-if="booking.status === 'no_show'"
-                  class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-1"
-                >
-                  <UIcon name="i-lucide-alert-circle" class="size-3.5 text-warning" />
-                  <span class="text-xs font-medium text-warning">عدم مراجعه</span>
-                </div>
-              </div>
-            </NuxtLink>
-          </div>
-        </div>
+    <!-- هیچ نوبتی نیست → مسیر بعدی را نشان می‌دهد، نه فقط «خالی» -->
+    <AppEmptyState
+      v-else-if="!hasAny"
+      icon="i-lucide-calendar-plus-2"
+      title="هنوز نوبتی نگرفته‌اید"
+      description="از فهرست کسب‌وکارها یک خدمت و ساعت انتخاب کنید؛ نوبت‌هایتان همین‌جا با وضعیت و نتیجهٔشان می‌مانند."
+    >
+      <WqButton to="/search" icon="i-lucide-compass" class="mt-1 min-h-12">
+        کشف کسب‌وکارها
+      </WqButton>
+    </AppEmptyState>
+
+    <template v-else>
+      <div class="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4">
+        <WqChip
+          v-for="option in options"
+          :key="option.id"
+          class="min-h-12 shrink-0"
+          :icon="option.icon"
+          :selected="scope === option.id"
+          @toggle="scope = option.id"
+        >
+          {{ option.label }}
+          <span class="t-num text-foreground-muted">{{ toFaDigits(counts[option.id]) }}</span>
+        </WqChip>
       </div>
-    </div>
+
+      <p
+        v-if="listPending"
+        class="t-caption mb-2 inline-flex items-center gap-1.5 text-foreground-muted"
+      >
+        <UIcon name="i-lucide-loader-circle" class="size-3.5 animate-spin" aria-hidden="true" />
+        در حال تازه‌سازی…
+      </p>
+
+      <!-- نمای خالیِ یک فیلتر، با توضیحِ همان فیلتر -->
+      <AppEmptyState
+        v-if="rows.length === 0"
+        :icon="scope === 'upcoming' ? 'i-lucide-calendar-check-2' : 'i-lucide-archive'"
+        :title="scope === 'upcoming' ? 'نوبت پیش‌رو ندارید' : 'چیزی در گذشته نیست'"
+        :description="scope === 'upcoming'
+          ? 'یا همهٔ نوبت‌ها انجام شده‌اند یا لغوشان کرده‌اید. برای زمان تازه، یک خدمت انتخاب کنید.'
+          : 'به‌محض اینکه نوبتی انجام شود یا لغو شود، به این نما منتقل می‌شود.'"
+      >
+        <WqButton
+          variant="tertiary"
+          class="mt-1 min-h-12"
+          @click="scope = scope === 'upcoming' ? 'past' : 'upcoming'"
+        >
+          نمایش {{ scope === 'upcoming' ? 'گذشته' : 'پیش‌رو' }}
+        </WqButton>
+      </AppEmptyState>
+
+      <ul v-else class="flex flex-col gap-2">
+        <li v-for="booking in rows" :key="booking.id">
+          <BookingCard :booking="booking" :scope="scope" />
+        </li>
+      </ul>
+
+      <p v-if="scope === 'upcoming' && counts.upcoming > 0" class="t-caption mt-4 flex items-start gap-1.5 text-foreground-muted">
+        <UIcon name="i-lucide-info" class="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+        <span>
+          برای لغو یا جابه‌جایی، وارد همان نوبت شوید. سیاست زمانی لغو از تنظیمات
+          کسب‌وکار می‌آید و نزدیک زمان نوبت ممکن نیست.
+        </span>
+      </p>
+    </template>
   </div>
 </template>

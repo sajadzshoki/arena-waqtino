@@ -1,5 +1,5 @@
 import type { EntityId } from './common'
-import type { TimeSlot } from './availability'
+import type { DayAvailabilityStatus, TimeSlot } from './availability'
 
 /**
  * مراحل فرآیند رزرو.
@@ -19,14 +19,19 @@ export interface BookingFlowDraft {
 }
 
 /**
- * وضعیت در دسترس‌بودن یک تاریخ.
+ * وضعیت در دسترس‌بودن یک تاریخ (فاز ۱۱).
+ *
+ * «تعطیل» و «پر» دو چیزند: `status` از پاسخ سرویس می‌آید، نه از حدس UI — پس نه
+ * روزی به‌صورت ثابت تعطیل فرض می‌شود، نه «بدون وقت آزاد» بی‌دلیل نمایش داده
+ * می‌شود. روز تعطیلِ واقعی از *برنامهٔ هفته* می‌آید.
  */
 export interface DateAvailability {
-  dateStr: string // YYYY-MM-DD
+  /** YYYY-MM-DD — روزِ تقویمی کسب‌وکار */
+  dateStr: string
   hasAvailableSlots: boolean
   isToday: boolean
   isTomorrow: boolean
-  isFriday: boolean // جمعه
+  status: DayAvailabilityStatus
 }
 
 /**

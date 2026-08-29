@@ -186,10 +186,10 @@ hard-code نشده (فقط `config.public.apiBaseUrl` + مسیر نسبی). اگ
 
 | واژه | مقدارها | که مصرفش می‌کند |
 | --- | --- | --- |
-| `BookingStatus` | `pending` · `confirmed` · `completed` · `cancelled` · `no_show` | نگاشت مرکزی `utils/booking-status.ts` → برچسب فارسی + آیکون + رنگ توکنی. `no_show` را **بک‌اند** ثبت می‌کند؛ فرانت هیچ‌وقت خودش به آن نمی‌رساند |
+| `BookingStatus` | `pending` · `confirmed` · `completed` · `cancelled` · `no_show` | نگاشت مرکزی `config/booking-status.ts` → برچسب فارسی + آیکون + رنگ توکنی. `no_show` را **بک‌اند** ثبت می‌کند؛ فرانت هیچ‌وقت خودش به آن نمی‌رساند |
 | «نوبت زنده» | `isLiveBooking()` = `pending \| confirmed` | دکمه‌های لغو/جابه‌جایی و `deletePolicy` از همین تابع می‌آیند — نه از مقایسهٔ رشته در کامپوننت |
 | `BookingCancelledBy` | `customer` · `business` · `employee` | چه کسی لغو کرد؛ در جزئیات نوبت با متن فارسی نمایش داده می‌شود |
-| دلیل لغو | `late` · `changed-mind` · `found-elsewhere` · `emergency` · `other` | `BOOKING_CANCEL_REASONS`؛ روی سیم `reason?: string` است (متن آزاد هم قبول است) |
+| دلیل لغو | `change-of-plan` · `found-elsewhere` · `wrong-time` · `emergency` · `other` | `BOOKING_CANCEL_REASONS`؛ روی سیم `reason?: string` است (متن آزاد هم قبول است) |
 | `ServiceStatus` / `EmployeeStatus` | `active` · `inactive` | فیلتر «قابل‌رزرو» در سرویس، نه در UI |
 | `DayAvailabilityStatus` | `available` · `fully-booked` · `closed` · `not-configured` · `past` · `unavailable` | «تعطیل» و «پر» دو چیزند؛ هر کدام متن و آیکون خودش را در `BookingDateSelect`/`BookingTimeSelect` دارد |
 | `Weekday` | `saturday … friday` | تقویم هفت‌شنبه‌محور؛ تبدیل نام فارسی در `utils/fa-calendar.ts` |
